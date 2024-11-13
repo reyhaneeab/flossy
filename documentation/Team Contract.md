@@ -1,6 +1,6 @@
-***Team contract*** 
 
-# ***DIT356 H24 Mini Project: Distributed Systems Development, Team 11***
+
+# ***Team contract***
 
 ### **Project Goals**
 
@@ -99,15 +99,4 @@
 * We will continuously evaluate and refine our processes to enhance efficiency and maintain a collaborative, supportive environment.  
 * Documentation will be maintained for all decisions, processes, and deviations, fostering transparency and accountability.
 
-**Signatures:**
-
-Loura: 
-
-Nika: 
-
-Rene:
-
-Georgi: 
-
-Reyhaneh: 
 
