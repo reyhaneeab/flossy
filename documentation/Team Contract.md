@@ -76,15 +76,15 @@
 * **Client-Server**: The system will follow a client-server architecture to manage communication between user interfaces (clients) and backend services (servers), ensuring a clear separation of responsibilities and improving system manageability.  
     
 2. **Documentation Standards**:  
-*  **4+1 View Model**: We will use the 4+1 View Model to structure our architectural documentation, covering Logical, Development, Process, Physical, and Scenario views.
+*  **4+1 View Model**: We will use the 4+1 View Model to structure our architectural documentation, covering Logical, Development, Process, Physical, and Scenario views. Each member is responsible for one diagram and we will review them in team meetings.
 
 | View Name | Corresponding UML Diagrams |
 | ----- | ----- |
-| Logical View | Class Diagram(Rene) |
-| Process View | Sequence Diagram(Georgi) |
-| Physical View | Deployment Diagram(Laura) |
-| Development View | Component Diagram(Reihaneh) |
-| Use Case View | Use Case Diagram(Nika) |
+| Logical View | Class Diagram |
+| Process View | Sequence Diagram |
+| Physical View | Deployment Diagram |
+| Development View | Component Diagram |
+| Use Case View | Use Case Diagram |
 
 * **Clear Documentation**: All architectural decisions and system designs will be documented to maintain clarity and ensure easy understanding for all team members and stakeholders.
 
