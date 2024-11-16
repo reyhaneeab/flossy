@@ -1,20 +1,14 @@
 package com.group11.flossy.config;
 
-import org.eclipse.paho.client.mqttv3.IMqttClient;
-import org.eclipse.paho.client.mqttv3.MqttClient;
-import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
-import org.eclipse.paho.client.mqttv3.MqttException;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.eclipse.paho.client.mqttv3.*;
 
-@Configuration
 public class MqttConfig {
 
     private static final String MQTT_PUBLISHER_ID = "flossyServer";
     private static final String MQTT_SERVER_ADDRES = "tcp://127.0.0.1:1883";
     private static IMqttClient instance;
 
-    public static IMqttClient getInstance() {
+    public static synchronized IMqttClient getInstance() {
         try {
             if (instance == null) {
                 instance = new MqttClient(MQTT_SERVER_ADDRES, MQTT_PUBLISHER_ID);
@@ -25,7 +19,7 @@ public class MqttConfig {
             options.setCleanSession(true);
             options.setConnectionTimeout(10);
 
-            if (!instance.isConnected()) {
+            while (!instance.isConnected()) {
                 instance.connect(options);
             }
         } catch (MqttException e) {
@@ -34,5 +28,7 @@ public class MqttConfig {
 
         return instance;
     }
+
+    private MqttConfig(){}
 
 }
