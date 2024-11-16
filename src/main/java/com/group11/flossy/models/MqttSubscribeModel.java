@@ -1,4 +1,4 @@
-package src.main.java.com.group11.flossy.models;
+package com.group11.flossy.models;
 
 public class MqttSubscribeModel {
 

@@ -1,4 +1,4 @@
-package src.main.java.com.group11.flossy.exceptions;
+package com.group11.flossy.exceptions;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
