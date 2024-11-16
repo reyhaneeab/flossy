@@ -1,4 +1,4 @@
-version: "3.4"
+version: "4"
 services:
   mqtt:
     image: eclipse-mosquitto
@@ -9,8 +9,19 @@ services:
     networks:
       - mqttnet
     ports:
-      - 9001:9001
-      - 1883:1883
+      - "9001:9001"
+      - "1883:1883"
+
+
+
+  mongodb:
+    image: mongo:7.0.5
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: flossyDB
+    volumes:
+      - ./data:/data/db
 volumes:
   mosquitto_conf:
   mosquitto_data:
@@ -18,3 +29,6 @@ volumes:
 networks:
   mqttnet:
     driver: bridge
+
+
+
