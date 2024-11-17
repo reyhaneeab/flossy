@@ -41,7 +41,7 @@ build/
 
 ### miscellanious ###
 *.gitattributes
-*.
+.lck
 mvnw
 mvnw.cmd
 .mvn
