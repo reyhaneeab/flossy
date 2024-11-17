@@ -1,13 +1,13 @@
-package com.group11.userservice;
+package com.group11.dentistservice;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class UserServiceApplication {
+public class DentistServiceApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(UserServiceApplication.class, args);
+        SpringApplication.run(DentistServiceApplication.class, args);
     }
 
 }

@@ -7,10 +7,10 @@
         <artifactId>flossy</artifactId>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
-    <artifactId>user-service</artifactId>
+    <artifactId>dentist-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>user-service</name>
-    <description>user-service</description>
+    <name>dentist-service</name>
+    <description>dentist-service</description>
     <url/>
     <licenses>
         <license/>
