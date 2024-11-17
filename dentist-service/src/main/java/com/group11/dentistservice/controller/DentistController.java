@@ -16,7 +16,7 @@ public class DentistController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public DentistResponse createUser(@RequestBody DentistRequest dentistRequest){
+    public DentistResponse createDentist(@RequestBody DentistRequest dentistRequest){
         return dentistService.createDentist(dentistRequest);
     }
 
