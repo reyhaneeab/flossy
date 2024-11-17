@@ -39,7 +39,10 @@ build/
 /data/
 /docker/tempo/tempo-data/
 
+### miscellanious ###
+*.gitattributes
+*.
 mvnw
 mvnw.cmd
 .mvn
-.lck
+
