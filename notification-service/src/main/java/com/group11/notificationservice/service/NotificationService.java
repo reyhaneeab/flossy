@@ -75,6 +75,7 @@ public class NotificationService {
             return;
         }
         String email = details[0];
+        log.info("Dentist registration: {}", email);
         String dentistName = details[1];
 
         try {
