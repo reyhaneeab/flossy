@@ -33,7 +33,9 @@
 		<module>mqtt</module>
 		<module>notification-service</module>
 		<module>dentist-service</module>
-	</modules>
+        <module>account-service</module>
+        <module>account-service</module>
+    </modules>
 
 	<properties>
 		<java.version>21</java.version>
