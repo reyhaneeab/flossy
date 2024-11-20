@@ -1,13 +1,15 @@
 package com.group11.notificationservice.service;
 
+import com.group11.notificationservice.engine.EmailEngine;
 import jakarta.annotation.PostConstruct;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.client.mqttv3.*;
-import org.springframework.mail.javamail.*;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.stereotype.Service;
+import com.group11.notificationservice.handler.*;
+import java.util.HashMap;
+import java.util.Map;
 
 
 @Service
@@ -15,11 +17,12 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class NotificationService {
 
-    private final JavaMailSender javaMailSender;
+    private final Map<String, NotificationHandler> handlers = new HashMap<>();
     private final MqttClient mqttClient;
 
     // Define topics
     private static final String DENTIST_REGISTRATION_TOPIC = "dentist/registration";
+    private final JavaMailSenderImpl mailSender;
 
     // PostConstruct to set up subscriptions
     @PostConstruct
@@ -46,7 +49,9 @@ public class NotificationService {
             if (!mqttClient.isConnected()) {
                 mqttClient.connect();
             }
+
             mqttClient.subscribe(DENTIST_REGISTRATION_TOPIC);
+            handlers.put("dentist/registration", new DentistRegistrationHandler(new EmailEngine(mailSender)));
             log.info("Subscribed to topic: {}", DENTIST_REGISTRATION_TOPIC);
 
         } catch (MqttException e) {
@@ -54,52 +59,16 @@ public class NotificationService {
         }
     }
 
-    // Handle received messages
     private void handleMessage(String topic, String payload) {
-        switch (topic) {
-            case DENTIST_REGISTRATION_TOPIC:
-                handleDentistRegistration(payload);
-                break;
-
-            default:
-                log.warn("Unhandled topic: {}", topic);
+        NotificationHandler handler = handlers.get(topic);
+        if (handler != null) {
+            try {
+                handler.process(payload);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            log.warn("No handler found for topic: {}", topic);
         }
-    }
-
-    // Send dentist registration email
-    private void handleDentistRegistration(String payload) {
-        // Extract email details from payload
-        String[] details = payload.split(",");
-        if (details.length < 2) {
-            log.error("Invalid payload format for dentist registration: {}", payload);
-            return;
-        }
-        String email = details[0];
-        log.info("Dentist registration: {}", email);
-        String dentistName = details[1];
-
-        try {
-            sendEmail(email, "Welcome to Flossy!", buildDentistWelcomeEmail(dentistName));
-        } catch (MessagingException e) {
-            log.error("Error sending dentist registration email", e);
-        }
-    }
-
-    // Build email content for dentist registration
-    private String buildDentistWelcomeEmail(String dentistName) {
-        return String.format("Dear %s,\n\nWelcome to Flossy! We're excited to have you onboard.\n\nBest regards,\nFlossy Team", dentistName);
-    }
-
-    // Send email
-    private void sendEmail(String to, String subject, String content) throws MessagingException {
-        MimeMessage message = javaMailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message, true);
-
-        helper.setTo(to);
-        helper.setSubject(subject);
-        helper.setText(content, false); // Set 'true' for HTML content
-
-        javaMailSender.send(message);
-        log.info("Email sent to: {}", to);
     }
 }
