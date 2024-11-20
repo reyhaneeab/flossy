@@ -3,6 +3,7 @@ package com.group11.notificationservice.service;
 import com.group11.notificationservice.engine.EmailEngine;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
@@ -21,7 +22,10 @@ public class NotificationService {
     private final MqttClient mqttClient;
 
     // Define topics
-    private static final String DENTIST_REGISTRATION_TOPIC = "dentist/registration";
+    private static final String[] topics = {
+            "dentist/registration",
+            "dentist/booking"
+    };
     private final JavaMailSenderImpl mailSender;
 
     // PostConstruct to set up subscriptions
@@ -29,9 +33,12 @@ public class NotificationService {
     public void init() {
         try {
             mqttClient.setCallback(new MqttCallback() {
+                @SneakyThrows
                 @Override
                 public void connectionLost(Throwable cause) {
                     log.error("MQTT connection lost", cause);
+                    mqttClient.disconnect();
+                    mqttClient.close();
                 }
 
                 @Override
@@ -50,9 +57,14 @@ public class NotificationService {
                 mqttClient.connect();
             }
 
-            mqttClient.subscribe(DENTIST_REGISTRATION_TOPIC);
-            handlers.put("dentist/registration", new DentistRegistrationHandler(new EmailEngine(mailSender)));
-            log.info("Subscribed to topic: {}", DENTIST_REGISTRATION_TOPIC);
+            for (String topic : topics) {
+                mqttClient.subscribe(topic,1);
+                log.info("Subscribed to topic: {}", topic);
+            }
+
+            handlers.put(topics[0], new DentistRegistrationHandler(new EmailEngine(mailSender)));
+            handlers.put(topics[1], new DentistBookingHandler(new EmailEngine(mailSender)));
+
 
         } catch (MqttException e) {
             log.error("Error initializing MQTT client", e);
