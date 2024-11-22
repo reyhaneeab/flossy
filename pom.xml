@@ -33,6 +33,7 @@
 		<module>mqtt</module>
 		<module>notification-service</module>
 		<module>dentist-service</module>
+		<module>appointment-service</module>
 	</modules>
 
 	<properties>
