@@ -115,4 +115,23 @@ public class CalendarService {
                 "TimeSlot has been published successfully");
     }
 
+    public List<CalendarResponse> getAllAppointments() {
+        return calendarRepository.findAll().stream()
+                .map(calendar -> new CalendarResponse(
+                        calendar.getDate(),
+                        calendar.getTime(),
+                        calendar.getDentistName()))
+                .collect(Collectors.toList());
+    }
+
+    public List<CalendarResponse> getAppointmentsByDentist(String dentistName) {
+        List<Calendar> calendars = (List<Calendar>) calendarRepository.findByDentistName(dentistName);
+
+        return calendars.stream()
+                .map(calendar -> new CalendarResponse(
+                        calendar.getDate(),
+                        calendar.getTime(),
+                        calendar.getDentistName()))
+                .collect(Collectors.toList());
+    }
 }
