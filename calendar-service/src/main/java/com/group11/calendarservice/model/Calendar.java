@@ -15,8 +15,8 @@ import java.util.List;
 @Data
 public class Calendar {
     @Id
+    private String id;
     private String date;
     private String time;
-    private List <String> pastSlots;
-    private List <String> Slots;
+    private String dentistName;
 }

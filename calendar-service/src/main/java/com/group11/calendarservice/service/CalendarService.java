@@ -55,6 +55,7 @@ public class CalendarService {
         Calendar calendar = Calendar.builder()
                 .date(calendarRequest.date())
                 .time(calendarRequest.time())
+                .dentistName(calendarRequest.dentistName())
                 .build();
         calendarRepository.save(calendar);
 
@@ -62,7 +63,7 @@ public class CalendarService {
         mqttPublishUtil.publish(CALENDAR_REGISTRATION_TOPIC, payload, 1, false);
 
         log.info("Calendar {} has been registered successfully", calendar.getDate());
-        return new CalendarResponse(calendar.getDate(), calendar.getTime());
+        return new CalendarResponse(calendar.getDate(), calendar.getTime(), calendar.getDentistName());
     }
 
 }
