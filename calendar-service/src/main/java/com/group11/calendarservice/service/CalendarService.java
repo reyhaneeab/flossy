@@ -5,13 +5,10 @@ import com.group11.calendarservice.dto.CalendarRequest;
 import com.group11.calendarservice.dto.CalendarResponse;
 import com.group11.calendarservice.model.Calendar;
 import com.group11.calendarservice.repository.CalendarRepository;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.stereotype.Service;
-
-import static org.springframework.core.io.support.SpringFactoriesLoader.FailureHandler.handleMessage;
 
 
 @Slf4j
@@ -29,11 +26,14 @@ public class CalendarService {
             mqttClient.setCallback(new MqttCallback() {
                 @Override
                 public void connectionLost(Throwable cause) {
-                    log.error( "MQTT connection lost", cause);
+                    log.error("MQTT connection lost", cause);
                 }
+
                 @Override
-                public void messageArrived(String s, MqttMessage mqttMessage) throws Exception {
-                    log.info("Message arrived: {}", mqttMessage.toString());
+                public void messageArrived(String topic, MqttMessage mqttMessage) throws Exception {
+                    if (topic.equals(CALENDAR_REGISTRATION_TOPIC)) {
+                        log.info("Message arrived on topic {}: {}", topic, new String(mqttMessage.getPayload()));
+                    }
                 }
                 @Override
                 public void deliveryComplete(IMqttDeliveryToken token) {
@@ -44,7 +44,9 @@ public class CalendarService {
             if (!mqttClient.isConnected()) {
                 mqttClient.connect();
             }
-        } catch (MqttException e){
+            mqttClient.subscribe(CALENDAR_REGISTRATION_TOPIC);
+
+        } catch (MqttException e) {
             log.error("Error initializing MQTT client", e);
         }
     }
