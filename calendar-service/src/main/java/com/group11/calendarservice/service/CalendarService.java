@@ -16,6 +16,9 @@ import org.springframework.stereotype.Service;
 
 import static org.springframework.core.io.support.SpringFactoriesLoader.FailureHandler.handleMessage;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -69,18 +72,25 @@ public class CalendarService {
         return new CalendarResponse(calendar.getDate(), calendar.getTime());
     }
 
+    // Create a list of timeslots using the TimeSlotRequest and return a list of
+    // TimeSlotResponse objects
+    public List<TimeSlotResponse> createTimeSlots(TimeSlotRequest timeSlotRequest) {
+        return timeSlotRequest.timeSlots().stream().map(this::createTimeSlot).collect(Collectors.toList());
+    }
+
     // Create a new TimeSlot object using the TimeSlotRequest and save it to the
     // database
-    public TimeSlotResponse createTimeSlot(TimeSlotRequest timeSlotRequest) {
-        // Build and save the TimeSlot object using the TimeSlotRequest
+    private TimeSlotResponse createTimeSlot(TimeSlotRequest.TimeSlotDto timeSlotDto) {
+
+        // Build and save the TimeSlot object
         TimeSlot timeSlot = TimeSlot.builder()
-                .dentistName(timeSlotRequest.dentistName())
-                .startTime(timeSlotRequest.startTime())
-                .endTime(timeSlotRequest.endTime())
+                .dentistName(timeSlotDto.dentistName())
+                .startTime(timeSlotDto.startTime())
+                .endTime(timeSlotDto.endTime())
                 .build();
         timeSlotRepository.save(timeSlot);
 
-        // Create the payload for MQTT publish using the TimeSlot object
+        // Create the payload for MQTT publish
         String payload = String.format(
                 "{\"dentistName\": \"%s\", \"startTime\": \"%s\", \"endTime\": \"%s\"}",
                 timeSlot.getDentistName(), timeSlot.getStartTime().toString(), timeSlot.getEndTime().toString());
@@ -97,7 +107,7 @@ public class CalendarService {
             throw new RuntimeException("Failed to publish message: " + e.getMessage(), e);
         }
 
-        // Log success and return a response object with the TimeSlot details
+        // Log success and return a response object
         log.info("TimeSlot {} has been published successfully", timeSlot.getId());
         return new TimeSlotResponse(
                 timeSlot.getId(),

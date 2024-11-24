@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/timeslots")
 @RequiredArgsConstructor
@@ -16,7 +18,7 @@ public class TimeSlotController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public TimeSlotResponse createTimeSlot(@RequestBody TimeSlotRequest timeSlotRequest) {
-        return calendarService.createTimeSlot(timeSlotRequest);
+    public List<TimeSlotResponse> createTimeSlots(@RequestBody TimeSlotRequest timeSlotRequest) {
+        return calendarService.createTimeSlots(timeSlotRequest);
     }
 }
