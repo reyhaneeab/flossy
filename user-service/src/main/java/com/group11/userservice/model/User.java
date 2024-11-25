@@ -1,21 +1,28 @@
-package com.group11.accountservice.model;
+package com.group11.userservice.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Data
-@Document(value="account")
-public class Account {
+@Document(value="users")
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class User {
 
 
         @Id
         private String id;
-        private String username;
         private String firstName;
         private String lastName;
         private String phone;
         private String email;
+        @JsonIgnore
         private String password;
     }
 
