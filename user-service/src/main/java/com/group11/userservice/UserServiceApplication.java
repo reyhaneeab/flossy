@@ -1,8 +1,8 @@
-package com.group11.accountservice;
+package com.group11.userservice;
 
 // Press Shift twice to open the Search Everywhere dialog and type `show whitespaces`,
 // then press Enter. You can now see whitespace characters in your code.
-public class Main {
+public class UserServiceApplication {
     public static void main(String[] args) {
         // Press Opt+Enter with your caret at the highlighted text to see how
         // IntelliJ IDEA suggests fixing it.
