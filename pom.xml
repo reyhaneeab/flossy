@@ -34,7 +34,6 @@
 		<module>notification-service</module>
 		<module>dentist-service</module>
         <module>user-service</module>
-        <module>user-service</module>
     </modules>
 
 	<properties>
