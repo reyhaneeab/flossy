@@ -5,6 +5,7 @@ import java.util.List;
 
 public record TimeSlotRequest(List<TimeSlotDto> timeSlots) {
 
-    public static record TimeSlotDto(String dentistName, LocalDateTime startTime, LocalDateTime endTime) {
+    public static record TimeSlotDto(String dentistName, LocalDateTime startTime, LocalDateTime endTime,
+            String dentistOffice) {
     }
 }

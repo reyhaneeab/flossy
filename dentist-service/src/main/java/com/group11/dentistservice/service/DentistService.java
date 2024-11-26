@@ -53,8 +53,6 @@ public class DentistService {
         }
     }
 
-
-
     public DentistResponse createDentist(DentistRequest dentistRequest) {
         Dentist dentist = Dentist.builder()
                 .officeName(dentistRequest.officeName())
@@ -67,15 +65,13 @@ public class DentistService {
 
         String payload = String.format(
                 "\"%s\", \"%s\"",
-                dentist.getOfficeEmail(), dentist.getOfficeName()
-        );
-
+                dentist.getOfficeEmail(), dentist.getOfficeName());
 
         mqttPublishUtil.publish(DENTIST_REGISTRATION_TOPIC, payload, 1, false);
 
-
         log.info("Dentist Office {} has been registered successfully", dentist.getOfficeName());
-        return new DentistResponse(dentist.getId(), dentist.getOfficeName(), dentist.getOfficeEmail(), dentist.getPassword(), dentist.getPhone(), dentist.getAddress());
+        return new DentistResponse(dentist.getId(), dentist.getOfficeName(), dentist.getOfficeEmail(),
+                dentist.getPassword(), dentist.getPhone(), dentist.getAddress());
     }
 
 }
