@@ -11,6 +11,7 @@ import java.util.List;
 @Repository
 public interface TimeSlotRepository extends MongoRepository<TimeSlot, String> {
 
+    // Create a query to find overlapping time slots by using mangoDB query language
     @Query("{ 'dentistName': ?0, 'startTime': { $lt: ?2 }, 'endTime': { $gt: ?1 } }")
     List<TimeSlot> findOverlappingSlots(String dentistName, LocalDateTime startTime, LocalDateTime endTime);
 }

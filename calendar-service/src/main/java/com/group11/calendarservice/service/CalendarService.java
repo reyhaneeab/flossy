@@ -15,10 +15,11 @@ import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+
+// Import the required classes from the Spring Framework
 import static org.springframework.core.io.support.SpringFactoriesLoader.FailureHandler.handleMessage;
 
 @Slf4j
@@ -81,15 +82,14 @@ public class CalendarService {
     }
 
     private TimeSlotResponse createTimeSlot(TimeSlotRequest.TimeSlotDto timeSlotDto) {
-        // Check for overlapping time slots
+        // Check for overlapping time slots for the same doctor
         List<TimeSlot> overlappingSlots = timeSlotRepository.findOverlappingSlots(
                 timeSlotDto.dentistName(), timeSlotDto.startTime(), timeSlotDto.endTime());
         if (!overlappingSlots.isEmpty()) {
             throw new IllegalArgumentException("Time slot overlaps with an existing slot for the same doctor");
         }
 
-        // Build and save the TimeSlot object
-        LocalDateTime now = LocalDateTime.now();
+        // Build and save the TimeSlot by using the TimeSlotDto
         TimeSlot timeSlot = TimeSlot.builder()
                 .dentistName(timeSlotDto.dentistName())
                 .startTime(timeSlotDto.startTime())
@@ -98,8 +98,10 @@ public class CalendarService {
                 .build();
         timeSlotRepository.save(timeSlot);
 
-        // Add the time slot to the calendar
+        // Add the time slot to the calendar and save it
         Calendar calendar = calendarRepository.findByDate(timeSlotDto.startTime().toLocalDate().toString());
+
+        // Check if the calendar is null and create a new one if it is
         if (calendar == null) {
             calendar = Calendar.builder()
                     .date(timeSlotDto.startTime().toLocalDate().toString())
@@ -107,13 +109,15 @@ public class CalendarService {
                     .timeSlots(new ArrayList<>())
                     .build();
         }
+        // Check if the timeSlots list is null and create a new list if it is
         if (calendar.getTimeSlots() == null) {
             calendar.setTimeSlots(new ArrayList<>());
         }
+        // Add the time slot to the calendar and save it
         calendar.getTimeSlots().add(timeSlot);
         calendarRepository.save(calendar);
 
-        // Create the payload for MQTT publish
+        // Create the payload for MQTT publish using the TimeSlot
         String payload = String.format(
                 "{\"dentistName\": \"%s\", \"startTime\": \"%s\", \"endTime\": \"%s\"}",
                 timeSlot.getDentistName(), timeSlot.getStartTime().toString(), timeSlot.getEndTime().toString());
@@ -130,7 +134,7 @@ public class CalendarService {
             throw new RuntimeException("Failed to publish message: " + e.getMessage(), e);
         }
 
-        // Log success and return a response object
+        // Log success and return a response object with the time slot details
         log.info("TimeSlot {} has been published successfully", timeSlot.getId());
         return new TimeSlotResponse(
                 timeSlot.getId(),
