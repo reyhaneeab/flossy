@@ -1,5 +1,6 @@
 package com.group11.userservice.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.group11.userservice.config.MqttPublishUtil;
 import com.group11.userservice.dto.SignupRequest;
 import com.group11.userservice.dto.UserResponse;
@@ -12,6 +13,8 @@ import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -21,9 +24,10 @@ public class UserService {
     private final MqttClient mqttClient;
     private final MqttPublishUtil mqttPublishUtil;
     private final PasswordEncoder passwordEncoder;
-
+    private final ObjectMapper objectMapper;
 
     private static final String USER_REGISTRATION_TOPIC = "user/registration";
+
     @PostConstruct
     public void init() {
         try {
@@ -31,30 +35,34 @@ public class UserService {
                 @Override
                 public void connectionLost(Throwable cause) {
                     log.error("MQTT connection lost", cause);
+
                 }
 
                 @Override
                 public void messageArrived(String topic, MqttMessage message) {
-                    log.info("Message arrived: {}", message.toString());
-                } @Override
+                    log.info("Message arrived: {}", new String(message.getPayload()));
+                }
+
+                @Override
                 public void deliveryComplete(IMqttDeliveryToken token) {
                     log.info("MQTT delivery complete: {}", token.isComplete());
                 }
             });
-            // Connect if not already connected
+
             if (!mqttClient.isConnected()) {
                 mqttClient.connect();
+                log.info("MQTT client connected during initialization.");
             }
-
         } catch (MqttException e) {
             log.error("Error initializing MQTT client", e);
+            throw new RuntimeException("MQTT initialization failed", e);
         }
-    } public UserResponse createUser(SignupRequest request) {
-        // Check if user exists
+    }
+
+    public UserResponse createUser(SignupRequest request) {
         if (userRepository.existsByEmail(request.email())) {
             throw new RuntimeException("Email already exists");
         }
-
 
         User user = User.builder()
                 .email(request.email())
@@ -63,26 +71,30 @@ public class UserService {
                 .phone(request.phone())
                 .password(passwordEncoder.encode(request.password()))
                 .build();
+
+        // Save user to db
         userRepository.save(user);
 
-        // Pub to MQTT
-        String payload = String.format(
-                "\"%s\", \"%s\"",
-                user.getEmail()
-        );
+        // Prepare and publish payload
+        try {
+            String payload = objectMapper.writeValueAsString(Map.of(
+                    "email", user.getEmail(),
+                    "name", user.getFirstName() + " " + user.getLastName()
+            ));
+            mqttPublishUtil.publish(USER_REGISTRATION_TOPIC, payload, 1, false);
+        } catch (Exception e) {
+            log.error("Error publishing user registration message to MQTT", e);
+        }
 
-        mqttPublishUtil.publish(USER_REGISTRATION_TOPIC, payload, 1, false);
+            log.info("User {} has been registered successfully", user.getFirstName());
 
-        log.info("User {} has been registered successfully", user.getFirstName());
-
-        return new UserResponse(
-                user.getId(),
-                user.getFirstName(),
-                user.getLastName(),
-                user.getPhone(),
-                user.getEmail(),
-                user.getPassword()
-
-        );
+            return new UserResponse(
+                    user.getId(),
+                    user.getFirstName(),
+                    user.getLastName(),
+                    user.getEmail(),
+                    user.getPhone(),
+                    null
+            );
+        }
     }
-}
