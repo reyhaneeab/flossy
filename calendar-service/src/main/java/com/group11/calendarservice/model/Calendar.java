@@ -20,6 +20,7 @@ public class Calendar {
     private String date;
     private String time;
     private List<String> pastSlots;
+    private boolean available;
     @Builder.Default
     private List<TimeSlot> timeSlots = new ArrayList<>();
     private String dentistOffice;

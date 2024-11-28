@@ -74,7 +74,8 @@ public class CalendarService {
         mqttPublishUtil.publish(CALENDAR_REGISTRATION_TOPIC, payload, 1, false);
 
         log.info("Calendar {} has been registered successfully", calendar.getDate());
-        return new CalendarResponse(calendar.getDate(), calendar.getDentistOffice());
+        return new CalendarResponse(calendar.getDate(), calendar.getDentistOffice(), calendar.isAvailable());
+
     }
 
     public List<TimeSlotResponse> createTimeSlots(TimeSlotRequest timeSlotRequest) {
@@ -142,5 +143,21 @@ public class CalendarService {
                 timeSlot.getStartTime(),
                 timeSlot.getEndTime(),
                 "TimeSlot has been published successfully");
+    }
+    public CalendarResponse cancelTimeSlot(String id) throws Exception {
+        Calendar calendar = calendarRepository.findById(id)
+                .orElseThrow(() -> new Exception("Time slot not found with id: " + id));
+
+        if (calendar.isAvailable()) {
+            throw new Exception("Time slot is already available.");
+        }
+        calendar.setAvailable(true);
+        Calendar updatedCalendar = calendarRepository.save(calendar);
+
+        return new CalendarResponse(
+                updatedCalendar.getDate(),
+                updatedCalendar.getTime(),
+                updatedCalendar.isAvailable()
+        );
     }
 }

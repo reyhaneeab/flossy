@@ -19,5 +19,10 @@ public class CalendarController {
     public CalendarResponse createCalendar (@RequestBody CalendarRequest calendarRequest){
         return calendarService.createCalendar(calendarRequest);
     }
+    @PatchMapping("/appointments/{id}/cancel")
+    @ResponseStatus(HttpStatus.OK)
+    public CalendarResponse cancelTimeSlot(@PathVariable String id) throws Exception {
+        return calendarService.cancelTimeSlot(id);
+    }
 
 }
