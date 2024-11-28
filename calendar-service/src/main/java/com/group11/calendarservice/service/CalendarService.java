@@ -14,8 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.stereotype.Service;
 
-import static org.springframework.core.io.support.SpringFactoriesLoader.FailureHandler.handleMessage;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -36,9 +34,8 @@ public class CalendarService {
             mqttClient.setCallback(new MqttCallback() {
                 @Override
                 public void connectionLost(Throwable cause) {
-                    log.error("MQTT connection lost", cause);
+                    log.error( "MQTT connection lost", cause);
                 }
-
                 @Override
                 public void messageArrived(String s, MqttMessage mqttMessage) throws Exception {
                     log.info("Message arrived: {}", mqttMessage.toString());
@@ -62,6 +59,7 @@ public class CalendarService {
         Calendar calendar = Calendar.builder()
                 .date(calendarRequest.date())
                 .time(calendarRequest.time())
+                .dentistName(calendarRequest.dentistName())
                 .build();
         calendarRepository.save(calendar);
 
@@ -69,7 +67,7 @@ public class CalendarService {
         mqttPublishUtil.publish(CALENDAR_REGISTRATION_TOPIC, payload, 1, false);
 
         log.info("Calendar {} has been registered successfully", calendar.getDate());
-        return new CalendarResponse(calendar.getDate(), calendar.getTime());
+        return new CalendarResponse(calendar.getDate(), calendar.getTime(), calendar.getDentistName());
     }
 
     // Create a list of timeslots using the TimeSlotRequest and return a list of
@@ -117,4 +115,23 @@ public class CalendarService {
                 "TimeSlot has been published successfully");
     }
 
+    public List<CalendarResponse> getAllAppointments() {
+        return calendarRepository.findAll().stream()
+                .map(calendar -> new CalendarResponse(
+                        calendar.getDate(),
+                        calendar.getTime(),
+                        calendar.getDentistName()))
+                .collect(Collectors.toList());
+    }
+
+    public List<CalendarResponse> getAppointmentsByDentist(String dentistName) {
+        List<Calendar> calendars = (List<Calendar>) calendarRepository.findByDentistName(dentistName);
+
+        return calendars.stream()
+                .map(calendar -> new CalendarResponse(
+                        calendar.getDate(),
+                        calendar.getTime(),
+                        calendar.getDentistName()))
+                .collect(Collectors.toList());
+    }
 }
