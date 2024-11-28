@@ -1,4 +1,4 @@
-package com.group11.appointment_service;
+package com.group11.appointmentservice;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
