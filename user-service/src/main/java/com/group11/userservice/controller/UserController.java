@@ -7,10 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
@@ -20,18 +17,15 @@ import org.springframework.web.server.ResponseStatusException;
 public class UserController {
     private final UserService userService;
 
-    @PostMapping("/signup")
-    public ResponseEntity<UserResponse> registerUser(@RequestBody SignupRequest request) {
+
+    @PostMapping("/signup/form")
+    public String registerUserFromForm(@ModelAttribute SignupRequest request) {
         try {
-            UserResponse response = userService.createUser(request);
-            log.info("User registered successfully: {}", response.firstName());
-            return ResponseEntity.ok(response);
+            userService.createUser(request);
+            log.info("User registered successfully: {}", request.firstName());
+            return "redirect:/success"; // NOTE: Add confirmation message later
         } catch (Exception e) {
             log.error("Error registering user", e);
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    e.getMessage()
-            );
+            return "redirect:/signup?error";
         }
-    }
-}
+    }}
