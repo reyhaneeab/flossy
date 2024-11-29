@@ -5,8 +5,8 @@ import com.group11.calendarservice.dto.CalendarRequest;
 import com.group11.calendarservice.dto.CalendarResponse;
 import com.group11.calendarservice.dto.TimeSlotRequest;
 import com.group11.calendarservice.dto.TimeSlotResponse;
-import com.group11.calendarservice.model.Calendar;
-import com.group11.calendarservice.model.TimeSlot;
+import com.group11.model.Calendar;
+import com.group11.model.TimeSlot;
 import com.group11.calendarservice.repository.CalendarRepository;
 import com.group11.calendarservice.repository.TimeSlotRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,9 +18,6 @@ import jakarta.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
-// Import the required classes from the Spring Framework
-import static org.springframework.core.io.support.SpringFactoriesLoader.FailureHandler.handleMessage;
 
 @Slf4j
 @Service
@@ -74,7 +71,7 @@ public class CalendarService {
         mqttPublishUtil.publish(CALENDAR_REGISTRATION_TOPIC, payload, 1, false);
 
         log.info("Calendar {} has been registered successfully", calendar.getDate());
-        return new CalendarResponse(calendar.getDate(), calendar.getDentistOffice());
+        return new CalendarResponse(calendar.getDate(), calendar.getTime(), calendar.getDentistOffice());
     }
 
     public List<TimeSlotResponse> createTimeSlots(TimeSlotRequest timeSlotRequest) {

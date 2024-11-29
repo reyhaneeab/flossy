@@ -1,4 +1,4 @@
-package com.group11.calendarservice.model;
+package com.group11.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,7 +19,6 @@ public class Calendar {
     @Id
     private String date;
     private String time;
-    private List<String> pastSlots;
     @Builder.Default
     private List<TimeSlot> timeSlots = new ArrayList<>();
     private String dentistOffice;

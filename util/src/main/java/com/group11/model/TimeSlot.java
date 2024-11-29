@@ -1,4 +1,4 @@
-package com.group11.calendarservice.model;
+package com.group11.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
