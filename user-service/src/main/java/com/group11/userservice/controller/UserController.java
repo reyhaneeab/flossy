@@ -14,7 +14,7 @@ public class UserController {
     private final UserService userService;
 
 
-    @PostMapping("/signup/form")
+    @PostMapping("/signup")
     public String registerUserFromForm(@ModelAttribute SignupRequest request) {
         try {
             userService.createUser(request);
