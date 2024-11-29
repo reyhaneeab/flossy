@@ -3,15 +3,13 @@ package com.group11.dentistservice.service;
 import com.group11.dentistservice.config.MqttPublishUtil;
 import com.group11.dentistservice.dto.DentistRequest;
 import com.group11.dentistservice.dto.DentistResponse;
-import com.group11.dentistservice.model.Dentist;
+import com.group11.model.Dentist;
 import com.group11.dentistservice.repository.DentistRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.stereotype.Service;
-
-import static org.springframework.core.io.support.SpringFactoriesLoader.FailureHandler.handleMessage;
 
 @Slf4j
 @Service
@@ -33,7 +31,7 @@ public class DentistService {
                 }
 
                 @Override
-                public void messageArrived(String s, MqttMessage mqttMessage) throws Exception {
+                public void messageArrived(String s, MqttMessage mqttMessage) {
                     log.info("Message arrived: {}", mqttMessage.toString());
                 }
 
@@ -58,7 +56,7 @@ public class DentistService {
     public DentistResponse createDentist(DentistRequest dentistRequest) {
         Dentist dentist = Dentist.builder()
                 .officeName(dentistRequest.officeName())
-                .officeEmail(dentistRequest.officeEmail())
+                .email(dentistRequest.email())
                 .password(dentistRequest.password())
                 .phone(dentistRequest.phone())
                 .address(dentistRequest.address())
@@ -67,7 +65,7 @@ public class DentistService {
 
         String payload = String.format(
                 "\"%s\", \"%s\"",
-                dentist.getOfficeEmail(), dentist.getOfficeName()
+                dentist.getEmail(), dentist.getOfficeName()
         );
 
 
@@ -75,7 +73,7 @@ public class DentistService {
 
 
         log.info("Dentist Office {} has been registered successfully", dentist.getOfficeName());
-        return new DentistResponse(dentist.getId(), dentist.getOfficeName(), dentist.getOfficeEmail(), dentist.getPassword(), dentist.getPhone(), dentist.getAddress());
+        return new DentistResponse(dentist.getId(), dentist.getOfficeName(), dentist.getEmail(), dentist.getPassword(), dentist.getPhone(), dentist.getAddress());
     }
 
 }
