@@ -4,7 +4,7 @@
     <div class="calendar">
       <div v-for="day in days" :key="day.date" class="day">
         <h3>{{ formatDate(day.date) }}</h3>
-        <div class="slots">
+        <div class="column-of-timeslots">
           <button
             v-for="slot in day.slots"
             :key="slot.time"
@@ -98,30 +98,32 @@ export default defineComponent({
 
 .day {
   border: 1px solid #ddd;
-  padding: 10px;
+  padding: 20px;
   border-radius: 5px;
   background: #f9f9f9;
-  width: 150px;
+  width: 400px;
 }
 
 h3 {
-  font-size: 1.2rem;
+  font-size: 1.5rem;
   margin-bottom: 10px;
 }
 
-.slots {
+.column-of-timeslots {
   display: flex;
   flex-direction: column;
   gap: 5px;
 }
 
 button {
-  padding: 5px 10px;
+  padding: 30px 50px;
   border: 1px solid #ddd;
   border-radius: 3px;
   background: #fff;
   cursor: pointer;
   transition: 0.3s;
+  font-size: 15px;
+  font-weight: bold;
 }
 
 button:hover {
