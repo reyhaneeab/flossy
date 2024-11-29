@@ -1,6 +1,6 @@
 package com.group11.userservice.repository;
 
-import com.group11.userservice.model.User;
+import com.group11.model.User;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
