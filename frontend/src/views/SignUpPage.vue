@@ -37,20 +37,22 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 
-const URL = `http://localhost:8080/api/users/signup`
+    const URL = `http://localhost:8090/api/users/signup`
+    const router = useRouter()
 
-const firstName = ref('')
-const lastName = ref('')
-const email = ref('')
-const phone = ref('')
-const password = ref('')
 
-export default
-{ methods: {
-    async handleSignup() {
+
+    const lastName = ref('')
+    const firstName = ref('')
+    const email = ref('')
+    const phone = ref('')
+    const password = ref('')
+
+    async function handleSignup() {
       try {
         console.log(1)
         const response = await fetch(URL, {
@@ -69,7 +71,7 @@ export default
 
         if (response.ok) {
           // Redirect to success page or login
-          this.$router.push('/signup/success')
+          await router.push('/')
           console.log('Signup successful')
         } else {
           // Handle signup failure
@@ -78,8 +80,8 @@ export default
       } catch (error) {
         console.error('Signup error:', error)
       }
-    },
-  },}
+    }
+
 </script>
 
 <style scoped>
