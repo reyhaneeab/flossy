@@ -93,8 +93,7 @@ public class UserService {
                     user.getFirstName(),
                     user.getLastName(),
                     user.getEmail(),
-                    user.getPhone(),
-                    null
+                    user.getPhone()
             );
         }
     }
