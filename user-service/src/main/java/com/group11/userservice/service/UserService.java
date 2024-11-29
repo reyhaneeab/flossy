@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.group11.userservice.config.MqttPublishUtil;
 import com.group11.userservice.dto.SignupRequest;
 import com.group11.userservice.dto.UserResponse;
-import com.group11.userservice.model.User;
+import com.group11.model.User;
 import com.group11.userservice.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -59,7 +59,7 @@ public class UserService {
         }
     }
 
-    public UserResponse createUser(SignupRequest request) {
+    public void createUser(SignupRequest request) {
         if (userRepository.existsByEmail(request.email())) {
             throw new RuntimeException("Email already exists");
         }
@@ -88,12 +88,12 @@ public class UserService {
 
             log.info("User {} has been registered successfully", user.getFirstName());
 
-            return new UserResponse(
-                    user.getId(),
-                    user.getFirstName(),
-                    user.getLastName(),
-                    user.getEmail(),
-                    user.getPhone()
-            );
-        }
+        new UserResponse(
+                user.getId(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getEmail(),
+                user.getPhone()
+        );
+    }
     }
