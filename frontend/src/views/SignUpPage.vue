@@ -32,13 +32,15 @@
           placeholder="Password"
           required
       />
-      <button type="submit">Sign Up</button>
+      <button @click="handleSignup" type="submit">Sign Up</button>
     </form>
   </div>
 </template>
 
-<script setup>
+<script>
 import { ref } from 'vue'
+
+const URL = `http://localhost:8080/api/users/signup`
 
 const firstName = ref('')
 const lastName = ref('')
@@ -46,34 +48,38 @@ const email = ref('')
 const phone = ref('')
 const password = ref('')
 
-const handleSignup = async () => {
-  try {
-    const response = await fetch('/api/users/signup/form', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        firstName: firstName.value,
-        lastName: lastName.value,
-        email: email.value,
-        phone: phone.value,
-        password: password.value
-      })
-    })
+export default
+{ methods: {
+    async handleSignup() {
+      try {
+        console.log(1)
+        const response = await fetch(URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: email.value,
+            firstName: firstName.value,
+            lastName: lastName.value,
+            phone: phone.value,
+            password: password.value
+          })
+        })
 
-    if (response.ok) {
-      // Redirect to success page or login
-      this.$router.push('/signup/success')
-      console.log('Signup successful')
-    } else {
-      // Handle signup failure
-      console.error('Signup failed')
-    }
-  } catch (error) {
-    console.error('Signup error:', error)
-  }
-}
+        if (response.ok) {
+          // Redirect to success page or login
+          this.$router.push('/signup/success')
+          console.log('Signup successful')
+        } else {
+          // Handle signup failure
+          console.error('Signup failed')
+        }
+      } catch (error) {
+        console.error('Signup error:', error)
+      }
+    },
+  },}
 </script>
 
 <style scoped>

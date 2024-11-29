@@ -6,7 +6,9 @@
 </template>
 
 <script setup>
-
+export default {
+  name:'Success'
+}
 </script>
 
 <style scoped>

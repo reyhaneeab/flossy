@@ -69,7 +69,7 @@ public class UserService {
                 .firstName(request.firstName())
                 .lastName(request.lastName())
                 .phone(request.phone())
-                .password(passwordEncoder.encode(request.password()))
+                .password(request.password())
                 .build();
 
         // Save user to db
