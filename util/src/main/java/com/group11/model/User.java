@@ -1,4 +1,4 @@
-package com.group11.userservice.model;
+package com.group11.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
