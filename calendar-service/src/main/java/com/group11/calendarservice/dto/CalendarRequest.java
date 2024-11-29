@@ -1,5 +1,6 @@
 package com.group11.calendarservice.dto;
 
-public record CalendarRequest (String date,
-                               String time,
-                               String dentistName){}
+public record CalendarRequest(String date,
+        String time,
+        String dentistOffice) {
+}

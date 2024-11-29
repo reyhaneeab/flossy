@@ -6,17 +6,21 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.util.ArrayList;
 import java.util.List;
 
-@Document(value="calendar")
+@Document(value = "calendar")
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 @Data
 public class Calendar {
     @Id
-    private String id;
     private String date;
     private String time;
-    private String dentistName;
+    private List<String> pastSlots;
+    @Builder.Default
+    private List<TimeSlot> timeSlots = new ArrayList<>();
+    private String dentistOffice;
 }

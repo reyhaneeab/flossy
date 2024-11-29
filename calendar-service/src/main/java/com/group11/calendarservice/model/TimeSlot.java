@@ -19,4 +19,5 @@ public class TimeSlot {
     private String dentistName;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
+    private String dentistOffice;
 }
