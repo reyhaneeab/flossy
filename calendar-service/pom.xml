@@ -7,7 +7,6 @@
         <artifactId>flossy</artifactId>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
-    <groupId>com.group11</groupId>
     <artifactId>calendar-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>calendar-service</name>
@@ -37,7 +36,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-devtools</artifactId>
@@ -50,15 +48,19 @@
             <optional>true</optional>
         </dependency>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
+            <groupId>com.group11</groupId>
+            <artifactId>util</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>com.group11</groupId>
-            <artifactId>mqtt</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <groupId>org.eclipse.paho</groupId>
+            <artifactId>org.eclipse.paho.client.mqttv3</artifactId>
+            <version>1.2.5</version>
             <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-rest-webmvc</artifactId>
         </dependency>
     </dependencies>
 

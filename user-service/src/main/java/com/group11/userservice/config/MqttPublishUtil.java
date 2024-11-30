@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
-import org.eclipse.paho.client.mqttv3.MqttPersistenceException;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -15,15 +14,29 @@ public class MqttPublishUtil {
     private final MqttClient mqttClient;
 
     public void publish(String topic, String payload, int qos, boolean retained) {
+        if (payload == null || payload.trim().isEmpty()) {
+            log.warn("Cannot publish empty payload to topic: {}", topic);
+            return;
+        }
+
+        if (qos < 0 || qos > 2) {
+            throw new IllegalArgumentException("Invalid QoS level: " + qos);
+        }
+
+
         try {
             MqttMessage message = new MqttMessage(payload.getBytes());
             message.setQos(qos);
             message.setRetained(retained);
             mqttClient.publish(topic, message);
-            log.info("Published message to topic: {}", topic);
+            log.info("Published message to topic: {} with QoS: {} and Retained: {} on attempt {}",
+                    topic, qos, retained);
         } catch (MqttException e) {
-            log.error("Error publishing to MQTT", e);
-        }
-    }
-}
+            log.error("Error publishing to MQTT on attempt {}: {}", e.getMessage());
 
+        }
+
+    }
+
+
+}

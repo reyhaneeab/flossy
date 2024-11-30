@@ -1,6 +1,6 @@
 package com.group11.calendarservice.repository;
 
-import com.group11.calendarservice.model.TimeSlot;
+import com.group11.model.TimeSlot;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
