@@ -21,7 +21,7 @@ public class Dentist {
     private String email;
     private String password;
     private String address;
-    private List<String> phones;
+    private String phone;
     private List<String> doctors;
 
 
