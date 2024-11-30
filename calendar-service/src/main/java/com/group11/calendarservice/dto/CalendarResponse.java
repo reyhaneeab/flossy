@@ -1,6 +1,11 @@
 package com.group11.calendarservice.dto;
 
-public record CalendarResponse (String date,
-                                String time, 
-                                boolean available,
-                                String dentistName){}
+import java.util.List;
+
+public record CalendarResponse(
+        String id,
+        String ownerId,
+        int weekNumber,
+        int year,
+        List<TimeSlotResponse> timeSlots
+) {}

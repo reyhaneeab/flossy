@@ -6,7 +6,10 @@ import com.group11.dentistservice.service.DentistService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RestController;
 
+@CrossOrigin(origins = "http://localhost:8087")
 @RestController
 @RequestMapping("/api/dentist")
 @RequiredArgsConstructor
