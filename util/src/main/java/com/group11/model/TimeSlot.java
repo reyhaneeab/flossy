@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.Builder;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.LocalDateTime;
 
@@ -17,7 +18,13 @@ public class TimeSlot {
     @Id
     private String id;
     private String dentistName;
+    private boolean booked;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
-    private String dentistOffice;
+    @DBRef
+    private Dentist owner;
+    @DBRef
+    private Calendar calendar;
+    @DBRef
+    private User user;
 }
