@@ -1,6 +1,5 @@
 package com.group11.appointmentservice.service;
 
-import com.group11.appointmentservice.config.MqttPublishUtil;
 import com.group11.appointmentservice.repository.*;
 import com.group11.model.TimeSlot;
 import com.group11.model.User;
@@ -22,7 +21,6 @@ public class AppointmentService {
     private final MqttClient mqttClient;
     private static final String BOOKING_SUCCESS_TOPIC = "booking/successful";
     private static final String BOOK_APPOINTMENT_TOPIC = "timeSlot/book";
-    private final MqttPublishUtil mqttPublishUtil;
 
     @PostConstruct
     public void init() {
@@ -39,7 +37,7 @@ public class AppointmentService {
                 }
 
                 @Override
-                public void messageArrived(String s, MqttMessage mqttMessage) throws Exception {
+                public void messageArrived(String s, MqttMessage mqttMessage) {
                     log.info("Message arrived: {}", mqttMessage.toString());
                     try{
                         bookAppointment(mqttMessage);
@@ -78,16 +76,16 @@ public class AppointmentService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking failed. User not found"));
 
-
         if(timeSlot.isBooked()) throw new Exception("Appointment is already booked");
         else {
             timeSlot.setBooked(true);
             timeSlot.setBookedBy(user);
             timeSlotRepository.save(timeSlot);
             payload = user.getEmail()+","+user.getFirstName()+","+timeSlot.getOwner().getEmail();
-            mqttPublishUtil.publish(BOOKING_SUCCESS_TOPIC, payload , 1, false);
+            mqttClient.publish(BOOKING_SUCCESS_TOPIC, payload.getBytes() , 1, false);
         }
 
     }
+
 
 }
