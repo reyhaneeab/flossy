@@ -29,5 +29,5 @@ public class TimeSlot {
     @DBRef
     private Calendar calendar;
     @DBRef
-    private User user;
+    private User bookedBy;
 }
