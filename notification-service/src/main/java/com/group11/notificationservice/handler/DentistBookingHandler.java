@@ -16,13 +16,14 @@ public class DentistBookingHandler implements NotificationHandler{
     @Override
     public void process(String payload) {
         String[] details = payload.split(",");
-        String email = details[0];
-        String name = details[1];
+        String user = details[0];
+        String officeEmail = details[1];
+        String officeName = details[2];
         String content = String.format("Dear %s,/n" +
-                "Congratulations! Someone has decided to book one of your time slots! Here are the details: /n" +
-                "....", name);
+                "Congratulations! /n %s has decided to book one of your time slots! Here are the details: /n" +
+                "....", officeName, user);
         try {
-            emailEngine.sendEmail(email, "New Booking", content);
+            emailEngine.sendEmail(officeEmail, "New Booking", content);
         }
         catch (MessagingException e) {
             log.info("Error occurred when trying to send email: ", e);
