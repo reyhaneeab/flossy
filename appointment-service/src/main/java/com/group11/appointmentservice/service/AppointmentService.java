@@ -25,6 +25,10 @@ public class AppointmentService {
     @PostConstruct
     public void init() {
         try {
+            if(!mqttClient.isConnected()) {
+                mqttClient.connect();
+                mqttClient.subscribe(BOOK_APPOINTMENT_TOPIC, 1);
+            }
             mqttClient.setCallback(new MqttCallback() {
                 @Override
                 public void connectionLost(Throwable cause) {
@@ -51,11 +55,6 @@ public class AppointmentService {
                 }
             });
 
-            if (!mqttClient.isConnected()) {
-                mqttClient.connect();
-            }
-
-            mqttClient.subscribe(BOOK_APPOINTMENT_TOPIC, 1);
         } catch (MqttException e) {
             log.error("Error initializing MQTT client", e);
         }
