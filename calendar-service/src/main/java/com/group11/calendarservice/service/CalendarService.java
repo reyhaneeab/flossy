@@ -15,7 +15,11 @@ import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
+
+import java.time.LocalDate;
+import java.time.temporal.WeekFields;
 import java.util.List;
+import java.util.Locale;
 
 @Slf4j
 @Service
@@ -65,6 +69,9 @@ public class CalendarService {
         Dentist dentist = dentistRepository.findById(DentistId)
                 .orElseThrow(() -> new ResourceNotFoundException("Dentist office not found"));
 
+        LocalDate current = LocalDate.now();
+        WeekFields weekFields = WeekFields.of(Locale.getDefault());
+
         List<TimeSlot> timeSlots = calendarRequest.timeSlots().stream().map(slotRequest -> {
             TimeSlot slot = new TimeSlot();
             slot.setStartTime(slotRequest.startTime());
@@ -79,14 +86,14 @@ public class CalendarService {
         Calendar calendar = new Calendar();
         calendar.setOwner(dentist);
         calendar.setTimeSlots(timeSlots);
-        calendar.setYear(calendarRequest.year());
-        calendar.setWeekNumber(calendarRequest.weekNumber());
+        calendar.setWeekNumber(current.get(weekFields.weekOfWeekBasedYear()));
+        calendar.setYear(current.getYear());
 
         calendarRepository.save(calendar);
 
         String message="successfully created calendar";
         mqttPublishUtil.publish(CALENDAR_REGISTRATION_TOPIC, message, 0, true);
-        return new CalendarResponse(calendar.getId(), calendar.getOwner().getId(), calendar.getYear(), calendar.getWeekNumber(), calendar.getTimeSlots().stream().map(this::mapToResponse).toList());
+        return new CalendarResponse(calendar.getId(), calendar.getOwner().getId(),  calendar.getWeekNumber(), calendar.getYear(), calendar.getTimeSlots().stream().map(this::mapToResponse).toList());
     }
 
 }
