@@ -36,7 +36,7 @@ public class AppointmentService {
                         mqttClient.disconnect();
                         mqttClient.close();
                     }catch(Exception e){
-                        System.out.println("Connection lost!");
+                        log.info("Connection lost:" + e.getMessage());
                     }
                 }
 
@@ -80,7 +80,7 @@ public class AppointmentService {
             timeSlot.setBooked(true);
             timeSlot.setBookedBy(user);
             timeSlotRepository.save(timeSlot);
-            payload = user.getEmail()+","+user.getFirstName()+","+timeSlot.getOwner().getEmail();
+            payload = user.getFirstName()+" "+user.getLastName()+","+timeSlot.getOwner().getEmail()+","+timeSlot.getOwner().getOfficeName();
             mqttClient.publish(BOOKING_SUCCESS_TOPIC, payload.getBytes() , 1, false);
         }
 
