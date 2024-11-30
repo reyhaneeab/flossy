@@ -19,9 +19,16 @@ public class DentistBookingHandler implements NotificationHandler{
         String user = details[0];
         String officeEmail = details[1];
         String officeName = details[2];
-        String content = String.format("Dear %s,/n" +
-                "Congratulations! /n %s has decided to book one of your time slots! Here are the details: /n" +
-                "....", officeName, user);
+        String content = String.format(
+                "Dear %s,\n\n" +
+                        "We are pleased to inform you that %s has successfully booked one of your available time slots.\n\n" +
+                        "Here are the booking details:\n" +
+                        "...\n\n" +
+                        "Thank you for using our service. If you have any questions or need further assistance, please feel free to reach out.\n\n" +
+                        "Best regards,\n" +
+                        "The Flossy Team",
+                officeName, user
+        );
         try {
             emailEngine.sendEmail(officeEmail, "New Booking", content);
         }
