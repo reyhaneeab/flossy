@@ -7,36 +7,18 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
-
 @RestController
-@RequestMapping("/api/dentist")
+@RequestMapping("/api/calendar")
 @RequiredArgsConstructor
 public class CalendarController {
     private final CalendarService calendarService;
 
-    @PostMapping
+    @PostMapping("/{dentistId}")
     @ResponseStatus(HttpStatus.CREATED)
-    public CalendarResponse createCalendar(@RequestBody CalendarRequest calendarRequest) {
-        return calendarService.createCalendar(calendarRequest);
+    public CalendarResponse createCalendar(
+            @PathVariable String dentistId,
+            @RequestBody CalendarRequest calendarRequest) {
+        return calendarService.createCalendar(dentistId, calendarRequest);
     }
 
-    @GetMapping("/test")
-    @ResponseStatus(HttpStatus.OK)
-    public String testEndpoint() {
-        return "Test endpoint is working!";
-    }
-
-    @GetMapping("/appointments")
-    @ResponseStatus(HttpStatus.OK)
-    public List<CalendarResponse> getAllAppointments() {
-        return calendarService.getAllAppointments();
-    }
-
-    @GetMapping("/appointments/{dentistName}")
-    @ResponseStatus(HttpStatus.OK)
-    public List<CalendarResponse> getAppointmentsByDentist(@PathVariable String dentistName) {
-        return calendarService.getAppointmentsByDentist(dentistName);
-    }
 }

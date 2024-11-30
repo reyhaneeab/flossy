@@ -1,11 +1,15 @@
 package com.group11.calendarservice.dto;
 
+import com.group11.model.Dentist;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public record TimeSlotResponse(
                 String id,
-                String dentistName,
+                LocalDate date,
                 LocalDateTime startTime,
                 LocalDateTime endTime,
-                String message) {
+                Dentist owner
+                ) {
 }
