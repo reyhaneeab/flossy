@@ -7,6 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
+import org.springframework.stereotype.Indexed;
 
 @Data
 @Document(value="users")
@@ -18,10 +20,11 @@ public class User {
 
         @Id
         private String id;
+        @Field("email")
+        private String email;
         private String firstName;
         private String lastName;
         private String phone;
-        private String email;
         @JsonIgnore
         private String password;
     }
