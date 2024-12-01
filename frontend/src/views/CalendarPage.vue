@@ -28,17 +28,25 @@
 
 <script>
 import { defineComponent, ref, onMounted } from "vue";
-import axios from "axios";
 
 export default defineComponent({
   setup() {
     const selectedSlot = ref(null);
     const days = ref([]);
+    const URL = `http://localhost:8091/api/calendar/get`
 
     const fetchTimeSlots = async () => {
       try {
-
-        const response = await axios.get("tcp://127.0.0.1:1883/appointments");
+        const response = await fetch(URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            weekNumber: "50",
+            ownerId: ""
+          })
+        })
 
         // Map the response to the structure expected in `days`
         days.value = response.data.map((dayData) => {
