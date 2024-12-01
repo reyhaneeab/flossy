@@ -35,6 +35,7 @@
         <module>user-service</module>
 		<module>appointment-service</module>
 		<module>util</module>
+		<module>api-gateway</module>
 	</modules>
 
 	<properties>

@@ -1,8 +1,7 @@
 package com.group11.calendarservice.service;
 
-import com.group11.calendarservice.config.MqttPublishUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.group11.calendarservice.dto.CalendarRequest;
-import com.group11.calendarservice.dto.CalendarResponse;
 import com.group11.calendarservice.dto.TimeSlotResponse;
 import com.group11.model.Calendar;
 import com.group11.model.Dentist;
@@ -13,13 +12,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
-
 import jakarta.annotation.PostConstruct;
-
-import java.time.LocalDate;
-import java.time.temporal.WeekFields;
 import java.util.List;
-import java.util.Locale;
+import static com.group11.calendarservice.config.JacksonConfig.createObjectMapper;
 
 @Slf4j
 @Service
@@ -29,33 +24,51 @@ public class CalendarService {
     private final CalendarRepository calendarRepository;
     private final TimeSlotRepository timeSlotRepository;
     private final MqttClient mqttClient;
-    private final MqttPublishUtil mqttPublishUtil;
+    private final ObjectMapper mapper = createObjectMapper();
 
-    private static final String CALENDAR_REGISTRATION_TOPIC = "dentist/registration";
+    private static final String CALENDAR_REGISTRATION_TOPIC = "calendar/registration";
+    private static final String CALENDAR_GET_TOPIC = "calendar/get";
+    private static final String CALENDAR_REGISTRATION_RESPONSE = CALENDAR_REGISTRATION_TOPIC + "/response";
+    private static final String CALENDAR_GET_RESPONSE = CALENDAR_GET_TOPIC + "/response";
 
     @PostConstruct
     public void init() {
         try {
+            if(!mqttClient.isConnected()) {
+                mqttClient.connect();
+                mqttClient.subscribe(CALENDAR_REGISTRATION_TOPIC, 1);
+                mqttClient.subscribe(CALENDAR_GET_TOPIC,1);
+            }
             mqttClient.setCallback(new MqttCallback() {
+
                 @Override
                 public void connectionLost(Throwable cause) {
-                    log.error("MQTT connection lost", cause);
+                    try {
+                        mqttClient.disconnect();
+                        mqttClient.close();
+                    }catch(Exception e){
+                        log.info("Connection lost:" + e.getMessage());
+                    }
                 }
 
-                @Override
-                public void messageArrived(String s, MqttMessage mqttMessage) throws Exception {
-                    log.info("Message arrived: {}", mqttMessage.toString());
-                }
+                public void messageArrived(String topic, MqttMessage mqttMessage) {
+                        log.info("Message arrived: {}", mqttMessage.toString());
+                        try{
+                            if (topic.equals(CALENDAR_REGISTRATION_TOPIC)) {
+                                createCalendar(mqttMessage);
+                            }else if (topic.equals(CALENDAR_GET_TOPIC)) {
+                                getCalendar(mqttMessage);
+                            }
+                        }
+                        catch (Exception e){log.info(e.getMessage());}
+                    }
 
-                @Override
-                public void deliveryComplete(IMqttDeliveryToken token) {
-                    log.info("MQTT delivery complete: {}", token.isComplete());
-                }
-            });
+                    @Override
+                    public void deliveryComplete(IMqttDeliveryToken token) {
+                        log.info("MQTT delivery complete: {}", token.isComplete());
+                    }
+                });
 
-            if (!mqttClient.isConnected()) {
-                mqttClient.connect();
-            }
         } catch (MqttException e) {
             log.error("Error initializing MQTT client", e);
         }
@@ -65,18 +78,19 @@ public class CalendarService {
         return new TimeSlotResponse(slot.getId(), slot.getDate(), slot.getStartTime(), slot.getEndTime(), slot.getOwner());
     }
 
-    public CalendarResponse createCalendar(String DentistId, CalendarRequest calendarRequest) {
-        Dentist dentist = dentistRepository.findById(DentistId)
+    public void createCalendar(MqttMessage message) throws Exception {
+
+        CalendarRequest request = mapper.readValue(message.getPayload(), CalendarRequest.class);
+
+        Dentist dentist = dentistRepository.findById(request.ownerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Dentist office not found"));
 
-        LocalDate current = LocalDate.now();
-        WeekFields weekFields = WeekFields.of(Locale.getDefault());
-
-        List<TimeSlot> timeSlots = calendarRequest.timeSlots().stream().map(slotRequest -> {
+        if(request.timeSlots() == null) throw new ResourceNotFoundException("TimeSlots not found");
+        List<TimeSlot> timeSlots = request.timeSlots().stream().map(slotRequest -> {
             TimeSlot slot = new TimeSlot();
+            slot.setDate(slotRequest.date());
             slot.setStartTime(slotRequest.startTime());
             slot.setEndTime(slotRequest.endTime());
-            slot.setDate(slotRequest.date());
             slot.setOwner(dentist);
             return slot;
         }).toList();
@@ -86,14 +100,24 @@ public class CalendarService {
         Calendar calendar = new Calendar();
         calendar.setOwner(dentist);
         calendar.setTimeSlots(timeSlots);
-        calendar.setWeekNumber(current.get(weekFields.weekOfWeekBasedYear()));
-        calendar.setYear(current.getYear());
+        calendar.setWeekNumber(request.weekNumber());
+        calendar.setYear(request.year());
 
         calendarRepository.save(calendar);
+        String payload = mapper.writeValueAsString(calendar);
+        mqttClient.publish(CALENDAR_REGISTRATION_RESPONSE, payload.getBytes(), 1, true);
+    }
 
-        String message="successfully created calendar";
-        mqttPublishUtil.publish(CALENDAR_REGISTRATION_TOPIC, message, 0, true);
-        return new CalendarResponse(calendar.getId(), calendar.getOwner().getId(),  calendar.getWeekNumber(), calendar.getYear(), calendar.getTimeSlots().stream().map(this::mapToResponse).toList());
+    public void getCalendar(MqttMessage message) throws Exception {
+
+        CalendarRequest request = mapper.readValue(message.getPayload(), CalendarRequest.class);
+
+        Dentist dentist = dentistRepository.findById(request.ownerId())
+                .orElseThrow(() -> new ResourceNotFoundException("Dentist office not found"));
+
+            Calendar calendar = calendarRepository.findByOwnerAndWeekNumber(request.ownerId(), request.weekNumber());
+            String payload = mapper.writeValueAsString(calendar);
+            mqttClient.publish(CALENDAR_GET_RESPONSE, payload.getBytes(), 1, true);
     }
 
 }
