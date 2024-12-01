@@ -1,10 +1,10 @@
 package com.group11.userservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.group11.userservice.config.MqttPublishUtil;
-import com.group11.userservice.dto.SignupRequest;
-import com.group11.userservice.dto.UserResponse;
 import com.group11.model.User;
+import com.group11.userservice.config.MqttPublishUtil;
+import com.group11.userservice.dto.LoginRequest;
+import com.group11.userservice.dto.SignupRequest;
 import com.group11.userservice.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +25,7 @@ public class UserService {
     private final MqttPublishUtil mqttPublishUtil;
     private final PasswordEncoder passwordEncoder;
     private final ObjectMapper objectMapper;
+
 
     private static final String USER_REGISTRATION_TOPIC = "user/registration";
 
@@ -65,37 +66,44 @@ public class UserService {
         if (userRepository.existsByEmail(request.email())) {
             throw new RuntimeException("Email already exists");
         }
-
+    
         User user = User.builder()
                 .email(request.email())
                 .firstName(request.firstName())
                 .lastName(request.lastName())
                 .phone(request.phone())
-                .password(request.password())
+                .password(passwordEncoder.encode(request.password())) // Encode the password
                 .build();
-
+    
         // Save user to db
-        userRepository.save(user);
-
+        User savedUser = userRepository.save(user);
+    
+        log.info("User saved to database: {}", savedUser);
+    
         // Prepare and publish payload
         try {
             String payload = objectMapper.writeValueAsString(Map.of(
-                    "email", user.getEmail(),
-                    "name", user.getFirstName() + " " + user.getLastName()
+                    "email", savedUser.getEmail(),
+                    "name", savedUser.getFirstName() + " " + savedUser.getLastName()
             ));
             mqttPublishUtil.publish(USER_REGISTRATION_TOPIC, payload, 1, false);
         } catch (Exception e) {
             log.error("Error publishing user registration message to MQTT", e);
         }
+    
+        log.info("User {} has been registered successfully", savedUser.getFirstName());
+    }
+    public User loginUser(LoginRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
 
-            log.info("User {} has been registered successfully", user.getFirstName());
+        .orElseThrow(() -> new RuntimeException("User not found"));
 
-        new UserResponse(
-                user.getId(),
-                user.getFirstName(),
-                user.getLastName(),
-                user.getEmail(),
-                user.getPhone()
-        );
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new RuntimeException("Invalid password");
+        }
+
+        user.setPassword(null);
+        return user;
     }
     }
+

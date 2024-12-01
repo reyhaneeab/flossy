@@ -6,23 +6,28 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.TypeAlias;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 @Data
-@Document(value="users")
+@Document(value = "users")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@TypeAlias("user")
 public class User {
 
+    @Id
+    private String id;
 
-        @Id
-        private String id;
-        private String firstName;
-        private String lastName;
-        private String phone;
-        private String email;
-        @JsonIgnore
-        private String password;
-    }
+    @Field("email")
+    private String email;
 
+    private String firstName;
+    private String lastName;
+    private String phone;
+
+    @JsonIgnore
+    private String password;
+}
