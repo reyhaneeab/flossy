@@ -100,7 +100,7 @@ public class UserService {
             throw new RuntimeException("Invalid password");
         }
 
-        user.setPassword(null); // Don't send password back to client
+        user.setPassword(null);
         return user;
     }
     }
