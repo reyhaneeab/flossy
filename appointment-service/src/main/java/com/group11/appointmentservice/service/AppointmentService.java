@@ -24,7 +24,8 @@ public class AppointmentService {
     private final MqttClient mqttClient;
     private static final String BOOKING_SUCCESS_TOPIC = "timeSlot/book/response";
     private static final String BOOK_APPOINTMENT_TOPIC = "timeSlot/book";
-    private static final String CANCEL_APPONTMENT_TOPIC = "timeSlot/cancel";
+    private static final String BOOK_APPOINTMENT_EMAIL = "timeSlot/book/email";
+    private static final String CANCEL_APPOINTMENT_TOPIC = "timeSlot/cancel";
     private static final String CANCEL_SUCCESS_TOPIC = "timeSlot/successful";
     @PostConstruct
     public void init() {
@@ -32,7 +33,7 @@ public class AppointmentService {
             if(!mqttClient.isConnected()) {
                 mqttClient.connect();
                 mqttClient.subscribe(BOOK_APPOINTMENT_TOPIC, 1);
-                mqttClient.subscribe(CANCEL_APPONTMENT_TOPIC,1);
+                mqttClient.subscribe(CANCEL_APPOINTMENT_TOPIC,1);
             }
             mqttClient.setCallback(new MqttCallback() {
                 @Override
@@ -51,7 +52,7 @@ public class AppointmentService {
                     try{
                         if (topic.equals(BOOK_APPOINTMENT_TOPIC)){
                             bookAppointment(mqttMessage);
-                        }else if (topic.equals(CANCEL_APPONTMENT_TOPIC)){
+                        }else if (topic.equals(CANCEL_APPOINTMENT_TOPIC)){
                             cancelAppointment(mqttMessage);
                         }
                     }
@@ -87,13 +88,13 @@ public class AppointmentService {
 
         if(timeSlot.isBooked()) throw new Exception("Appointment is already booked");
         else {
-            timeSlot.setBooked(false);
+            timeSlot.setBooked(true);
             timeSlot.setBookedBy(user);
             timeSlotRepository.save(timeSlot);
             String payload = mapper.writeValueAsString(user);
-            System.out.println(payload);
-            System.out.println(BOOKING_SUCCESS_TOPIC);
+            String emailPayload = user.getFirstName()+" "+user.getLastName()+","+ timeSlot.getOwner().getEmail() + "," + timeSlot.getOwner().getOfficeName();
             mqttClient.publish(BOOKING_SUCCESS_TOPIC, payload.getBytes() , 1, false);
+            mqttClient.publish(BOOK_APPOINTMENT_EMAIL, emailPayload.getBytes() , 1, true);
         }
 
     }
