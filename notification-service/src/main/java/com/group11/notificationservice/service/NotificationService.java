@@ -1,4 +1,4 @@
-package com.group11.notificationservice.handler;
+package com.group11.notificationservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.group11.notificationservice.handler.NotificationHandler;

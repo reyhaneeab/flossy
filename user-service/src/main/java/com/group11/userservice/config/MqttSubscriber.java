@@ -5,8 +5,9 @@ import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 @Component
 public class MqttSubscriber {
@@ -14,6 +15,7 @@ public class MqttSubscriber {
     private final MqttClient mqttClient;
     private final UserService userService;
 
+    @Autowired
     public MqttSubscriber(MqttClient mqttClient, UserService userService) {
         this.mqttClient = mqttClient;
         this.userService = userService;

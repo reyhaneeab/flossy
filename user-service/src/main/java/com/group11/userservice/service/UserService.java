@@ -98,4 +98,16 @@ public class UserService {
                 user.getPhone()
         );
     }
+public String handleRequest(String request) {
+    try {
+        // Parse the request and perform the appropriate action
+        // For example, you might want to create a user if the request is a signup
+        SignupRequest signupRequest = objectMapper.readValue(request, SignupRequest.class);
+        createUser(signupRequest);
+        return "User created successfully";
+    } catch (Exception e) {
+        log.error("Error handling request", e);
+        return "Error: " + e.getMessage();
+    }
+}
     }

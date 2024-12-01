@@ -23,6 +23,6 @@ public class Dentist {
 
 
     public String getName() {
-
+        return officeName;
     }
 }
