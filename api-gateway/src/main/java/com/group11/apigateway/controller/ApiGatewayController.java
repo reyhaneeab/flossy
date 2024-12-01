@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RestController;
 import com.group11.apigateway.handler.MqttHandler;
 
-    @CrossOrigin
+    @CrossOrigin("http://localhost:8086")
     @RestController
     @RequestMapping("/api")
     public class ApiGatewayController {

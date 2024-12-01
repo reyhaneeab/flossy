@@ -19,7 +19,8 @@ public class DentistService {
     private final MqttClient mqttClient;
 
     private static final String DENTIST_REGISTRATION_TOPIC = "dentist/registration";
-    private static final String DENTISTS_REGISTRATION_RESPONSE = DENTIST_REGISTRATION_TOPIC+"/response";
+    private static final String DENTIST_REGISTRATION_RESPONSE = DENTIST_REGISTRATION_TOPIC+"/response";
+    private static final String DENTIST_REGISTRATION_EMAIL = DENTIST_REGISTRATION_TOPIC+"/email";
 
     @PostConstruct
     public void init() {
@@ -73,8 +74,10 @@ public class DentistService {
 
         try {
             String payload = mapper.writeValueAsString(dentist);
+            String emailPayload = dentist.getEmail() + "," + dentist.getOfficeName();
             log.info("Dentist Office {} has been registered successfully", dentist.getOfficeName());
-            mqttClient.publish(DENTISTS_REGISTRATION_RESPONSE, payload.getBytes(), 1, false);
+            mqttClient.publish(DENTIST_REGISTRATION_RESPONSE, payload.getBytes(), 1, false);
+            mqttClient.publish(DENTIST_REGISTRATION_EMAIL, emailPayload.getBytes(), 1, false);
         }
         catch (Exception e){log.info(e.getMessage());}
 

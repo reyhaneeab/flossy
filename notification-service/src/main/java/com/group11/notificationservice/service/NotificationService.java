@@ -30,6 +30,8 @@ public class NotificationService {
     private final EmailEngine emailEngine;
     // Define topics
     private static final String[] topics = {
+            "dentist/registration/email",
+            "timeSlot/book/email"
             "dentist/registration",
             "booking/successful"
     };

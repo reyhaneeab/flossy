@@ -41,7 +41,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-    const URL = `http://localhost:8090/api/users/signup`
+    const URL = `http://localhost:8091/api/user/registration`
     const router = useRouter()
 
 
