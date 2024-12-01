@@ -39,9 +39,10 @@ export default {
           },
           body: JSON.stringify({
             email: email.value,
-            password: password.value
-          })
-        })
+            password: password.value,
+          }),
+          credentials: 'include',
+        });
 
         if (response.ok) {
           const data = await response.json()
