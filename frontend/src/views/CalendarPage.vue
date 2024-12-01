@@ -27,28 +27,36 @@
 </template>
 
 <script>
-import { defineComponent, ref } from "vue";
+import { defineComponent, ref, onMounted } from "vue";
+import axios from "axios";
 
 export default defineComponent({
   setup() {
     const selectedSlot = ref(null);
+    const days = ref([]);
 
-    const days = ref(
-        Array.from({ length: 5 }, (_, i) => {
-          const date = new Date();
-          date.setDate(date.getDate() + i);
+    const fetchTimeSlots = async () => {
+      try {
+
+        const response = await axios.get("tcp://127.0.0.1:1883/appointments");
+
+        // Map the response to the structure expected in `days`
+        days.value = response.data.map((dayData) => {
           return {
-            date,
-            slots: [
-              { time: "9:00 AM", selected: false },
-              { time: "10:00 AM", selected: false },
-              { time: "11:00 AM", selected: false },
-              { time: "1:00 PM", selected: false },
-              { time: "2:00 PM", selected: false },
-            ],
+            date: new Date(dayData.date),
+            slots: dayData.slots.map((slot) => ({
+              time: slot.time,
+              selected: false,
+            })),
           };
-        })
-    );
+        });
+      } catch (error) {
+        console.error("Error fetching time slots:", error);
+      }
+    };
+
+    // Call fetchTimeSlots when component is mounted
+    onMounted(fetchTimeSlots);
 
     const selectSlot = (day, slot) => {
       // Deselect all slots
@@ -81,6 +89,7 @@ export default defineComponent({
     };
   },
 });
+
 </script>
 
 <style scoped>
