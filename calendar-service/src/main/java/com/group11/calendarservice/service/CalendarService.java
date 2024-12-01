@@ -85,11 +85,12 @@ public class CalendarService {
         Dentist dentist = dentistRepository.findById(request.ownerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Dentist office not found"));
 
+        if(request.timeSlots() == null) throw new ResourceNotFoundException("TimeSlots not found");
         List<TimeSlot> timeSlots = request.timeSlots().stream().map(slotRequest -> {
             TimeSlot slot = new TimeSlot();
+            slot.setDate(slotRequest.date());
             slot.setStartTime(slotRequest.startTime());
             slot.setEndTime(slotRequest.endTime());
-            slot.setDate(slotRequest.date());
             slot.setOwner(dentist);
             return slot;
         }).toList();
