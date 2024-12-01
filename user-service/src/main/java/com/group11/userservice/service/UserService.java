@@ -3,6 +3,7 @@ package com.group11.userservice.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.group11.model.User;
 import com.group11.userservice.config.MqttPublishUtil;
+import com.group11.userservice.dto.LoginRequest;
 import com.group11.userservice.dto.SignupRequest;
 import com.group11.userservice.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
@@ -24,6 +25,7 @@ public class UserService {
     private final MqttPublishUtil mqttPublishUtil;
     private final PasswordEncoder passwordEncoder;
     private final ObjectMapper objectMapper;
+
 
     private static final String USER_REGISTRATION_TOPIC = "user/registration";
 
@@ -89,4 +91,17 @@ public class UserService {
     
         log.info("User {} has been registered successfully", savedUser.getFirstName());
     }
+    public User loginUser(LoginRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+
+        .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new RuntimeException("Invalid password");
+        }
+
+        user.setPassword(null); // Don't send password back to client
+        return user;
     }
+    }
+
