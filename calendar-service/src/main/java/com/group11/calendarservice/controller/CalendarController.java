@@ -20,10 +20,10 @@ public class CalendarController {
             @RequestBody CalendarRequest calendarRequest) {
         return calendarService.createCalendar(dentistId, calendarRequest);
     }
-    @PatchMapping("/appointments/{id}/cancel")
+    /*@PatchMapping("/appointments/{id}/cancel")
     @ResponseStatus(HttpStatus.OK)
     public CalendarResponse cancelTimeSlot(@PathVariable String id) throws Exception {
         return calendarService.cancelTimeSlot(id);
-    }
+    }*/
 
 }
