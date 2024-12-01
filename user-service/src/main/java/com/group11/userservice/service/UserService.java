@@ -53,6 +53,8 @@ public class UserService {
                 mqttClient.connect();
                 log.info("MQTT client connected during initialization.");
             }
+
+            mqttClient.subscribe(USER_REGISTRATION_TOPIC);
         } catch (MqttException e) {
             log.error("Error initializing MQTT client", e);
             throw new RuntimeException("MQTT initialization failed", e);
