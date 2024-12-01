@@ -21,13 +21,15 @@ public class AppointmentService {
     private final MqttClient mqttClient;
     private static final String BOOKING_SUCCESS_TOPIC = "booking/successful";
     private static final String BOOK_APPOINTMENT_TOPIC = "timeSlot/book";
-
+    private static final String CANCEL_APPONTMENT_TOPIC = "timeSlot/cancel";
+    private static final String CANCEL_SUCCESS_TOPIC = "timeSlot/successful";
     @PostConstruct
     public void init() {
         try {
             if(!mqttClient.isConnected()) {
                 mqttClient.connect();
                 mqttClient.subscribe(BOOK_APPOINTMENT_TOPIC, 1);
+                mqttClient.subscribe(CANCEL_APPONTMENT_TOPIC,1);
             }
             mqttClient.setCallback(new MqttCallback() {
                 @Override
@@ -41,10 +43,14 @@ public class AppointmentService {
                 }
 
                 @Override
-                public void messageArrived(String s, MqttMessage mqttMessage) {
+                public void messageArrived(String topic, MqttMessage mqttMessage) {
                     log.info("Message arrived: {}", mqttMessage.toString());
                     try{
-                        bookAppointment(mqttMessage);
+                        if (topic.equals(BOOK_APPOINTMENT_TOPIC)){
+                            bookAppointment(mqttMessage);
+                        }else if (topic.equals(CANCEL_APPONTMENT_TOPIC)){
+                            cancelAppointment(mqttMessage);
+                        }
                     }
                     catch (Exception e){log.info(e.getMessage());}
                 }
@@ -77,7 +83,7 @@ public class AppointmentService {
 
         if(timeSlot.isBooked()) throw new Exception("Appointment is already booked");
         else {
-            timeSlot.setBooked(true);
+            timeSlot.setBooked(false);
             timeSlot.setBookedBy(user);
             timeSlotRepository.save(timeSlot);
             payload = user.getFirstName()+" "+user.getLastName()+","+timeSlot.getOwner().getEmail()+","+timeSlot.getOwner().getOfficeName();
@@ -86,5 +92,35 @@ public class AppointmentService {
 
     }
 
+    public void cancelAppointment(MqttMessage message) throws Exception {
+        String payload =  message.toString();
+        String[] details = payload.split(",");
+        String timeSlotId = details[0];
+        String userId = details[1];
 
+        log.info("Canceling appointment for UserId: {} and TimeSlotId: {} ",userId, timeSlotId);
+
+        TimeSlot timeSlot = timeSlotRepository.findById(timeSlotId)
+                .orElseThrow(() ->new ResourceNotFoundException("Cancelation falied. Time Slot not found"));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cancelation failed. User Id not found."));
+
+        if (!timeSlot.isBooked()) {
+            throw new Exception("Cancellation failed. The time slot is not currently booked.");
+
+        } else if (!user.equals(timeSlot.getBookedBy())) {
+            throw new Exception("Cancellation failed. The time slot is not booked by this user.");
+
+        } else {
+            timeSlot.setBooked(false);
+            timeSlot.setBookedBy(null);
+            timeSlotRepository.save(timeSlot);
+
+            payload = user.getFirstName() + " " + user.getLastName() + "," +
+                    timeSlot.getOwner().getEmail() + "," + timeSlot.getOwner().getOfficeName();
+            mqttClient.publish(CANCEL_SUCCESS_TOPIC, payload.getBytes(), 1, false);
+
+            log.info("Cancellation successful for UserId: {} and TimeSlotId: {}", userId, timeSlotId);
+        }
+    }
 }
