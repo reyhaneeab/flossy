@@ -2,9 +2,9 @@
   <div class="login-container">
     <form @submit.prevent="handleLogin">
       <input
-          type="text"
-          v-model="username"
-          placeholder="Username"
+          type="email"
+          v-model="email"
+          placeholder="Email"
           required
       />
       <input
@@ -15,71 +15,61 @@
       />
       <button type="submit">Login</button>
     </form>
+    <p v-if="error" class="error-message">{{ error }}</p>
   </div>
 </template>
 
-<script setup>
+<script>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 
-const username = ref('')
-const password = ref('')
+export default {
+  setup() {
+    const email = ref('')
+    const password = ref('')
+    const error = ref('')
+    const router = useRouter()
 
-const handleLogin = async () => {
-  try {
-    // Add login logic here
-    // Typically this would involve an API call to validate credentials
-    const response = await fetch('/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        username: username.value,
-        password: password.value
-      })
-    })
+    const handleLogin = async () => {
+      try {
+        const response = await fetch('/api/users/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: email.value,
+            password: password.value
+          })
+        })
 
-    if (response.ok) {
-      // Redirect to home page or dashboard
-
-      this.$router.push('/home')
-      console.log('Login successful')
-    } else {
-      // Handle login failure
-      console.error('Login failed')
+        if (response.ok) {
+          const data = await response.json()
+          localStorage.setItem('token', data.token)
+          router.push('/home')
+        } else {
+          const errorData = await response.json()
+          error.value = errorData.message || 'Login failed'
+        }
+      } catch (err) {
+        console.error('Login error:', err)
+        error.value = 'An unexpected error occurred'
+      }
     }
-  } catch (error) {
-    console.error('Login error:', error)
+
+    return {
+      email,
+      password,
+      error,
+      handleLogin
+    }
   }
 }
 </script>
 
 <style scoped>
-.login-container {
-  max-width: 300px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-form {
-  display: flex;
-  flex-direction: column;
-}
-
-input {
-  margin-bottom: 10px;
-  padding: 10px;
-}
-
-button {
-  padding: 10px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  cursor: pointer;
-}
-
-button:hover {
-  background-color: #0056b3;
+.error-message {
+  color: red;
+  margin-top: 10px;
 }
 </style>
