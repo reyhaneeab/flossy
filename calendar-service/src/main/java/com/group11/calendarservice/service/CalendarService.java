@@ -32,6 +32,7 @@ public class CalendarService {
     private final MqttPublishUtil mqttPublishUtil;
 
     private static final String CALENDAR_REGISTRATION_TOPIC = "dentist/registration";
+    private static final String CALENDAR_REQUEST_TOPIC = "calendar/request";
 
     @PostConstruct
     public void init() {
@@ -43,8 +44,9 @@ public class CalendarService {
                 }
 
                 @Override
-                public void messageArrived(String s, MqttMessage mqttMessage) throws Exception {
+                public void messageArrived(String s, MqttMessage mqttMessage) {
                     log.info("Message arrived: {}", mqttMessage.toString());
+                    getCalendar(mqttMessage.toString());
                 }
 
                 @Override
@@ -56,6 +58,8 @@ public class CalendarService {
             if (!mqttClient.isConnected()) {
                 mqttClient.connect();
             }
+
+            mqttClient.subscribe(CALENDAR_REQUEST_TOPIC);
         } catch (MqttException e) {
             log.error("Error initializing MQTT client", e);
         }
@@ -93,6 +97,28 @@ public class CalendarService {
 
         String message="successfully created calendar";
         mqttPublishUtil.publish(CALENDAR_REGISTRATION_TOPIC, message, 0, true);
+        return new CalendarResponse(calendar.getId(), calendar.getOwner().getId(),  calendar.getWeekNumber(), calendar.getYear(), calendar.getTimeSlots().stream().map(this::mapToResponse).toList());
+    }
+
+    public CalendarResponse getCalendar(String payload) {
+        String[] details = payload.split(",");
+        String DentistId = details[0];
+        String week = details[1];
+        int weekNumber = Integer.parseInt(week);
+        log.info(DentistId);
+        log.info(week);
+
+        Dentist dentist = dentistRepository.findById(DentistId)
+                .orElseThrow(() -> new ResourceNotFoundException("Dentist office not found"));
+
+        Calendar calendar = new Calendar();
+        try {
+            calendar = calendarRepository.findByOwnerAndWeekNumber(DentistId, weekNumber);
+        }
+        catch (Exception e) {log.info(e.getMessage());}
+
+        log.info(String.valueOf(new CalendarResponse(calendar.getId(), calendar.getOwner().toString(), calendar.getWeekNumber(), calendar.getYear(), calendar.getTimeSlots().stream().map(this::mapToResponse).toList())));
+
         return new CalendarResponse(calendar.getId(), calendar.getOwner().getId(),  calendar.getWeekNumber(), calendar.getYear(), calendar.getTimeSlots().stream().map(this::mapToResponse).toList());
     }
 
