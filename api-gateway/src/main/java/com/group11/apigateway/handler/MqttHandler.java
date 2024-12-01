@@ -1,5 +1,6 @@
 package com.group11.apigateway.handler;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.group11.apigateway.config.MqttConfig;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,30 +15,20 @@ public class MqttHandler {
     private final IMqttClient mqttClient = MqttConfig.getClient();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public String forwardRequest(String topic, String request) throws Exception {
+    public JsonNode forwardRequest(String topic, Object requestBody) throws Exception {
         String responseTopic = topic + "/response";
-        String correlationId = java.util.UUID.randomUUID().toString();
+        String[] responseBody = new String[1];
 
         //Prepare message with correlation ID
-        //String requestJson = objectMapper.writeValueAsString(request);
-        String rap = new String("hey");
-        mqttClient.publish(topic, new MqttMessage(rap.getBytes()));
-
-        // Wait for a response
-        CountDownLatch latch = new CountDownLatch(1);
-        final String[] responseJson = new String[1];
+        String requestJson = objectMapper.writeValueAsString(requestBody);
+        mqttClient.publish(topic, requestJson.getBytes(), 1, true);
 
         mqttClient.subscribe(responseTopic, (t, msg) -> {
-            responseJson[0] = new String(msg.getPayload());
-            latch.countDown();
+            responseBody[0] = new String(msg.getPayload());
         });
 
-       // if (!latch.await(5, TimeUnit.SECONDS)) {
-         //   throw new Exception("Response timed out");
-        //}
-
         // Deserialize and return the response
-        return "success";
+        return objectMapper.readTree(responseBody[0]);
     }
 }
 
