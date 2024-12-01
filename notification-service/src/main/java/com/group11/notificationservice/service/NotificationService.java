@@ -22,8 +22,8 @@ public class NotificationService {
 
     // Define topics
     private static final String[] topics = {
-            "dentist/registration/response",
-            "timeSlot/book/response"
+            "dentist/registration/email",
+            "timeSlot/book/email"
     };
 
     // PostConstruct to set up subscriptions
