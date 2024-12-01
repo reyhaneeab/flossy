@@ -64,7 +64,7 @@ public class AppointmentService {
     }
 
     public void bookAppointment(MqttMessage message) throws Exception {
-        String payload = message.toString();
+
         BookAppointmentRequest request = mapper.readValue(message.getPayload(), BookAppointmentRequest.class);
         // Access structured data
         String timeSlotId = request.getTimeSlotId();
@@ -84,7 +84,7 @@ public class AppointmentService {
             timeSlot.setBooked(true);
             timeSlot.setBookedBy(user);
             timeSlotRepository.save(timeSlot);
-            payload = mapper.writeValueAsString(user);
+            String payload = mapper.writeValueAsString(user);
             System.out.println(payload);
             System.out.println(BOOKING_SUCCESS_TOPIC);
             mqttClient.publish(BOOKING_SUCCESS_TOPIC, payload.getBytes() , 1, false);
