@@ -107,9 +107,9 @@ public class AppointmentService {
         log.info("Canceling appointment for UserId: {} and TimeSlotId: {} ",userId, timeSlotId);
 
         TimeSlot timeSlot = timeSlotRepository.findById(timeSlotId)
-                .orElseThrow(() ->new ResourceNotFoundException("Cancelation falied. Time Slot not found"));
+                .orElseThrow(() ->new ResourceNotFoundException("Cancellation fai;ed. Time Slot not found"));
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Cancelation failed. User Id not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Cancellation failed. User Id not found."));
 
         if (!timeSlot.isBooked()) {
             throw new Exception("Cancellation failed. The time slot is not currently booked.");

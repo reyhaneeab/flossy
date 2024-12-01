@@ -28,68 +28,86 @@
 
 <script>
 import { defineComponent, ref, onMounted } from "vue";
-import axios from "axios";
 
 export default defineComponent({
   setup() {
     const selectedSlot = ref(null);
     const days = ref([]);
+    const URL = `http://localhost:8091/api/calendar/get`
 
     const fetchTimeSlots = async () => {
       try {
+        const response = await fetch(URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            weekNumber: "50",
+            ownerId: "674a2c3e3881dd327be177fd"
+          })
+        })
 
-        const response = await axios.get("tcp://127.0.0.1:1883/appointments");
+        const data = await response.json();
 
-        // Map the response to the structure expected in `days`
-        days.value = response.data.map((dayData) => {
-          return {
-            date: new Date(dayData.date),
-            slots: dayData.slots.map((slot) => ({
-              time: slot.time,
-              selected: false,
-            })),
-          };
+        // Group the time slots by day and create a proper structure for `days`
+        const dayMap = {};
+
+        data.timeSlots.forEach(slot => {
+          const date = slot.date;
+          if (!dayMap[date]) {
+            dayMap[date] = {
+              date: date,
+              slots: []
+            };
+          }
+
+          // Push the slot details into the correct day
+          dayMap[date].slots.push({
+            id: slot.id,
+            time: `${new Date(slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+            booked: slot.booked,
+            selected: false,
+          });
         });
+
+        // Assign the grouped slots to the days array
+        days.value = Object.values(dayMap);
+
       } catch (error) {
-        console.error("Error fetching time slots:", error);
+        console.error("Failed to fetch time slots:", error);
       }
     };
 
-    // Call fetchTimeSlots when component is mounted
-    onMounted(fetchTimeSlots);
-
     const selectSlot = (day, slot) => {
-      // Deselect all slots
-      days.value.forEach((d) =>
-          d.slots.forEach((s) => {
-            s.selected = false;
-          })
-      );
-
+      // Deselect any previously selected slot
+      days.value.forEach(day => {
+        day.slots.forEach(slot => {
+          slot.selected = false;
+        });
+      });
       // Select the clicked slot
       slot.selected = true;
-
-      // Update the selected slot
-      selectedSlot.value = {
-        date: day.date,
-        time: slot.time,
-      };
+      selectedSlot.value = slot;
     };
 
-    const formatDate = (date) => {
-      const options = { weekday: "short", month: "short", day: "numeric" };
-      return new Intl.DateTimeFormat("en-US", options).format(date);
+    const formatDate = (dateString) => {
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      return new Date(dateString).toLocaleDateString(undefined, options);
     };
+
+    onMounted(() => {
+      fetchTimeSlots();
+    });
 
     return {
       days,
       selectedSlot,
-      selectSlot,
       formatDate,
+      selectSlot,
     };
   },
 });
-
 </script>
 
 <style scoped>
