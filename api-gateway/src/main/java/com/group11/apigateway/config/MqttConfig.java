@@ -4,7 +4,7 @@ import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.stereotype.Component;
 
 @Component
-public class MqttConfig {
+public class MqttConfig implements MqttCallback {
 
     private static IMqttClient mqttClient;
 
@@ -17,6 +17,26 @@ public class MqttConfig {
         options.setAutomaticReconnect(true);
         options.setCleanSession(true);
         mqttClient.connect(options);
+    }
+
+    @Override
+    public void connectionLost(Throwable throwable) {
+        try {
+            mqttClient.disconnect();
+            mqttClient.close();
+        }catch(Exception e){
+            System.out.println("Connection lost!");
+        }
+    }
+
+    @Override
+    public void messageArrived(String topic, MqttMessage mqttMessage) {
+            System.out.println(new String(mqttMessage.getPayload()));
+    }
+
+    @Override
+    public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {
+        System.out.println(iMqttDeliveryToken.toString());
     }
 
     public static IMqttClient getClient() {

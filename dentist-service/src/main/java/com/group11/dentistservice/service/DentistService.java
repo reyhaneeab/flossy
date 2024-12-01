@@ -1,8 +1,7 @@
 package com.group11.dentistservice.service;
 
-import com.group11.dentistservice.config.MqttPublishUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.group11.dentistservice.dto.DentistRequest;
-import com.group11.dentistservice.dto.DentistResponse;
 import com.group11.model.Dentist;
 import com.group11.dentistservice.repository.DentistRepository;
 import jakarta.annotation.PostConstruct;
@@ -15,24 +14,38 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class DentistService {
+    private final ObjectMapper mapper = new ObjectMapper();
     private final DentistRepository dentistRepository;
     private final MqttClient mqttClient;
-    private final MqttPublishUtil mqttPublishUtil;
 
     private static final String DENTIST_REGISTRATION_TOPIC = "dentist/registration";
+    private static final String DENTISTS_REGISTRATION_RESPONSE = DENTIST_REGISTRATION_TOPIC+"/response";
 
     @PostConstruct
     public void init() {
         try {
+            if(!mqttClient.isConnected()) {
+                mqttClient.connect();
+                mqttClient.subscribe(DENTIST_REGISTRATION_TOPIC, 1);
+            }
             mqttClient.setCallback(new MqttCallback() {
                 @Override
                 public void connectionLost(Throwable cause) {
-                    log.error("MQTT connection lost", cause);
+                    try {
+                        mqttClient.disconnect();
+                        mqttClient.close();
+                    }catch(Exception e){
+                        log.info("Connection lost:" + e.getMessage());
+                    }
                 }
 
                 @Override
-                public void messageArrived(String s, MqttMessage mqttMessage) {
+                public void messageArrived(String topic, MqttMessage mqttMessage) {
                     log.info("Message arrived: {}", mqttMessage.toString());
+                    try{
+                        createDentist(mqttMessage);
+                    }
+                    catch (Exception e){log.info(e.getMessage());}
                 }
 
                 @Override
@@ -40,40 +53,31 @@ public class DentistService {
                     log.info("MQTT delivery complete: {}", token.isComplete());
                 }
             });
-
-            // Connect and subscribe to the relevant topic
-            if (!mqttClient.isConnected()) {
-                mqttClient.connect();
-            }
-
         } catch (MqttException e) {
             log.error("Error initializing MQTT client", e);
         }
     }
 
+    public void createDentist(MqttMessage message) throws Exception {
 
+        DentistRequest request = mapper.readValue(message.getPayload(), DentistRequest.class);
 
-    public DentistResponse createDentist(DentistRequest dentistRequest) {
         Dentist dentist = Dentist.builder()
-                .officeName(dentistRequest.officeName())
-                .email(dentistRequest.email())
-                .password(dentistRequest.password())
-                .phone(dentistRequest.phone())
-                .address(dentistRequest.address())
+                .officeName(request.officeName())
+                .email(request.email())
+                .password(request.password())
+                .phone(request.phone())
+                .address(request.address())
                 .build();
         dentistRepository.save(dentist);
 
-        String payload = String.format(
-                "\"%s\", \"%s\"",
-                dentist.getEmail(), dentist.getOfficeName()
-        );
+        try {
+            String payload = mapper.writeValueAsString(dentist);
+            log.info("Dentist Office {} has been registered successfully", dentist.getOfficeName());
+            mqttClient.publish(DENTISTS_REGISTRATION_RESPONSE, payload.getBytes(), 1, false);
+        }
+        catch (Exception e){log.info(e.getMessage());}
 
-
-        mqttPublishUtil.publish(DENTIST_REGISTRATION_TOPIC, payload, 1, false);
-
-
-        log.info("Dentist Office {} has been registered successfully", dentist.getOfficeName());
-        return new DentistResponse(dentist.getId(), dentist.getOfficeName(), dentist.getEmail(), dentist.getPassword(), dentist.getPhone(), dentist.getAddress());
     }
 
     public String handleRequest(String request) {

@@ -1,41 +1,52 @@
 package com.group11.apigateway.handler;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.group11.apigateway.config.MqttConfig;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.paho.client.mqttv3.*;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 @Service
-
 public class MqttHandler {
 
-    private final IMqttClient mqttClient;
-    private final ObjectMapper objectMapper;
+    private final IMqttClient mqttClient = MqttConfig.getClient();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public MqttHandler(IMqttClient mqttClient, ObjectMapper objectMapper) {
-        this.mqttClient = mqttClient;
-        this.objectMapper = objectMapper;
-    }
-
-    public String forwardRequest(String topic, String request) throws Exception {
-        CompletableFuture<String> responseFuture = new CompletableFuture<>();
-
-        // Subscribe to the response topic
+    public JsonNode forwardRequest(String topic, Object requestBody) throws Exception {
         String responseTopic = topic + "/response";
+
+        String requestJson = objectMapper.writeValueAsString(requestBody);
+
+        // Publish message to MQTT
+        MqttMessage mqttMessage = new MqttMessage(requestJson.getBytes());
+        mqttMessage.setQos(1);
+        mqttMessage.setRetained(false);
+        mqttClient.publish(topic, mqttMessage);
+
+        // Wait for response
+        CountDownLatch latch = new CountDownLatch(1);
+        final String[] responseJson = new String[1];
+
         mqttClient.subscribe(responseTopic, (t, msg) -> {
-            responseFuture.complete(new String(msg.getPayload()));
+            // Extract the actual payload
+            String payload = new String(msg.getPayload());
+
+            responseJson[0] = payload; // Assign the payload to responseJson
+            latch.countDown();
         });
 
-        // Publish the request
-        MqttMessage message = new MqttMessage(request.getBytes());
-        mqttClient.publish(topic, message);
+        if (!latch.await(5, TimeUnit.SECONDS)) {
+            throw new ResponseStatusException(HttpStatus.REQUEST_TIMEOUT, "MQTT response timed out");
+        }
 
-        // Wait for the response with a timeout
-        return responseFuture.get(10, TimeUnit.SECONDS);
+        // Deserialize the response into a JsonNode
+        return objectMapper.readTree(responseJson[0]);
     }
 }
+
