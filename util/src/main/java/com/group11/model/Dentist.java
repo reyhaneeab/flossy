@@ -25,6 +25,7 @@ public class Dentist {
     private List<String> doctors;
 
 
+    public String getName() {
 
-
+    }
 }

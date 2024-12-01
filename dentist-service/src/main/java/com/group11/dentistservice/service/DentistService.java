@@ -76,4 +76,9 @@ public class DentistService {
         return new DentistResponse(dentist.getId(), dentist.getOfficeName(), dentist.getEmail(), dentist.getPassword(), dentist.getPhone(), dentist.getAddress());
     }
 
+    public String handleRequest(String request) {
+
+
+        return request;
+    }
 }
