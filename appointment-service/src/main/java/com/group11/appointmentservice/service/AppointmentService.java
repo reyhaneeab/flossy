@@ -19,20 +19,21 @@ public class AppointmentService {
 
     private final TimeSlotRepository timeSlotRepository;
     private final UserRepository userRepository;
-    ObjectMapper mapper = new ObjectMapper();
-
+    private final ObjectMapper mapper;
     private final MqttClient mqttClient;
+
     private static final String BOOKING_SUCCESS_TOPIC = "timeSlot/book/response";
     private static final String BOOK_APPOINTMENT_TOPIC = "timeSlot/book";
-    private static final String CANCEL_APPONTMENT_TOPIC = "timeSlot/cancel";
+    private static final String CANCEL_APPOINTMENT_TOPIC = "timeSlot/cancel";
     private static final String CANCEL_SUCCESS_TOPIC = "timeSlot/successful";
+
     @PostConstruct
     public void init() {
         try {
-            if(!mqttClient.isConnected()) {
+            if (!mqttClient.isConnected()) {
                 mqttClient.connect();
                 mqttClient.subscribe(BOOK_APPOINTMENT_TOPIC, 1);
-                mqttClient.subscribe(CANCEL_APPONTMENT_TOPIC,1);
+                mqttClient.subscribe(CANCEL_APPOINTMENT_TOPIC, 1);
             }
             mqttClient.setCallback(new MqttCallback() {
                 @Override
@@ -40,22 +41,23 @@ public class AppointmentService {
                     try {
                         mqttClient.disconnect();
                         mqttClient.close();
-                    }catch(Exception e){
-                        log.info("Connection lost:" + e.getMessage());
+                    } catch (Exception e) {
+                        log.info("Connection lost: " + e.getMessage());
                     }
                 }
 
                 @Override
                 public void messageArrived(String topic, MqttMessage mqttMessage) {
                     log.info("Message arrived: {}", mqttMessage.toString());
-                    try{
-                        if (topic.equals(BOOK_APPOINTMENT_TOPIC)){
+                    try {
+                        if (topic.equals(BOOK_APPOINTMENT_TOPIC)) {
                             bookAppointment(mqttMessage);
-                        }else if (topic.equals(CANCEL_APPONTMENT_TOPIC)){
+                        } else if (topic.equals(CANCEL_APPOINTMENT_TOPIC)) {
                             cancelAppointment(mqttMessage);
                         }
+                    } catch (Exception e) {
+                        log.error("Error processing message", e);
                     }
-                    catch (Exception e){log.info(e.getMessage());}
                 }
 
                 @Override
@@ -68,59 +70,60 @@ public class AppointmentService {
             log.error("Error initializing MQTT client", e);
         }
     }
-    public String createAppointment(String request) throws Exception {
-        MqttMessage message = new MqttMessage(request.getBytes());
-        bookAppointment(message);
-        return "Appointment created successfully";
-    }
-    public void bookAppointment(MqttMessage message) throws Exception {
 
+    public String createAppointment(String request) throws Exception {
+        try {
+            MqttMessage message = new MqttMessage(request.getBytes());
+            message.setQos(1);
+            mqttClient.publish(BOOK_APPOINTMENT_TOPIC, message);
+            return "Appointment request sent successfully";
+        } catch (MqttException e) {
+            log.error("Error publishing MQTT message", e);
+            throw new Exception("Failed to send appointment request");
+        }
+    }
+
+    public void bookAppointment(MqttMessage message) throws Exception {
         BookAppointmentRequest request = mapper.readValue(message.getPayload(), BookAppointmentRequest.class);
-        // Access structured data
         String timeSlotId = request.getTimeSlotId();
         String userId = request.getUserId();
-        log.info(timeSlotId);
-        log.info(userId);
+        log.info("Booking appointment for TimeSlotId: {} and UserId: {}", timeSlotId, userId);
 
-        log.info(timeSlotRepository.findAll().toString());
         TimeSlot timeSlot = timeSlotRepository.findById(timeSlotId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking failed. Time Slot not found"));
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking failed. User not found"));
 
-        if(timeSlot.isBooked()) throw new Exception("Appointment is already booked");
-        else {
-            timeSlot.setBooked(false);
+        if (timeSlot.isBooked()) {
+            throw new Exception("Appointment is already booked");
+        } else {
+            timeSlot.setBooked(true);
             timeSlot.setBookedBy(user);
             timeSlotRepository.save(timeSlot);
             String payload = mapper.writeValueAsString(user);
-            System.out.println(payload);
-            System.out.println(BOOKING_SUCCESS_TOPIC);
-            mqttClient.publish(BOOKING_SUCCESS_TOPIC, payload.getBytes() , 1, false);
+            log.info("Publishing booking success message: {}", payload);
+            mqttClient.publish(BOOKING_SUCCESS_TOPIC, payload.getBytes(), 1, false);
         }
-
     }
 
     public void cancelAppointment(MqttMessage message) throws Exception {
-        String payload =  message.toString();
+        String payload = message.toString();
         String[] details = payload.split(",");
         String timeSlotId = details[0];
         String userId = details[1];
 
-        log.info("Canceling appointment for UserId: {} and TimeSlotId: {} ",userId, timeSlotId);
+        log.info("Canceling appointment for UserId: {} and TimeSlotId: {}", userId, timeSlotId);
 
         TimeSlot timeSlot = timeSlotRepository.findById(timeSlotId)
-                .orElseThrow(() ->new ResourceNotFoundException("Cancelation falied. Time Slot not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Cancellation failed. Time Slot not found"));
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Cancelation failed. User Id not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Cancellation failed. User Id not found."));
 
         if (!timeSlot.isBooked()) {
             throw new Exception("Cancellation failed. The time slot is not currently booked.");
-
         } else if (!user.equals(timeSlot.getBookedBy())) {
             throw new Exception("Cancellation failed. The time slot is not booked by this user.");
-
         } else {
             timeSlot.setBooked(false);
             timeSlot.setBookedBy(null);
