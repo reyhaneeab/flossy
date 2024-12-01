@@ -5,6 +5,7 @@ import com.group11.userservice.config.MqttPublishUtil;
 import com.group11.userservice.dto.SignupRequest;
 import com.group11.userservice.dto.UserResponse;
 import com.group11.model.User;
+import com.group11.userservice.dto.UserRequest;
 import com.group11.userservice.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -24,9 +25,10 @@ public class UserService {
     private final MqttClient mqttClient;
     private final MqttPublishUtil mqttPublishUtil;
     private final PasswordEncoder passwordEncoder;
-    private final ObjectMapper objectMapper;
+    private final ObjectMapper mapper = new ObjectMapper();
 
     private static final String USER_REGISTRATION_TOPIC = "user/registration";
+    private static final String USER_REGISTRATION_RESPONSE = USER_REGISTRATION_TOPIC + "/response";
 
     @PostConstruct
     public void init() {
@@ -34,13 +36,21 @@ public class UserService {
             mqttClient.setCallback(new MqttCallback() {
                 @Override
                 public void connectionLost(Throwable cause) {
-                    log.error("MQTT connection lost", cause);
-
+                    try {
+                        mqttClient.disconnect();
+                        mqttClient.close();
+                    }catch(Exception e){
+                        log.info("Connection lost:" + e.getMessage());
+                    }
                 }
 
                 @Override
-                public void messageArrived(String topic, MqttMessage message) {
-                    log.info("Message arrived: {}", new String(message.getPayload()));
+                public void messageArrived(String topic, MqttMessage mqttMessage) {
+                    log.info("Message arrived: {}", mqttMessage.toString());
+                    try{
+                        createUser(mqttMessage);
+                    }
+                    catch (Exception e){log.info(e.getMessage());}
                 }
 
                 @Override
@@ -61,7 +71,10 @@ public class UserService {
         }
     }
 
-    public void createUser(SignupRequest request) {
+    public void createUser(MqttMessage message) throws Exception {
+
+        UserRequest request = mapper.readValue(message.getPayload(), UserRequest.class);
+
         if (userRepository.existsByEmail(request.email())) {
             throw new RuntimeException("Email already exists");
         }
@@ -71,7 +84,7 @@ public class UserService {
                 .firstName(request.firstName())
                 .lastName(request.lastName())
                 .phone(request.phone())
-                .password(request.password())
+                .password(passwordEncoder.encode(request.password())) // Encode the password
                 .build();
 
         // Save user to db
@@ -79,24 +92,27 @@ public class UserService {
 
         // Prepare and publish payload
         try {
-            String payload = objectMapper.writeValueAsString(Map.of(
-                    "email", user.getEmail(),
-                    "name", user.getFirstName() + " " + user.getLastName()
-            ));
-            mqttPublishUtil.publish(USER_REGISTRATION_TOPIC, payload, 1, false);
+            String payload = mapper.writeValueAsString(user);
+            mqttClient.publish(USER_REGISTRATION_RESPONSE, payload.getBytes(), 1, false);
         } catch (Exception e) {
             log.error("Error publishing user registration message to MQTT", e);
         }
 
-            log.info("User {} has been registered successfully", user.getFirstName());
+        log.info("User {} has been registered successfully", user.getFirstName());
+    }
 
-        new UserResponse(
-                user.getId(),
-                user.getFirstName(),
-                user.getLastName(),
-                user.getEmail(),
-                user.getPhone()
-        );
+    /*
+    public User loginUser(LoginRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+
+        .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new RuntimeException("Invalid password");
+        }
+
+        user.setPassword(null);
+        return user;
     }
 public String handleRequest(String request) {
     try {
@@ -110,4 +126,7 @@ public String handleRequest(String request) {
         return "Error: " + e.getMessage();
     }
 }
+     */
+
     }
+

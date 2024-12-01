@@ -6,6 +6,11 @@ import com.group11.notificationservice.handler.DentistRegistrationHandler;
 import com.group11.notificationservice.handler.UserRegistrationHandler;
 import com.group11.notificationservice.handler.DentistBookingHandler;
 import com.group11.notificationservice.engine.EmailEngine;
+import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.eclipse.paho.client.mqttv3.*;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -13,11 +18,21 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class NotificationService {
 
+    private final MqttClient mqttClient;
+    private final JavaMailSenderImpl mailSender;
+    private final HashMap<String, NotificationHandler> handlers = new HashMap<>();
     private final Map<String, NotificationHandler> handlers;
     private final ObjectMapper objectMapper;
     private final EmailEngine emailEngine;
+    // Define topics
+    private static final String[] topics = {
+            "dentist/registration",
+            "booking/successful"
+    };
 
     @Autowired
     public NotificationService(EmailEngine emailEngine, ObjectMapper objectMapper) {

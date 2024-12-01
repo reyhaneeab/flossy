@@ -32,7 +32,7 @@
           placeholder="Password"
           required
       />
-      <button @click="handleSignup" type="submit">Sign Up</button>
+      <button type="submit">Sign Up</button>
     </form>
   </div>
 </template>
@@ -54,7 +54,6 @@ import { useRouter } from 'vue-router'
 
     async function handleSignup() {
       try {
-        console.log(1)
         const response = await fetch(URL, {
           method: 'POST',
           headers: {
