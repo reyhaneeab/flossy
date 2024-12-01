@@ -1,23 +1,48 @@
 package com.group11.notificationservice.engine;
 
-import org.springframework.mail.javamail.JavaMailSender;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
-import org.springframework.mail.javamail.MimeMessageHelper;
+import jakarta.mail.*;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
+import javax.mail.*;
+import javax.mail.internet.InternetAddress;
+import java.util.Properties;
+
+@Component
 public class EmailEngine {
-    private final JavaMailSender mailSender;
 
-    public EmailEngine(JavaMailSender mailSender) {
-        this.mailSender = mailSender;
-    }
+    @Value("${spring.mail.host}")
+    private String host;
 
-    public void sendEmail(String to, String subject, String content) throws MessagingException {
-        MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message);
-        helper.setTo(to);
-        helper.setSubject(subject);
-        helper.setText(content, false);
-        mailSender.send(message);
+    @Value("${spring.mail.port}")
+    private int port;
+
+    @Value("${spring.mail.username}")
+    private String username;
+
+    @Value("${spring.mail.password}")
+    private String password;
+
+    public void sendEmail(String to, String subject, String body) throws MessagingException {
+        Properties props = new Properties();
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.smtp.host", host);
+        props.put("mail.smtp.port", port);
+
+        Session session = Session.getInstance(props, new Authenticator() {
+            @Override
+            protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication(username, password);
+            }
+        });
+
+        Message message = new MimeMessage(session);
+        message.setFrom(new InternetAddress(username));
+        message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
+        message.setSubject(subject);
+        message.setText(body);
+
+        Transport.send(message);
     }
 }
