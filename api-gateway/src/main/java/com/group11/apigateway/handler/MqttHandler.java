@@ -5,39 +5,37 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.stereotype.Service;
+
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 @Service
+
 public class MqttHandler {
 
-    private final IMqttClient mqttClient = MqttConfig.getClient();
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final IMqttClient mqttClient;
+    private final ObjectMapper objectMapper;
+
+    public MqttHandler(IMqttClient mqttClient, ObjectMapper objectMapper) {
+        this.mqttClient = mqttClient;
+        this.objectMapper = objectMapper;
+    }
 
     public String forwardRequest(String topic, String request) throws Exception {
+        CompletableFuture<String> responseFuture = new CompletableFuture<>();
+
+        // Subscribe to the response topic
         String responseTopic = topic + "/response";
-        String correlationId = java.util.UUID.randomUUID().toString();
-
-        //Prepare message with correlation ID
-        //String requestJson = objectMapper.writeValueAsString(request);
-        String rap = new String("hey");
-        mqttClient.publish(topic, new MqttMessage(rap.getBytes()));
-
-        // Wait for a response
-        CountDownLatch latch = new CountDownLatch(1);
-        final String[] responseJson = new String[1];
-
         mqttClient.subscribe(responseTopic, (t, msg) -> {
-            responseJson[0] = new String(msg.getPayload());
-            latch.countDown();
+            responseFuture.complete(new String(msg.getPayload()));
         });
 
-       // if (!latch.await(5, TimeUnit.SECONDS)) {
-         //   throw new Exception("Response timed out");
-        //}
+        // Publish the request
+        MqttMessage message = new MqttMessage(request.getBytes());
+        mqttClient.publish(topic, message);
 
-        // Deserialize and return the response
-        return "success";
+        // Wait for the response with a timeout
+        return responseFuture.get(10, TimeUnit.SECONDS);
     }
 }
-
