@@ -22,6 +22,7 @@ public class AppointmentService {
     private static final String BOOKING_SUCCESS_TOPIC = "booking/successful";
     private static final String BOOK_APPOINTMENT_TOPIC = "timeSlot/book";
     private static final String CANCEL_APPONTMENT_TOPIC = "timeSlot/cancel";
+    private static final String CANCEL_SUCCESS_TOPIC = "timeSlot/successful";
     @PostConstruct
     public void init() {
         try {
@@ -113,14 +114,13 @@ public class AppointmentService {
         } else {
             timeSlot.setBooked(false);
             timeSlot.setBookedBy(null);
+            timeSlotRepository.save(timeSlot);
 
             payload = user.getFirstName() + " " + user.getLastName() + "," +
                     timeSlot.getOwner().getEmail() + "," + timeSlot.getOwner().getOfficeName();
-            mqttClient.publish(CANCEL_APPONTMENT_TOPIC, payload.getBytes(), 1, false);
+            mqttClient.publish(CANCEL_SUCCESS_TOPIC, payload.getBytes(), 1, false);
 
             log.info("Cancellation successful for UserId: {} and TimeSlotId: {}", userId, timeSlotId);
-
-            timeSlotRepository.deleteById(timeSlotId);
         }
     }
 }
