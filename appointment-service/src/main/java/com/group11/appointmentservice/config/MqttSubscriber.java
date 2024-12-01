@@ -6,7 +6,7 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;;
 
 @Component
 public class MqttSubscriber {
@@ -23,8 +23,8 @@ public class MqttSubscriber {
     public void subscribe() throws MqttException {
         mqttClient.subscribe("appointment", (topic, message) -> {
             String request = new String(message.getPayload());
-            String response = appointmentService.handleRequest(request);
-
+            String response = appointmentService.createAppointment(request);
+    
             mqttClient.publish("appointment/response", new MqttMessage(response.getBytes()));
         });
     }

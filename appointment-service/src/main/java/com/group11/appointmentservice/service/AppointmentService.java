@@ -62,7 +62,11 @@ public class AppointmentService {
             log.error("Error initializing MQTT client", e);
         }
     }
-
+    public String createAppointment(String request) throws Exception {
+        MqttMessage message = new MqttMessage(request.getBytes());
+        bookAppointment(message);
+        return "Appointment created successfully";
+    }
     public void bookAppointment(MqttMessage message) throws Exception {
 
         BookAppointmentRequest request = mapper.readValue(message.getPayload(), BookAppointmentRequest.class);

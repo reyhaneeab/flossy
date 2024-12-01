@@ -1,11 +1,10 @@
-package com.group11.notificationservice.service;
-
+package com.group11.notificationservice.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.group11.notificationservice.handler.NotificationHandler.;
+import com.group11.notificationservice.handler.NotificationHandler;
 import com.group11.notificationservice.handler.DentistRegistrationHandler;
 import com.group11.notificationservice.handler.UserRegistrationHandler;
-import com.group11.notificationservice.handler.AppointmentConfirmationHandler;
+import com.group11.notificationservice.handler.DentistBookingHandler;
 import com.group11.notificationservice.engine.EmailEngine;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +30,7 @@ public class NotificationService {
     private void initializeHandlers() {
         handlers.put("DENTIST_REGISTRATION", new DentistRegistrationHandler(emailEngine));
         handlers.put("USER_REGISTRATION", new UserRegistrationHandler(emailEngine));
-        handlers.put("APPOINTMENT_CONFIRMATION", new AppointmentConfirmationHandler(emailEngine));
+        handlers.put("DENTIST_BOOKING", new DentistBookingHandler(emailEngine));
         // Add more handlers as needed
     }
 

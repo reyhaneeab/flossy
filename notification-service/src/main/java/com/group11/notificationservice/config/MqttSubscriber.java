@@ -1,6 +1,6 @@
 package com.group11.notificationservice.config;
 
-import com.group11.notificationservice.*;
+import com.group11.notificationservice.NotificationService;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;

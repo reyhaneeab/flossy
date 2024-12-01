@@ -80,37 +80,33 @@ public class CalendarService {
         return new TimeSlotResponse(slot.getId(), slot.getDate(), slot.getStartTime(), slot.getEndTime(), slot.getOwner());
     }
 
-    public CalendarResponse createCalendar(String dentistId, CalendarRequest calendarRequest) {
-        Dentist dentist = dentistRepository.findById(dentistId)
+    public CalendarResponse createCalendar(String DentistId, CalendarRequest calendarRequest) {
+        Dentist dentist = dentistRepository.findById(DentistId)
                 .orElseThrow(() -> new ResourceNotFoundException("Dentist office not found"));
-    
+
         LocalDate current = LocalDate.now();
         WeekFields weekFields = WeekFields.of(Locale.getDefault());
-    
+
         List<TimeSlot> timeSlots = calendarRequest.timeSlots().stream().map(slotRequest -> {
-            TimeSlot slot = TimeSlot.builder()
-                    .dentistName(dentist.getName()) // Assuming getName() is the correct method
-                    .booked(false)
-                    .date(slotRequest.date())
-                    .startTime(slotRequest.startTime())
-                    .endTime(slotRequest.endTime())
-                    .owner(dentist)
-                    .build();
+            TimeSlot slot = new TimeSlot();
+            slot.setStartTime(slotRequest.startTime());
+            slot.setEndTime(slotRequest.endTime());
+            slot.setDate(slotRequest.date());
+            slot.setOwner(dentist);
             return slot;
         }).toList();
-    
+
         timeSlots = timeSlotRepository.saveAll(timeSlots);
-    
-        Calendar calendar = Calendar.builder()
-                .owner(dentist)
-                .timeSlots(timeSlots)
-                .weekNumber(current.get(weekFields.weekOfWeekBasedYear()))
-                .year(current.getYear())
-                .build();
-    
+
+        Calendar calendar = new Calendar();
+        calendar.setOwner(dentist);
+        calendar.setTimeSlots(timeSlots);
+        calendar.setWeekNumber(current.get(weekFields.weekOfWeekBasedYear()));
+        calendar.setYear(current.getYear());
+
         calendarRepository.save(calendar);
-    
-        String message = "Successfully created calendar";
+
+        String message = "successfully created calendar";
         mqttPublishUtil.publish(CALENDAR_REGISTRATION_TOPIC, message, 0, true);
         return new CalendarResponse(calendar.getId(), calendar.getOwner().getId(), calendar.getWeekNumber(), calendar.getYear(), calendar.getTimeSlots().stream().map(this::mapToResponse).toList());
     }
@@ -121,7 +117,6 @@ public class CalendarService {
 
             // Check for overlapping slots
             List<TimeSlot> overlappingSlots = timeSlotRepository.findOverlappingSlots(
-                    timeSlotRequest.dentistName(),
                     timeSlotRequest.startTime(),
                     timeSlotRequest.endTime()
             );
@@ -130,14 +125,14 @@ public class CalendarService {
                 return "Error: Overlapping time slot detected";
             }
 
-            // Create and save new time slot
+            // Create and save new time slot using the builder pattern
             TimeSlot newTimeSlot = TimeSlot.builder()
-                    .dentistName(timeSlotRequest.dentistName())
-                    .date(timeSlotRequest.date())
                     .startTime(timeSlotRequest.startTime())
                     .endTime(timeSlotRequest.endTime())
+                    .date(timeSlotRequest.startTime().toLocalDate())
                     .booked(false)
                     .build();
+
             TimeSlot savedTimeSlot = timeSlotRepository.save(newTimeSlot);
 
             return "Time slot created successfully: " + savedTimeSlot.getId();
