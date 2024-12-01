@@ -32,7 +32,7 @@ export default {
 
     const handleLogin = async () => {
       try {
-        const response = await fetch('/api/users/login', {
+        const response = await fetch('http://localhost:8090/api/users/login', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -48,8 +48,13 @@ export default {
           localStorage.setItem('token', data.token)
           router.push('/home')
         } else {
-          const errorData = await response.json()
-          error.value = errorData.message || 'Login failed'
+          const errorData = await response.text();
+          try {
+            const parsedError = JSON.parse(errorData);
+            error.value = parsedError.message || 'Login failed';
+          } catch (e) {
+            error.value = errorData || 'Login failed';
+          }
         }
       } catch (err) {
         console.error('Login error:', err)
