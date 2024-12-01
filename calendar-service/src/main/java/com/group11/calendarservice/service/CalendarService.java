@@ -48,34 +48,51 @@ public class CalendarService {
         this.objectMapper = objectMapper;
     }
 
-    @PostConstruct
-    public void init() {
-        try {
-            mqttClient.setCallback(new MqttCallback() {
-                @Override
-                public void connectionLost(Throwable cause) {
-                    log.error("MQTT connection lost", cause);
-                }
 
-                @Override
-                public void messageArrived(String s, MqttMessage mqttMessage) throws Exception {
-                    log.info("Message arrived: {}", mqttMessage.toString());
-                }
-
-                @Override
-                public void deliveryComplete(IMqttDeliveryToken token) {
-                    log.info("MQTT delivery complete: {}", token.isComplete());
-                }
-            });
-
-            if (!mqttClient.isConnected()) {
-                mqttClient.connect();
+@PostConstruct
+public void init() {
+    try {
+        mqttClient.setCallback(new MqttCallback() {
+            @Override
+            public void connectionLost(Throwable cause) {
+                log.error("MQTT connection lost", cause);
             }
-        } catch (MqttException e) {
-            log.error("Error initializing MQTT client", e);
-        }
-    }
 
+            @Override
+            public void messageArrived(String topic, MqttMessage message) throws Exception {
+                log.info("Message arrived on topic {}: {}", topic, new String(message.getPayload()));
+                // Handle the message here
+                handleMqttMessage(topic, new String(message.getPayload()));
+            }
+
+            @Override
+            public void deliveryComplete(IMqttDeliveryToken token) {
+                log.info("MQTT delivery complete: {}", token.isComplete());
+            }
+        });
+
+        if (!mqttClient.isConnected()) {
+            mqttClient.connect();
+        }
+
+        // Subscribe to the calendar topic
+        mqttClient.subscribe("calendar/#", 1);
+        log.info("Subscribed to topic: calendar/#");
+
+    } catch (MqttException e) {
+        log.error("Error initializing MQTT client", e);
+    }
+}
+
+private void handleMqttMessage(String topic, String payload) {
+    // Implement the logic to handle different calendar-related topics
+    if (topic.equals("calendar/view")) {
+        // Handle calendar view request
+    } else if (topic.equals("calendar/create")) {
+        // Handle calendar creation request
+    }
+    // Add more topic handlers as needed
+}
     private TimeSlotResponse mapToResponse(TimeSlot slot) {
         return new TimeSlotResponse(slot.getId(), slot.getDate(), slot.getStartTime(), slot.getEndTime(), slot.getOwner());
     }
