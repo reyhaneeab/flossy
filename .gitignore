@@ -1,8 +1,12 @@
 HELP.md
 target/
 !.mvn
+.mvn
 !**/src/main/**/target/
 !**/src/test/**/target/
+.lck
+mvnw
+mvnw.cmd
 
 ### STS ###
 .apt_generated
@@ -39,11 +43,5 @@ build/
 /data/
 /docker/tempo/tempo-data/
 
-### miscellanious ###
-./.gitattributes
-./.gitignore
-.lck
-mvnw
-mvnw.cmd
-.mvn
+
 
