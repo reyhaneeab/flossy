@@ -22,11 +22,12 @@ public class AppointmentService {
     ObjectMapper mapper = new ObjectMapper();
 
     private final MqttClient mqttClient;
-    private static final String BOOKING_SUCCESS_TOPIC = "timeSlot/book/response";
     private static final String BOOK_APPOINTMENT_TOPIC = "timeSlot/book";
-    private static final String BOOK_APPOINTMENT_EMAIL = "timeSlot/book/email";
+    private static final String BOOK_APPOINTMENT_RESPONSE = BOOK_APPOINTMENT_TOPIC + "/response";
+    private static final String BOOK_APPOINTMENT_EMAIL = BOOK_APPOINTMENT_TOPIC + "/email";
     private static final String CANCEL_APPOINTMENT_TOPIC = "timeSlot/cancel";
-    private static final String CANCEL_SUCCESS_TOPIC = "timeSlot/successful";
+    private static final String CANCEL_APPOINTMENT_RESPONSE = CANCEL_APPOINTMENT_TOPIC + "/response";
+
     @PostConstruct
     public void init() {
         try {
@@ -93,23 +94,20 @@ public class AppointmentService {
             timeSlotRepository.save(timeSlot);
             String payload = mapper.writeValueAsString(user);
             String emailPayload = user.getFirstName()+" "+user.getLastName()+","+ timeSlot.getOwner().getEmail() + "," + timeSlot.getOwner().getOfficeName();
-            mqttClient.publish(BOOKING_SUCCESS_TOPIC, payload.getBytes() , 1, false);
+            mqttClient.publish(BOOK_APPOINTMENT_RESPONSE, payload.getBytes() , 1, false);
             mqttClient.publish(BOOK_APPOINTMENT_EMAIL, emailPayload.getBytes() , 1, true);
         }
 
     }
 
     public void cancelAppointment(MqttMessage message) throws Exception {
-        String payload =  message.toString();
-        String[] details = payload.split(",");
-        String timeSlotId = details[0];
-        String userId = details[1];
+        BookAppointmentRequest request = mapper.readValue(message.getPayload(), BookAppointmentRequest.class);
 
-        log.info("Canceling appointment for UserId: {} and TimeSlotId: {} ",userId, timeSlotId);
+        log.info("Canceling appointment for UserId: {} and TimeSlotId: {} ", request.getUserId(), request.getTimeSlotId());
 
-        TimeSlot timeSlot = timeSlotRepository.findById(timeSlotId)
+        TimeSlot timeSlot = timeSlotRepository.findById(request.getTimeSlotId())
                 .orElseThrow(() ->new ResourceNotFoundException("Cancellation fai;ed. Time Slot not found"));
-        User user = userRepository.findById(userId)
+        User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("Cancellation failed. User Id not found."));
 
         if (!timeSlot.isBooked()) {
@@ -123,11 +121,11 @@ public class AppointmentService {
             timeSlot.setBookedBy(null);
             timeSlotRepository.save(timeSlot);
 
-            payload = user.getFirstName() + " " + user.getLastName() + "," +
+            String payload = user.getFirstName() + " " + user.getLastName() + "," +
                     timeSlot.getOwner().getEmail() + "," + timeSlot.getOwner().getOfficeName();
-            mqttClient.publish(CANCEL_SUCCESS_TOPIC, payload.getBytes(), 1, false);
+            mqttClient.publish(CANCEL_APPOINTMENT_RESPONSE, payload.getBytes(), 1, false);
 
-            log.info("Cancellation successful for UserId: {} and TimeSlotId: {}", userId, timeSlotId);
+            log.info("Cancellation successful for UserId: {} and TimeSlotId: {}", request.getUserId(), request.getTimeSlotId());
         }
     }
 }
