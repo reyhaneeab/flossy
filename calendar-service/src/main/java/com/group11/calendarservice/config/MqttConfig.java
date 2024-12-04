@@ -7,8 +7,12 @@ import org.springframework.context.annotation.Configuration;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.springframework.beans.factory.annotation.Value;
 
+import java.util.logging.Logger;
+import java.util.logging.Level;
+
 @Configuration
 public class MqttConfig {
+    private static final Logger logger = Logger.getLogger(MqttConfig.class.getName());
 
     @Value("${mqtt.broker.url}")
     private String brokerUrl;
@@ -24,6 +28,7 @@ public class MqttConfig {
 
     @Bean
     public MqttClient mqttClient() throws MqttException {
+        logger.info(String.format("Initializing MQTT client with broker URL: %s", brokerUrl));
         MqttClient client = new MqttClient(brokerUrl, clientId);
         MqttConnectOptions options = new MqttConnectOptions();
         options.setCleanSession(true);
@@ -32,7 +37,22 @@ public class MqttConfig {
         options.setAutomaticReconnect(true);
         options.setUserName(username);
         options.setPassword(password.toCharArray());
-        client.connect(options);
+
+        try {
+            logger.info("Attempting to connect MQTT client...");
+            client.connect(options);
+            logger.info("MQTT client connected successfully");
+
+            // Subscribe to the relevant topic
+            String topic = "calendar/#";
+            client.subscribe(topic);
+            logger.info("Subscribed to topic: " + topic);
+
+        } catch (MqttException e) {
+            logger.log(Level.SEVERE, "Error connecting MQTT client", e);
+            throw e;
+        }
+
         return client;
     }
 }
