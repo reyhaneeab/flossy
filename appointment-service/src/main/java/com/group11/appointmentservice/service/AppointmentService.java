@@ -24,8 +24,11 @@ public class AppointmentService {
 
     private static final String BOOKING_SUCCESS_TOPIC = "timeSlot/book/response";
     private static final String BOOK_APPOINTMENT_TOPIC = "timeSlot/book";
-    private static final String BOOK_APPOINTMENT_EMAIL = "timeSlot/book/email";
+    private static final String BOOK_APPOINTMENT_RESPONSE = BOOK_APPOINTMENT_TOPIC + "/response";
+    private static final String BOOK_APPOINTMENT_EMAIL = BOOK_APPOINTMENT_TOPIC + "/email";
     private static final String CANCEL_APPOINTMENT_TOPIC = "timeSlot/cancel";
+    private static final String CANCEL_APPOINTMENT_RESPONSE = CANCEL_APPOINTMENT_TOPIC + "/response";
+
     private static final String CANCEL_SUCCESS_TOPIC = "timeSlot/successful";
 
     @PostConstruct
@@ -34,7 +37,6 @@ public class AppointmentService {
             if (!mqttClient.isConnected()) {
                 mqttClient.connect();
                 mqttClient.subscribe(BOOK_APPOINTMENT_TOPIC, 1);
-                mqttClient.subscribe(CANCEL_APPOINTMENT_TOPIC, 1);
                 mqttClient.subscribe(CANCEL_APPOINTMENT_TOPIC, 1);
             }
             mqttClient.setCallback(new MqttCallback() {
@@ -109,20 +111,25 @@ public class AppointmentService {
             mqttClient.publish(BOOKING_SUCCESS_TOPIC, payload.getBytes(), 1, false);
             mqttClient.publish(BOOK_APPOINTMENT_EMAIL, emailPayload.getBytes(), 1, true);
             log.info("Publishing booking success message: {}", payload);
+            String emailPayload = user.getFirstName()+" "+user.getLastName()+","+ timeSlot.getOwner().getEmail() + "," + timeSlot.getOwner().getOfficeName();
+            mqttClient.publish(BOOK_APPOINTMENT_RESPONSE, payload.getBytes() , 1, false);
+            mqttClient.publish(BOOK_APPOINTMENT_EMAIL, emailPayload.getBytes() , 1, true);
         }
     }
 
     public void cancelAppointment(MqttMessage message) throws Exception {
+        BookAppointmentRequest request = mapper.readValue(message.getPayload(), BookAppointmentRequest.class);
         String payload = message.toString();
         String[] details = payload.split(",");
         String timeSlotId = details[0];
         String userId = details[1];
 
-        log.info("Canceling appointment for UserId: {} and TimeSlotId: {}", userId, timeSlotId);
+        log.info("Canceling appointment for UserId: {} and TimeSlotId: {} ", request.getUserId(), request.getTimeSlotId());
 
-        TimeSlot timeSlot = timeSlotRepository.findById(timeSlotId)
-                .orElseThrow(() -> new ResourceNotFoundException("Cancellation failed. Time Slot not found"));
-        User user = userRepository.findById(userId)
+
+       TimeSlot timeSlot = timeSlotRepository.findById(request.getTimeSlotId())
+                .orElseThrow(() ->new ResourceNotFoundException("Cancellation fai;ed. Time Slot not found"));
+        User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("Cancellation failed. User Id not found."));
 
         if (!timeSlot.isBooked()) {
@@ -134,11 +141,11 @@ public class AppointmentService {
             timeSlot.setBookedBy(null);
             timeSlotRepository.save(timeSlot);
 
-            payload = user.getFirstName() + " " + user.getLastName() + "," +
+            String payload = user.getFirstName() + " " + user.getLastName() + "," +
                     timeSlot.getOwner().getEmail() + "," + timeSlot.getOwner().getOfficeName();
-            mqttClient.publish(CANCEL_SUCCESS_TOPIC, payload.getBytes(), 1, false);
+            mqttClient.publish(CANCEL_APPOINTMENT_RESPONSE, payload.getBytes(), 1, false);
 
-            log.info("Cancellation successful for UserId: {} and TimeSlotId: {}", userId, timeSlotId);
+            log.info("Cancellation successful for UserId: {} and TimeSlotId: {}", request.getUserId(), request.getTimeSlotId());
         }
     }
 }
