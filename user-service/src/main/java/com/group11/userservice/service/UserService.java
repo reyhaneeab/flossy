@@ -68,9 +68,13 @@ public class UserService {
     }
 
     public void createUser(MqttMessage message) throws Exception {
+        log.debug("Received user registration request: {}", new String(message.getPayload()));
+
         UserRequest request = mapper.readValue(message.getPayload(), UserRequest.class);
 
         if (userRepository.existsByEmail(request.email())) {
+            log.warn("Email already exists: {}", request.email());
+
             throw new RuntimeException("Email already exists");
         }
 
@@ -82,8 +86,13 @@ public class UserService {
                 .password(passwordEncoder.encode(request.password()))
                 .build();
 
-        userRepository.save(user);
-
+        try {
+            userRepository.save(user);
+            log.info("User created successfully: {}", user.getEmail());
+        } catch (Exception e) {
+            log.error("Error saving user to database", e);
+            throw e;
+        }
         try {
             String payload = mapper.writeValueAsString(user);
             mqttClient.publish(USER_REGISTRATION_RESPONSE, payload.getBytes(), 1, false);

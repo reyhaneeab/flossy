@@ -20,6 +20,7 @@ public class ApiGatewayApplication {
         loggingFilter.setIncludeQueryString(true);
         loggingFilter.setIncludePayload(true);
         loggingFilter.setMaxPayloadLength(10000);
+        loggingFilter.setAfterMessagePrefix("REQUEST DATA : ");
         return loggingFilter;
     }
 }
