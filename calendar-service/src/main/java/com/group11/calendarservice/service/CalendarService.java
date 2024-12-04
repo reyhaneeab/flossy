@@ -109,13 +109,18 @@ public class CalendarService {
     }
 
     public void getCalendar(MqttMessage message) throws Exception {
-
         CalendarRequest request = mapper.readValue(message.getPayload(), CalendarRequest.class);
 
         Dentist dentist = dentistRepository.findById(request.ownerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Dentist office not found"));
 
-        Calendar calendar = calendarRepository.findByOwnerAndWeekNumber(request.ownerId(), request.weekNumber());
+        Calendar calendar = calendarRepository.findByOwnerAndWeekNumber(dentist.getId(), request.weekNumber());
+        if (calendar == null) {
+            throw new ResourceNotFoundException("Calendar not found for dentist " + dentist.getOfficeName() + " and week number " + request.weekNumber());
+        }
+
+         calendar.setOwner(dentist);
+
         String payload = mapper.writeValueAsString(calendar);
         mqttClient.publish(CALENDAR_GET_RESPONSE, payload.getBytes(), 1, true);
     }
