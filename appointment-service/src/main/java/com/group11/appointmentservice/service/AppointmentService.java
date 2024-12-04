@@ -6,11 +6,16 @@ import com.group11.appointmentservice.repository.*;
 import com.group11.model.TimeSlot;
 import com.group11.model.User;
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -29,49 +34,84 @@ public class AppointmentService {
     private static final String CANCEL_APPOINTMENT_TOPIC = "timeSlot/cancel";
     private static final String CANCEL_APPOINTMENT_RESPONSE = CANCEL_APPOINTMENT_TOPIC + "/response";
 
-    private static final String CANCEL_SUCCESS_TOPIC = "timeSlot/successful";
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private static final int RECONNECT_DELAY_SECONDS = 5;
 
     @PostConstruct
     public void init() {
+        connectMqttClient();
+    }
+
+    private void connectMqttClient() {
         try {
             if (!mqttClient.isConnected()) {
+                log.info("Attempting to connect MQTT client...");
                 mqttClient.connect();
                 mqttClient.subscribe(BOOK_APPOINTMENT_TOPIC, 1);
                 mqttClient.subscribe(CANCEL_APPOINTMENT_TOPIC, 1);
+                setMqttCallback();
+                log.info("MQTT client connected successfully");
             }
-            mqttClient.setCallback(new MqttCallback() {
-                @Override
-                public void connectionLost(Throwable cause) {
-                    try {
-                        mqttClient.disconnect();
-                        mqttClient.close();
-                    } catch (Exception e) {
-                        log.info("Connection lost: " + e.getMessage());
-                    }
-                }
-
-                @Override
-                public void messageArrived(String topic, MqttMessage mqttMessage) {
-                    log.info("Message arrived: {}", mqttMessage.toString());
-                    try {
-                        if (topic.equals(BOOK_APPOINTMENT_TOPIC)) {
-                            bookAppointment(mqttMessage);
-                        } else if (topic.equals(CANCEL_APPOINTMENT_TOPIC)) {
-                            cancelAppointment(mqttMessage);
-                        }
-                    } catch (Exception e) {
-                        log.error("Error processing message", e);
-                    }
-                }
-
-                @Override
-                public void deliveryComplete(IMqttDeliveryToken token) {
-                    log.info("MQTT delivery complete: {}", token.isComplete());
-                }
-            });
-
         } catch (MqttException e) {
-            log.error("Error initializing MQTT client", e);
+            log.error("Error connecting MQTT client", e);
+            scheduleReconnection();
+        }
+    }
+
+    private void setMqttCallback() {
+        mqttClient.setCallback(new MqttCallback() {
+            @Override
+            public void connectionLost(Throwable cause) {
+                log.error("MQTT connection lost", cause);
+                scheduleReconnection();
+            }
+
+            @Override
+            public void messageArrived(String topic, MqttMessage message) {
+                log.info("Message arrived on topic: {}", topic);
+                try {
+                    if (topic.equals(BOOK_APPOINTMENT_TOPIC)) {
+                        bookAppointment(message);
+                    } else if (topic.equals(CANCEL_APPOINTMENT_TOPIC)) {
+                        cancelAppointment(message);
+                    } else {
+                        log.warn("Received message on unexpected topic: {}", topic);
+                    }
+                } catch (Exception e) {
+                    log.error("Error processing message on topic: {}", topic, e);
+                }
+            }
+
+            @Override
+            public void deliveryComplete(IMqttDeliveryToken token) {
+                try {
+                    log.info("Message delivery complete. Topic: {}, Message ID: {}",
+                            token.getTopics(), token.getMessage().getId());
+                } catch (MqttException e) {
+                    log.error("Error getting delivery token details", e);
+                }
+            }
+        });
+    }
+
+    private void scheduleReconnection() {
+        scheduler.schedule(() -> {
+            log.info("Attempting to reconnect MQTT client...");
+            connectMqttClient();
+        }, RECONNECT_DELAY_SECONDS, TimeUnit.SECONDS);
+    }
+
+    @PreDestroy
+    public void cleanup() {
+        try {
+            if (mqttClient.isConnected()) {
+                mqttClient.disconnect();
+            }
+            mqttClient.close();
+            scheduler.shutdown();
+            log.info("MQTT client disconnected and resources cleaned up");
+        } catch (MqttException e) {
+            log.error("Error during MQTT client cleanup", e);
         }
     }
 
@@ -80,16 +120,16 @@ public class AppointmentService {
             MqttMessage message = new MqttMessage(request.getBytes());
             message.setQos(1);
             mqttClient.publish(BOOK_APPOINTMENT_TOPIC, message);
+            log.info("Appointment request sent successfully");
             return "Appointment request sent successfully";
         } catch (MqttException e) {
             log.error("Error publishing MQTT message", e);
-            throw new Exception("Failed to send appointment request");
+            throw new Exception("Failed to send appointment request", e);
         }
     }
 
     public void bookAppointment(MqttMessage message) throws Exception {
         BookAppointmentRequest request = mapper.readValue(message.getPayload(), BookAppointmentRequest.class);
-        // Access structured data
         String timeSlotId = request.getTimeSlotId();
         String userId = request.getUserId();
         log.info("Booking appointment for TimeSlotId: {} and UserId: {}", timeSlotId, userId);
@@ -107,29 +147,28 @@ public class AppointmentService {
             timeSlot.setBookedBy(user);
             timeSlotRepository.save(timeSlot);
             String payload = mapper.writeValueAsString(user);
-            String emailPayload = user.getFirstName() + " " + user.getLastName() + "," + timeSlot.getOwner().getEmail() + "," + timeSlot.getOwner().getOfficeName();
-            mqttClient.publish(BOOKING_SUCCESS_TOPIC, payload.getBytes(), 1, false);
-            mqttClient.publish(BOOK_APPOINTMENT_EMAIL, emailPayload.getBytes(), 1, true);
+            String emailPayload = String.format("%s %s,%s,%s", 
+                user.getFirstName(), user.getLastName(), 
+                timeSlot.getOwner().getEmail(), timeSlot.getOwner().getOfficeName());
+            
+            publishMessage(BOOKING_SUCCESS_TOPIC, payload, false);
+            publishMessage(BOOK_APPOINTMENT_EMAIL, emailPayload, true);
+            publishMessage(BOOK_APPOINTMENT_RESPONSE, payload, false);
+            
             log.info("Publishing booking success message: {}", payload);
-            String emailPayload = user.getFirstName()+" "+user.getLastName()+","+ timeSlot.getOwner().getEmail() + "," + timeSlot.getOwner().getOfficeName();
-            mqttClient.publish(BOOK_APPOINTMENT_RESPONSE, payload.getBytes() , 1, false);
-            mqttClient.publish(BOOK_APPOINTMENT_EMAIL, emailPayload.getBytes() , 1, true);
         }
     }
 
     public void cancelAppointment(MqttMessage message) throws Exception {
         BookAppointmentRequest request = mapper.readValue(message.getPayload(), BookAppointmentRequest.class);
-        String payload = message.toString();
-        String[] details = payload.split(",");
-        String timeSlotId = details[0];
-        String userId = details[1];
+        String timeSlotId = request.getTimeSlotId();
+        String userId = request.getUserId();
 
-        log.info("Canceling appointment for UserId: {} and TimeSlotId: {} ", request.getUserId(), request.getTimeSlotId());
+        log.info("Canceling appointment for UserId: {} and TimeSlotId: {} ", userId, timeSlotId);
 
-
-       TimeSlot timeSlot = timeSlotRepository.findById(request.getTimeSlotId())
-                .orElseThrow(() ->new ResourceNotFoundException("Cancellation fai;ed. Time Slot not found"));
-        User user = userRepository.findById(request.getUserId())
+        TimeSlot timeSlot = timeSlotRepository.findById(timeSlotId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cancellation failed. Time Slot not found"));
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cancellation failed. User Id not found."));
 
         if (!timeSlot.isBooked()) {
@@ -141,11 +180,19 @@ public class AppointmentService {
             timeSlot.setBookedBy(null);
             timeSlotRepository.save(timeSlot);
 
-            String payload = user.getFirstName() + " " + user.getLastName() + "," +
-                    timeSlot.getOwner().getEmail() + "," + timeSlot.getOwner().getOfficeName();
-            mqttClient.publish(CANCEL_APPOINTMENT_RESPONSE, payload.getBytes(), 1, false);
+            String payload = String.format("%s %s,%s,%s", 
+                user.getFirstName(), user.getLastName(),
+                timeSlot.getOwner().getEmail(), timeSlot.getOwner().getOfficeName());
+            publishMessage(CANCEL_APPOINTMENT_RESPONSE, payload, false);
 
-            log.info("Cancellation successful for UserId: {} and TimeSlotId: {}", request.getUserId(), request.getTimeSlotId());
+            log.info("Cancellation successful for UserId: {} and TimeSlotId: {}", userId, timeSlotId);
         }
+    }
+
+    private void publishMessage(String topic, String payload, boolean retained) throws MqttException {
+        MqttMessage mqttMessage = new MqttMessage(payload.getBytes());
+        mqttMessage.setQos(1);
+        mqttMessage.setRetained(retained);
+        mqttClient.publish(topic, mqttMessage);
     }
 }
