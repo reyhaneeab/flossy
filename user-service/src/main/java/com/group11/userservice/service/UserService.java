@@ -1,11 +1,9 @@
 package com.group11.userservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.group11.userservice.config.MqttPublishUtil;
-import com.group11.userservice.dto.SignupRequest;
-import com.group11.userservice.dto.UserResponse;
 import com.group11.model.User;
 import com.group11.userservice.dto.UserRequest;
+import com.group11.userservice.dto.LoginRequest;
 import com.group11.userservice.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -14,8 +12,6 @@ import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -23,7 +19,6 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final MqttClient mqttClient;
-    private final MqttPublishUtil mqttPublishUtil;
     private final PasswordEncoder passwordEncoder;
     private final ObjectMapper mapper = new ObjectMapper();
 
@@ -39,7 +34,7 @@ public class UserService {
                     try {
                         mqttClient.disconnect();
                         mqttClient.close();
-                    }catch(Exception e){
+                    } catch(Exception e){
                         log.info("Connection lost:" + e.getMessage());
                     }
                 }
@@ -47,10 +42,11 @@ public class UserService {
                 @Override
                 public void messageArrived(String topic, MqttMessage mqttMessage) {
                     log.info("Message arrived: {}", mqttMessage.toString());
-                    try{
+                    try {
                         createUser(mqttMessage);
+                    } catch (Exception e) {
+                        log.info(e.getMessage());
                     }
-                    catch (Exception e){log.info(e.getMessage());}
                 }
 
                 @Override
@@ -72,7 +68,6 @@ public class UserService {
     }
 
     public void createUser(MqttMessage message) throws Exception {
-
         UserRequest request = mapper.readValue(message.getPayload(), UserRequest.class);
 
         if (userRepository.existsByEmail(request.email())) {
@@ -84,13 +79,11 @@ public class UserService {
                 .firstName(request.firstName())
                 .lastName(request.lastName())
                 .phone(request.phone())
-                .password(passwordEncoder.encode(request.password())) // Encode the password
+                .password(passwordEncoder.encode(request.password()))
                 .build();
 
-        // Save user to db
         userRepository.save(user);
 
-        // Prepare and publish payload
         try {
             String payload = mapper.writeValueAsString(user);
             mqttClient.publish(USER_REGISTRATION_RESPONSE, payload.getBytes(), 1, false);
@@ -101,11 +94,9 @@ public class UserService {
         log.info("User {} has been registered successfully", user.getFirstName());
     }
 
-    /*
     public User loginUser(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
-
-        .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new RuntimeException("Invalid password");
@@ -114,19 +105,15 @@ public class UserService {
         user.setPassword(null);
         return user;
     }
-public String handleRequest(String request) {
-    try {
-        // Parse the request and perform the appropriate action
-        // For example, you might want to create a user if the request is a signup
-        SignupRequest signupRequest = objectMapper.readValue(request, SignupRequest.class);
-        createUser(signupRequest);
-        return "User created successfully";
-    } catch (Exception e) {
-        log.error("Error handling request", e);
-        return "Error: " + e.getMessage();
+
+    public String handleRequest(String request) {
+        try {
+            UserRequest userRequest = mapper.readValue(request, UserRequest.class);
+            createUser(new MqttMessage(mapper.writeValueAsBytes(userRequest)));
+            return "User created successfully";
+        } catch (Exception e) {
+            log.error("Error handling request", e);
+            return "Error: " + e.getMessage();
+        }
     }
 }
-     */
-
-    }
-

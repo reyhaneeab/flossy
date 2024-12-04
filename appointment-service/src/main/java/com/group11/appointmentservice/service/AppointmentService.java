@@ -26,7 +26,6 @@ public class AppointmentService {
     private static final String BOOK_APPOINTMENT_TOPIC = "timeSlot/book";
     private static final String BOOK_APPOINTMENT_EMAIL = "timeSlot/book/email";
     private static final String CANCEL_APPOINTMENT_TOPIC = "timeSlot/cancel";
-    private static final String CANCEL_APPOINTMENT_TOPIC = "timeSlot/cancel";
     private static final String CANCEL_SUCCESS_TOPIC = "timeSlot/successful";
 
     @PostConstruct
@@ -35,7 +34,7 @@ public class AppointmentService {
             if (!mqttClient.isConnected()) {
                 mqttClient.connect();
                 mqttClient.subscribe(BOOK_APPOINTMENT_TOPIC, 1);
-                mqttClient.subscribe(CANCEL_APPOINTMENT_TOPIC,1);
+                mqttClient.subscribe(CANCEL_APPOINTMENT_TOPIC, 1);
                 mqttClient.subscribe(CANCEL_APPOINTMENT_TOPIC, 1);
             }
             mqttClient.setCallback(new MqttCallback() {
@@ -56,7 +55,6 @@ public class AppointmentService {
                         if (topic.equals(BOOK_APPOINTMENT_TOPIC)) {
                             bookAppointment(mqttMessage);
                         } else if (topic.equals(CANCEL_APPOINTMENT_TOPIC)) {
-                        }else if (topic.equals(CANCEL_APPOINTMENT_TOPIC)){
                             cancelAppointment(mqttMessage);
                         }
                     } catch (Exception e) {
@@ -100,9 +98,6 @@ public class AppointmentService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking failed. User not found"));
 
-        if(timeSlot.isBooked()) throw new Exception("Appointment is already booked");
-        else {
-            timeSlot.setBooked(true);
         if (timeSlot.isBooked()) {
             throw new Exception("Appointment is already booked");
         } else {
@@ -110,11 +105,10 @@ public class AppointmentService {
             timeSlot.setBookedBy(user);
             timeSlotRepository.save(timeSlot);
             String payload = mapper.writeValueAsString(user);
-            String emailPayload = user.getFirstName()+" "+user.getLastName()+","+ timeSlot.getOwner().getEmail() + "," + timeSlot.getOwner().getOfficeName();
-            mqttClient.publish(BOOKING_SUCCESS_TOPIC, payload.getBytes() , 1, false);
-            mqttClient.publish(BOOK_APPOINTMENT_EMAIL, emailPayload.getBytes() , 1, true);
-            log.info("Publishing booking success message: {}", payload);
+            String emailPayload = user.getFirstName() + " " + user.getLastName() + "," + timeSlot.getOwner().getEmail() + "," + timeSlot.getOwner().getOfficeName();
             mqttClient.publish(BOOKING_SUCCESS_TOPIC, payload.getBytes(), 1, false);
+            mqttClient.publish(BOOK_APPOINTMENT_EMAIL, emailPayload.getBytes(), 1, true);
+            log.info("Publishing booking success message: {}", payload);
         }
     }
 
@@ -127,7 +121,6 @@ public class AppointmentService {
         log.info("Canceling appointment for UserId: {} and TimeSlotId: {}", userId, timeSlotId);
 
         TimeSlot timeSlot = timeSlotRepository.findById(timeSlotId)
-                .orElseThrow(() ->new ResourceNotFoundException("Cancellation fai;ed. Time Slot not found"));
                 .orElseThrow(() -> new ResourceNotFoundException("Cancellation failed. Time Slot not found"));
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cancellation failed. User Id not found."));
