@@ -41,7 +41,7 @@ public class MqttHandler {
             latch.countDown();
         });
 
-        if (!latch.await(5, TimeUnit.SECONDS)) {
+        if (!latch.await(15, TimeUnit.SECONDS)) {
             throw new ResponseStatusException(HttpStatus.REQUEST_TIMEOUT, "MQTT response timed out");
         }
 

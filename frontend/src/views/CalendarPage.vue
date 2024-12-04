@@ -1,7 +1,9 @@
 <template>
   <div id="container">
     <h1>Appointment calendar</h1>
-    <div class="calendar">
+    <div v-if="loading">Loading...</div>
+    <div v-else-if="error">{{ error }}</div>
+    <div v-else class="calendar">
       <div v-for="day in days" :key="day.date" class="day">
         <h3>{{ formatDate(day.date) }}</h3>
         <div class="column-of-timeslots">
@@ -33,9 +35,13 @@ export default defineComponent({
   setup() {
     const selectedSlot = ref(null);
     const days = ref([]);
-    const URL = `http://localhost:8091/api/calendar/get`
+    const loading = ref(false);
+    const error = ref(null);
+    const URL = `http://localhost:8091/api/calendar/get`;
 
     const fetchTimeSlots = async () => {
+      loading.value = true;
+      error.value = null;
       try {
         const response = await fetch(URL, {
           method: 'POST',
@@ -43,10 +49,14 @@ export default defineComponent({
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            weekNumber: "50",
+            weekNumber: 50,
             ownerId: "674a2c3e3881dd327be177fd"
           })
-        })
+        });
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
         const data = await response.json();
 
@@ -75,20 +85,23 @@ export default defineComponent({
         days.value = Object.values(dayMap);
 
       } catch (error) {
-        console.error("Failed to fetch time slots:", error);
+        console.error("Error fetching time slots:", error);
+        error.value = "Failed to load calendar data. Please try again later.";
+      } finally {
+        loading.value = false;
       }
     };
 
     const selectSlot = (day, slot) => {
       // Deselect any previously selected slot
-      days.value.forEach(day => {
-        day.slots.forEach(slot => {
-          slot.selected = false;
+      days.value.forEach(d => {
+        d.slots.forEach(s => {
+          s.selected = false;
         });
       });
       // Select the clicked slot
       slot.selected = true;
-      selectedSlot.value = slot;
+      selectedSlot.value = { ...slot, date: day.date };
     };
 
     const formatDate = (dateString) => {
@@ -96,19 +109,20 @@ export default defineComponent({
       return new Date(dateString).toLocaleDateString(undefined, options);
     };
 
-    onMounted(() => {
-      fetchTimeSlots();
-    });
+    onMounted(fetchTimeSlots);
 
     return {
       days,
       selectedSlot,
+      loading,
+      error,
       formatDate,
       selectSlot,
     };
-  },
+  }
 });
 </script>
+
 
 <style scoped>
 #container {
