@@ -23,11 +23,13 @@ public class WebConfig implements WebMvcConfigurer {
         System.out.println("CORS configuration applied in WebConfig");
 
     }
+   // Log details about incoming HTTP request
     @Bean
     public CommonsRequestLoggingFilter logFilter() {
         CommonsRequestLoggingFilter filter = new CommonsRequestLoggingFilter();
         filter.setIncludeQueryString(true);
         filter.setIncludePayload(true);
+        // prevent super big loads from being logged in full
         filter.setMaxPayloadLength(10000);
         filter.setIncludeHeaders(true);
         filter.setAfterMessagePrefix("REQUEST DATA : ");

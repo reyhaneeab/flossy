@@ -21,6 +21,7 @@ public class MqttSubscriber {
 
     @PostConstruct
     public void subscribe() throws MqttException {
+        // called automatically when the application starts
         mqttClient.subscribe("appointment", (topic, message) -> {
             String request = new String(message.getPayload());
             String response = appointmentService.createAppointment(request);

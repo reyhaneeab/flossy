@@ -26,6 +26,7 @@ public class MqttConfig {
     public MqttClient mqttClient() throws MqttException {
         MqttClient client = new MqttClient(brokerUrl, clientId);
         MqttConnectOptions options = new MqttConnectOptions();
+        // ensure a clean session for each connection
         options.setCleanSession(true);
         options.setConnectionTimeout(30);
         options.setKeepAliveInterval(60);

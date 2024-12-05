@@ -36,10 +36,11 @@ public class GatewayController {
             @PathVariable String action) {
         return processRequest(entity, action, null);
     }
-
+// Process all requests regardless of HTTP method. it constructs an MQTT topic from the entity and action.
     private ResponseEntity<JsonNode> processRequest(String entity, String action, Object requestBody) {
         String topic = String.format("%s/%s", entity, action);
         logger.info("Handling request for topic: " + topic);
+// it uses MQTTHandler to forward the request to appropriate service.
 
         try {
             JsonNode response = mqttHandler.forwardRequest(topic, requestBody);

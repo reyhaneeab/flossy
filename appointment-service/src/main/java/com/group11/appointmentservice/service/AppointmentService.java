@@ -41,7 +41,7 @@ public class AppointmentService {
     public void init() {
         connectMqttClient();
     }
-
+// handles the MQTT client connection and subscription to relevant topics and sets up callbacks
     private void connectMqttClient() {
         try {
             if (!mqttClient.isConnected()) {
@@ -57,7 +57,7 @@ public class AppointmentService {
             scheduleReconnection();
         }
     }
-
+// setsip a callback for MQTT clients to handle multiple events related to MQTT connection and message processing
     private void setMqttCallback() {
         mqttClient.setCallback(new MqttCallback() {
             @Override
@@ -93,14 +93,14 @@ public class AppointmentService {
             }
         });
     }
-
+// scheduling a reconnection attempt for the MQTT client.
     private void scheduleReconnection() {
         scheduler.schedule(() -> {
             log.info("Attempting to reconnect MQTT client...");
             connectMqttClient();
         }, RECONNECT_DELAY_SECONDS, TimeUnit.SECONDS);
     }
-
+// cleanup operation when the application shuts down for preventing potential resource leaks and ensuring a clean shutdown.
     @PreDestroy
     public void cleanup() {
         try {
@@ -114,7 +114,7 @@ public class AppointmentService {
             log.error("Error during MQTT client cleanup", e);
         }
     }
-
+// Creating a new appointment request and sends it to the broker.
     public String createAppointment(String request) throws Exception {
         try {
             MqttMessage message = new MqttMessage(request.getBytes());
@@ -129,11 +129,13 @@ public class AppointmentService {
     }
 
     public void bookAppointment(MqttMessage message) throws Exception {
+       // De-serializing the request payload into a BookAppointmentRequest obj.
         BookAppointmentRequest request = mapper.readValue(message.getPayload(), BookAppointmentRequest.class);
+        // extract timeslotId and userId from the request
         String timeSlotId = request.getTimeSlotId();
         String userId = request.getUserId();
         log.info("Booking appointment for TimeSlotId: {} and UserId: {}", timeSlotId, userId);
-
+// retrieves the Timeslot and user from their repository in DB.
         TimeSlot timeSlot = timeSlotRepository.findById(timeSlotId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking failed. Time Slot not found"));
 
@@ -143,9 +145,11 @@ public class AppointmentService {
         if (timeSlot.isBooked()) {
             throw new Exception("Appointment is already booked");
         } else {
+            // Book the appointment
             timeSlot.setBooked(true);
             timeSlot.setBookedBy(user);
             timeSlotRepository.save(timeSlot);
+            // Publishing success message to the booking success topic and email notification.
             String payload = mapper.writeValueAsString(user);
             String emailPayload = String.format("%s %s,%s,%s", 
                 user.getFirstName(), user.getLastName(), 
@@ -160,12 +164,14 @@ public class AppointmentService {
     }
 
     public void cancelAppointment(MqttMessage message) throws Exception {
+        // De-serializing the request payload into a BookAppointmentRequest obj.
         BookAppointmentRequest request = mapper.readValue(message.getPayload(), BookAppointmentRequest.class);
+        // extract timeslotId and userId from the request
         String timeSlotId = request.getTimeSlotId();
         String userId = request.getUserId();
 
         log.info("Canceling appointment for UserId: {} and TimeSlotId: {} ", userId, timeSlotId);
-
+// retrieves the Timeslot and user from their repository in DB.
         TimeSlot timeSlot = timeSlotRepository.findById(timeSlotId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cancellation failed. Time Slot not found"));
         User user = userRepository.findById(userId)
@@ -179,7 +185,6 @@ public class AppointmentService {
             timeSlot.setBooked(false);
             timeSlot.setBookedBy(null);
             timeSlotRepository.save(timeSlot);
-
             String payload = String.format("%s %s,%s,%s", 
                 user.getFirstName(), user.getLastName(),
                 timeSlot.getOwner().getEmail(), timeSlot.getOwner().getOfficeName());
@@ -188,7 +193,7 @@ public class AppointmentService {
             log.info("Cancellation successful for UserId: {} and TimeSlotId: {}", userId, timeSlotId);
         }
     }
-
+// publish MQTT messages.
     private void publishMessage(String topic, String payload, boolean retained) throws MqttException {
         MqttMessage mqttMessage = new MqttMessage(payload.getBytes());
         mqttMessage.setQos(1);
