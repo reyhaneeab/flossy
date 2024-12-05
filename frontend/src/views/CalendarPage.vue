@@ -29,77 +29,86 @@
 </template>
 
 <script>
-import { defineComponent, ref, onMounted } from "vue";
+import { defineComponent, ref, onMounted, onUnmounted } from "vue";
+import mqtt from 'mqtt';
 
 export default defineComponent({
   setup() {
+    // Reactive references for component state
     const selectedSlot = ref(null);
     const days = ref([]);
     const loading = ref(false);
     const error = ref(null);
-    const URL = `http://localhost:8091/api/calendar/get`;
+    const client = ref(null);
+// MQTT configuration
+    const MQTT_BROKER_URL = 'ws://localhost:1883';
+    const CALENDAR_GET_TOPIC = 'calendar/get';
+    const CALENDAR_GET_RESPONSE = 'calendar/get/response';
 
-    const fetchTimeSlots = async () => {
+    const connectMqtt = () => {
+// Create and store MQTT client instance
+      client.value = mqtt.connect(MQTT_BROKER_URL);
+// Set up event handlers for MQTT client
+      client.value.on('connect', () => {
+        console.log('Connected to MQTT broker');
+        client.value.subscribe(CALENDAR_GET_RESPONSE);
+// Fetch time slots once connected
+        fetchTimeSlots();
+      });
+// Handle incoming MQTT messages
+      client.value.on('message', (topic, message) => {
+        if (topic === CALENDAR_GET_RESPONSE) {
+// Parse and process the calendar data
+          handleCalendarResponse(JSON.parse(message.toString()));
+        }
+      });
+
+      client.value.on('error', (err) => {
+        console.error('MQTT Error:', err);
+        error.value = "Failed to connect to the server. Please try again later.";
+      });
+    };
+
+    const fetchTimeSlots = () => {
       loading.value = true;
       error.value = null;
-      try {
-        const response = await fetch(URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            weekNumber: 50,
-            ownerId: "674a2c3e3881dd327be177fd"
-          })
-        });
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      const request = {
+        weekNumber: 50,
+        ownerId: "674a2c3e3881dd327be177fd"
+      };
+      client.value.publish(CALENDAR_GET_TOPIC, JSON.stringify(request));
+    };
+
+    const handleCalendarResponse = (data) => {
+      const dayMap = {};
+
+      data.timeSlots.forEach(slot => {
+        const date = slot.date;
+        if (!dayMap[date]) {
+          dayMap[date] = {
+            date: date,
+            slots: []
+          };
         }
 
-        const data = await response.json();
-
-        // Group the time slots by day and create a proper structure for `days`
-        const dayMap = {};
-
-        data.timeSlots.forEach(slot => {
-          const date = slot.date;
-          if (!dayMap[date]) {
-            dayMap[date] = {
-              date: date,
-              slots: []
-            };
-          }
-
-          // Push the slot details into the correct day
-          dayMap[date].slots.push({
-            id: slot.id,
-            time: `${new Date(slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
-            booked: slot.booked,
-            selected: false,
-          });
+        dayMap[date].slots.push({
+          id: slot.id,
+          time: `${new Date(slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+          booked: slot.booked,
+          selected: false,
         });
+      });
 
-        // Assign the grouped slots to the days array
-        days.value = Object.values(dayMap);
-
-      } catch (error) {
-        console.error("Error fetching time slots:", error);
-        error.value = "Failed to load calendar data. Please try again later.";
-      } finally {
-        loading.value = false;
-      }
+      days.value = Object.values(dayMap);
+      loading.value = false;
     };
 
     const selectSlot = (day, slot) => {
-      // Deselect any previously selected slot
       days.value.forEach(d => {
         d.slots.forEach(s => {
           s.selected = false;
         });
       });
-      // Select the clicked slot
       slot.selected = true;
       selectedSlot.value = { ...slot, date: day.date };
     };
@@ -108,9 +117,15 @@ export default defineComponent({
       const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
       return new Date(dateString).toLocaleDateString(undefined, options);
     };
+// Lifecycle hooks
+    onMounted(connectMqtt);
 
-    onMounted(fetchTimeSlots);
-
+    onUnmounted(() => {
+      if (client.value) {
+        client.value.end();
+      }
+    });
+// Return reactive references and methods for use in the template
     return {
       days,
       selectedSlot,
