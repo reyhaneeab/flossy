@@ -2,6 +2,7 @@ package com.group11.appointmentservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.group11.appointmentservice.dto.BookAppointmentRequest;
+import com.group11.appointmentservice.dto.AppointmentResponse;
 import com.group11.appointmentservice.repository.*;
 import com.group11.model.TimeSlot;
 import com.group11.model.User;
@@ -13,6 +14,7 @@ import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -26,13 +28,13 @@ public class AppointmentService {
     private final UserRepository userRepository;
     private final ObjectMapper mapper;
     private final MqttClient mqttClient;
-
-    private static final String BOOKING_SUCCESS_TOPIC = "timeSlot/book/response";
-    private static final String BOOK_APPOINTMENT_TOPIC = "timeSlot/book";
-    private static final String BOOK_APPOINTMENT_RESPONSE = BOOK_APPOINTMENT_TOPIC + "/response";
-    private static final String BOOK_APPOINTMENT_EMAIL = BOOK_APPOINTMENT_TOPIC + "/email";
-    private static final String CANCEL_APPOINTMENT_TOPIC = "timeSlot/cancel";
-    private static final String CANCEL_APPOINTMENT_RESPONSE = CANCEL_APPOINTMENT_TOPIC + "/response";
+    // MQTT topic constants
+    private static final String APPOINTMENT_TOPIC_BASE = "appointment/";
+    private static final String BOOK_APPOINTMENT_TOPIC = APPOINTMENT_TOPIC_BASE + "book";
+    private static final String CANCEL_APPOINTMENT_TOPIC = APPOINTMENT_TOPIC_BASE + "cancel";
+    private static final String RESPONSE_TOPIC = APPOINTMENT_TOPIC_BASE + "response";
+    private static final String ERROR_TOPIC = APPOINTMENT_TOPIC_BASE + "error";
+    private static final String EMAIL_NOTIFICATION_TOPIC = APPOINTMENT_TOPIC_BASE + "email";
 
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private static final int RECONNECT_DELAY_SECONDS = 5;
@@ -41,14 +43,14 @@ public class AppointmentService {
     public void init() {
         connectMqttClient();
     }
-// handles the MQTT client connection and subscription to relevant topics and sets up callbacks
+// Connects the MQTT client and sets up subscriptions.
     private void connectMqttClient() {
         try {
             if (!mqttClient.isConnected()) {
                 log.info("Attempting to connect MQTT client...");
                 mqttClient.connect();
-                mqttClient.subscribe(BOOK_APPOINTMENT_TOPIC, 1);
-                mqttClient.subscribe(CANCEL_APPOINTMENT_TOPIC, 1);
+                mqttClient.subscribe(BOOK_APPOINTMENT_TOPIC, 2);
+                mqttClient.subscribe(CANCEL_APPOINTMENT_TOPIC, 2);
                 setMqttCallback();
                 log.info("MQTT client connected successfully");
             }
@@ -57,7 +59,8 @@ public class AppointmentService {
             scheduleReconnection();
         }
     }
-// setsip a callback for MQTT clients to handle multiple events related to MQTT connection and message processing
+// Sets up the MQTT callback for handling incoming messages and connection issues.
+
     private void setMqttCallback() {
         mqttClient.setCallback(new MqttCallback() {
             @Override
@@ -67,18 +70,14 @@ public class AppointmentService {
             }
 
             @Override
-            public void messageArrived(String topic, MqttMessage message) {
+            public void messageArrived(String topic, MqttMessage message) throws Exception {
                 log.info("Message arrived on topic: {}", topic);
                 try {
-                    if (topic.equals(BOOK_APPOINTMENT_TOPIC)) {
-                        bookAppointment(message);
-                    } else if (topic.equals(CANCEL_APPOINTMENT_TOPIC)) {
-                        cancelAppointment(message);
-                    } else {
-                        log.warn("Received message on unexpected topic: {}", topic);
-                    }
+                    String correlationId = UUID.randomUUID().toString();
+                    handleRequest(topic, message, correlationId);
                 } catch (Exception e) {
                     log.error("Error processing message on topic: {}", topic, e);
+                    publishErrorMessage(ERROR_TOPIC, e.getMessage(), UUID.randomUUID().toString());
                 }
             }
 
@@ -93,111 +92,127 @@ public class AppointmentService {
             }
         });
     }
-// scheduling a reconnection attempt for the MQTT client.
+
     private void scheduleReconnection() {
-        scheduler.schedule(() -> {
-            log.info("Attempting to reconnect MQTT client...");
-            connectMqttClient();
-        }, RECONNECT_DELAY_SECONDS, TimeUnit.SECONDS);
+        scheduler.schedule(this::connectMqttClient, RECONNECT_DELAY_SECONDS, TimeUnit.SECONDS);
     }
-// cleanup operation when the application shuts down for preventing potential resource leaks and ensuring a clean shutdown.
+// Cleans up resources when the service is being destroyed.
     @PreDestroy
     public void cleanup() {
         try {
             if (mqttClient.isConnected()) {
                 mqttClient.disconnect();
             }
-            mqttClient.close();
             scheduler.shutdown();
-            log.info("MQTT client disconnected and resources cleaned up");
         } catch (MqttException e) {
-            log.error("Error during MQTT client cleanup", e);
+            log.error("Error during cleanup", e);
         }
     }
-// Creating a new appointment request and sends it to the broker.
-    public String createAppointment(String request) throws Exception {
-        try {
-            MqttMessage message = new MqttMessage(request.getBytes());
-            message.setQos(1);
-            mqttClient.publish(BOOK_APPOINTMENT_TOPIC, message);
-            log.info("Appointment request sent successfully");
-            return "Appointment request sent successfully";
-        } catch (MqttException e) {
-            log.error("Error publishing MQTT message", e);
-            throw new Exception("Failed to send appointment request", e);
+// Handles incoming MQTT requests based on the topic.
+    public void handleRequest(String topic, MqttMessage message, String correlationId) throws Exception {
+        String payload = new String(message.getPayload());
+        if (topic.equals(BOOK_APPOINTMENT_TOPIC)) {
+            bookAppointment(payload, correlationId);
+        } else if (topic.equals(CANCEL_APPOINTMENT_TOPIC)) {
+            cancelAppointment(payload, correlationId);
+        } else {
+            log.warn("Received message on unexpected topic: {}", topic);
         }
     }
-
-    public void bookAppointment(MqttMessage message) throws Exception {
-       // De-serializing the request payload into a BookAppointmentRequest obj.
-        BookAppointmentRequest request = mapper.readValue(message.getPayload(), BookAppointmentRequest.class);
-        // extract timeslotId and userId from the request
+// Processes a booking appointment request.
+    private void bookAppointment(String payload, String correlationId) throws Exception {
+        BookAppointmentRequest request = mapper.readValue(payload, BookAppointmentRequest.class);
         String timeSlotId = request.getTimeSlotId();
         String userId = request.getUserId();
         log.info("Booking appointment for TimeSlotId: {} and UserId: {}", timeSlotId, userId);
-// retrieves the Timeslot and user from their repository in DB.
-        TimeSlot timeSlot = timeSlotRepository.findById(timeSlotId)
-                .orElseThrow(() -> new ResourceNotFoundException("Booking failed. Time Slot not found"));
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Booking failed. User not found"));
+        try {
+            TimeSlot timeSlot = timeSlotRepository.findById(timeSlotId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Booking failed. Time Slot not found"));
 
-        if (timeSlot.isBooked()) {
-            throw new Exception("Appointment is already booked");
-        } else {
-            // Book the appointment
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Booking failed. User not found"));
+
+            if (timeSlot.isBooked()) {
+                throw new Exception("Appointment is already booked");
+            }
+
             timeSlot.setBooked(true);
             timeSlot.setBookedBy(user);
             timeSlotRepository.save(timeSlot);
-            // Publishing success message to the booking success topic and email notification.
-            String payload = mapper.writeValueAsString(user);
-            String emailPayload = String.format("%s %s,%s,%s", 
-                user.getFirstName(), user.getLastName(), 
-                timeSlot.getOwner().getEmail(), timeSlot.getOwner().getOfficeName());
-            
-            publishMessage(BOOKING_SUCCESS_TOPIC, payload, false);
-            publishMessage(BOOK_APPOINTMENT_EMAIL, emailPayload, true);
-            publishMessage(BOOK_APPOINTMENT_RESPONSE, payload, false);
-            
-            log.info("Publishing booking success message: {}", payload);
+
+            AppointmentResponse response = new AppointmentResponse(true, "Appointment booked successfully", user, timeSlot);
+            String responsePayload = mapper.writeValueAsString(response);
+
+            publishMessage(RESPONSE_TOPIC, responsePayload, false, correlationId);
+            publishMessage(EMAIL_NOTIFICATION_TOPIC, createEmailPayload(user, timeSlot), true, correlationId);
+
+            log.info("Booking success message published for correlationId: {}", correlationId);
+        } catch (Exception e) {
+            log.error("Error booking appointment", e);
+            publishErrorMessage(RESPONSE_TOPIC, e.getMessage(), correlationId);
         }
     }
-
-    public void cancelAppointment(MqttMessage message) throws Exception {
-        // De-serializing the request payload into a BookAppointmentRequest obj.
-        BookAppointmentRequest request = mapper.readValue(message.getPayload(), BookAppointmentRequest.class);
-        // extract timeslotId and userId from the request
+// Processes a canceling appointment request.
+    private void cancelAppointment(String payload, String correlationId) throws Exception {
+        BookAppointmentRequest request = mapper.readValue(payload, BookAppointmentRequest.class);
         String timeSlotId = request.getTimeSlotId();
         String userId = request.getUserId();
 
         log.info("Canceling appointment for UserId: {} and TimeSlotId: {} ", userId, timeSlotId);
-// retrieves the Timeslot and user from their repository in DB.
-        TimeSlot timeSlot = timeSlotRepository.findById(timeSlotId)
-                .orElseThrow(() -> new ResourceNotFoundException("Cancellation failed. Time Slot not found"));
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Cancellation failed. User Id not found."));
 
-        if (!timeSlot.isBooked()) {
-            throw new Exception("Cancellation failed. The time slot is not currently booked.");
-        } else if (!user.equals(timeSlot.getBookedBy())) {
-            throw new Exception("Cancellation failed. The time slot is not booked by this user.");
-        } else {
+        try {
+            TimeSlot timeSlot = timeSlotRepository.findById(timeSlotId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Cancellation failed. Time Slot not found"));
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Cancellation failed. User Id not found."));
+
+            if (!timeSlot.isBooked()) {
+                throw new Exception("Cancellation failed. The time slot is not currently booked.");
+            } else if (!user.equals(timeSlot.getBookedBy())) {
+                throw new Exception("Cancellation failed. The time slot is not booked by this user.");
+            }
+
             timeSlot.setBooked(false);
             timeSlot.setBookedBy(null);
             timeSlotRepository.save(timeSlot);
-            String payload = String.format("%s %s,%s,%s", 
-                user.getFirstName(), user.getLastName(),
-                timeSlot.getOwner().getEmail(), timeSlot.getOwner().getOfficeName());
-            publishMessage(CANCEL_APPOINTMENT_RESPONSE, payload, false);
+
+            AppointmentResponse response = new AppointmentResponse(true, "Appointment cancelled successfully", user, timeSlot);
+            String responsePayload = mapper.writeValueAsString(response);
+
+            publishMessage(RESPONSE_TOPIC, responsePayload, false, correlationId);
 
             log.info("Cancellation successful for UserId: {} and TimeSlotId: {}", userId, timeSlotId);
+        } catch (Exception e) {
+            log.error("Error cancelling appointment", e);
+            publishErrorMessage(RESPONSE_TOPIC, e.getMessage(), correlationId);
         }
     }
-// publish MQTT messages.
-    private void publishMessage(String topic, String payload, boolean retained) throws MqttException {
+// Publishes a message to the specified MQTT topic.
+    private void publishMessage(String topic, String payload, boolean retained, String correlationId) throws MqttException {
         MqttMessage mqttMessage = new MqttMessage(payload.getBytes());
-        mqttMessage.setQos(1);
+        mqttMessage.setQos(2);
         mqttMessage.setRetained(retained);
+        // Add correlation ID to the payload
+        String payloadWithCorrelationId = correlationId + ":" + payload;
+        mqttMessage.setPayload(payloadWithCorrelationId.getBytes());
         mqttClient.publish(topic, mqttMessage);
+    }
+//Publishes an error message to the error topic.
+    private void publishErrorMessage(String topic, String errorMessage, String correlationId) {
+        try {
+            AppointmentResponse errorResponse = new AppointmentResponse(false, errorMessage, null, null);
+            String payload = mapper.writeValueAsString(errorResponse);
+            publishMessage(ERROR_TOPIC, payload, false, correlationId);
+        } catch (Exception e) {
+            log.error("Error publishing error message", e);
+        }
+    }
+// Creates the payload for email notifications.
+
+    private String createEmailPayload(User user, TimeSlot timeSlot) {
+        return String.format("%s %s,%s,%s", 
+            user.getFirstName(), user.getLastName(), 
+            timeSlot.getOwner().getEmail(), timeSlot.getOwner().getOfficeName());
     }
 }

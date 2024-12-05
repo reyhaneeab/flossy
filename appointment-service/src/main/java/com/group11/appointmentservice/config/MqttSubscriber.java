@@ -24,8 +24,9 @@ public class MqttSubscriber {
         // called automatically when the application starts
         mqttClient.subscribe("appointment", (topic, message) -> {
             String request = new String(message.getPayload());
-            String response = appointmentService.createAppointment(request);
-    
+            appointmentService.handleRequest(request, message, topic);
+
+            String response = "Request processed";
             mqttClient.publish("appointment/response", new MqttMessage(response.getBytes()));
         });
     }
