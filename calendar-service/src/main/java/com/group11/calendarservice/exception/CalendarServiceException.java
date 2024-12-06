@@ -23,7 +23,7 @@ public class CalendarServiceException extends RuntimeException {
         super(message, cause);
     }
 
-    //Constructs a new CalendarServiceException with the specified cause and a
+    //Constructs a new CalendarServiceException with the specified cause
     public CalendarServiceException(Throwable cause) {
         super(cause);
     }
