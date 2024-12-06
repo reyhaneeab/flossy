@@ -44,7 +44,7 @@ export default {
   methods: {
     async fetchDentists() {
       try {
-        const response = await fetch('http://localhost:8080/api/dentists');
+        const response = await fetch('http://localhost:8084/api/dentists');
         this.dentists = await response.json();
       } catch (error) {
         console.error('Error fetching dentist offices:', error);
