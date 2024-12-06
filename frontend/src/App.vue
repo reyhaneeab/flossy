@@ -7,6 +7,7 @@
         <router-link to="/about">About</router-link>
         <router-link to="/contact">Contact</router-link>
         <router-link to="/calendar">Calendar</router-link>
+        <router-link to="/map">Map</router-link>
       </nav>
     </header>
 
@@ -16,8 +17,11 @@
 </template>
 
 <script>
+
+
 export default {
   name: "App",
+
 };
 </script>
 
