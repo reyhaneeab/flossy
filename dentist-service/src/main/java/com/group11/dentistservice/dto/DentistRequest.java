@@ -6,9 +6,12 @@ import java.util.List;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record DentistRequest(
-         String officeName,
-         String email,
-         String password,
-         String address,
-         String phone,
-         List<String>doctors) {}
+        String officeName,
+        String email,
+        String password,
+        String address,
+        String phone,
+        double latitude,
+        double longitude,
+        List<String> doctors) {
+}

@@ -5,8 +5,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import java.util.List;
 
-
-@Document(value="dentist_office")
+@Document(value = "dentist_office")
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
@@ -20,8 +19,6 @@ public class Dentist {
     private String address;
     private String phone;
     private List<String> doctors;
-
-
-
-
+    private double latitude;
+    private double longitude;
 }
