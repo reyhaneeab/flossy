@@ -3,7 +3,7 @@
     <GMapMap
       :center="mapCenter"
       :zoom="zoomLevel"
-      style="width: 100%; height: 100vh"
+      style="width: 100%; height: 100vh; position: relative;"
     >
       <GMapMarker
         v-for="dentist in dentists"
@@ -16,7 +16,6 @@
         icon="http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
       />
     </GMapMap>
-    <button @click="goToMyLocation" class="location-button">Go to My Location</button>
   </div>
 </template>
 
@@ -68,27 +67,10 @@ export default {
         );
       }
     },
-    goToMyLocation() {
-      if (this.userLocation) {
-        this.mapCenter = { ...this.userLocation };
-      } else {
-        this.watchUserLocation();
-      }
-    },
   },
 }
 </script>
 
 <style scoped>
-.location-button {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  padding: 10px 20px;
-  background-color: #42b983;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
+
 </style>
