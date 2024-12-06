@@ -4,6 +4,11 @@
     <div v-if="loading">Loading...</div>
     <div v-else-if="error">{{ error }}</div>
     <div v-else class="calendar">
+      <div>
+        <label for="weekNumber">Week Number:</label>
+        <input type="number" id="weekNumber" v-model="weekNumber" min="1" max="52">
+        <button @click="fetchTimeSlots">Fetch Calendar</button>
+      </div>
       <div v-for="day in days" :key="day.date" class="day">
         <h3>{{ formatDate(day.date) }}</h3>
         <div class="column-of-timeslots">
@@ -44,6 +49,14 @@ export default defineComponent({
     const MQTT_BROKER_URL = 'ws://localhost:1883';
     const CALENDAR_GET_TOPIC = 'calendar/get';
     const CALENDAR_GET_RESPONSE = 'calendar/get/response';
+    const weekNumber = ref(getCurrentWeekNumber());
+    const getCurrentWeekNumber = () => {
+      const now = new Date();
+      const start = new Date(now.getFullYear(), 0, 1);
+      const diff = now - start;
+      const oneWeek = 1000 * 60 * 60 * 24 * 7;
+      return Math.ceil((diff + start.getTimezoneOffset() * 60 * 1000) / oneWeek);
+    };
 
     const connectMqtt = () => {
 // Create and store MQTT client instance
@@ -73,7 +86,7 @@ export default defineComponent({
       loading.value = true;
       error.value = null;
       const request = {
-        weekNumber: 50,
+        weekNumber: weekNumber.value,
         ownerId: "674a2c3e3881dd327be177fd"
       };
       client.value.publish(CALENDAR_GET_TOPIC, JSON.stringify(request));
@@ -133,6 +146,8 @@ export default defineComponent({
       error,
       formatDate,
       selectSlot,
+      weekNumber,
+      fetchTimeSlots,
     };
   }
 });
