@@ -1,8 +1,8 @@
 <template>
   <div>
     <GMapMap
-      :center="{ lat: 60.128161, lng: 18.643501 }"
-      :zoom="5"
+      :center="mapCenter"
+      :zoom="zoomLevel"
       style="width: 100%; height: 100vh"
     >
       <GMapMarker
@@ -10,7 +10,13 @@
         :key="dentist.id"
         :position="{ lat: dentist.latitude, lng: dentist.longitude }"
       />
+      <GMapMarker
+        v-if="userLocation"
+        :position="userLocation"
+        icon="http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+      />
     </GMapMap>
+    <button @click="goToMyLocation" class="location-button">Go to My Location</button>
   </div>
 </template>
 
@@ -27,10 +33,14 @@ export default {
     return {
       dentists: [],
       markers: [],
+      mapCenter: { lat: 57.70887, lng: 11.97456 }, // Default to Gothenburg
+      zoomLevel: 12,
+      userLocation: null,
     };
   },
   mounted() {
     this.fetchDentists();
+    this.watchUserLocation();
   },
   methods: {
     async fetchDentists() {
@@ -41,10 +51,44 @@ export default {
         console.error('Error fetching dentist offices:', error);
       }
     },
+    watchUserLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.watchPosition(
+          position => {
+            this.userLocation = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            };
+            this.mapCenter = { ...this.userLocation };
+          },
+          error => {
+            console.error('Error getting user location:', error);
+          },
+          { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        );
+      }
+    },
+    goToMyLocation() {
+      if (this.userLocation) {
+        this.mapCenter = { ...this.userLocation };
+      } else {
+        this.watchUserLocation();
+      }
+    },
   },
 }
 </script>
 
 <style scoped>
-/* Remove styles related to the search bar */
+.location-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 10px 20px;
+  background-color: #42b983;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
 </style>

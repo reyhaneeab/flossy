@@ -10,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -19,13 +21,13 @@ public class DentistService {
     private final MqttClient mqttClient;
 
     private static final String DENTIST_REGISTRATION_TOPIC = "dentist/registration";
-    private static final String DENTIST_REGISTRATION_RESPONSE = DENTIST_REGISTRATION_TOPIC+"/response";
-    private static final String DENTIST_REGISTRATION_EMAIL = DENTIST_REGISTRATION_TOPIC+"/email";
+    private static final String DENTIST_REGISTRATION_RESPONSE = DENTIST_REGISTRATION_TOPIC + "/response";
+    private static final String DENTIST_REGISTRATION_EMAIL = DENTIST_REGISTRATION_TOPIC + "/email";
 
     @PostConstruct
     public void init() {
         try {
-            if(!mqttClient.isConnected()) {
+            if (!mqttClient.isConnected()) {
                 mqttClient.connect();
                 mqttClient.subscribe(DENTIST_REGISTRATION_TOPIC, 1);
             }
@@ -35,7 +37,7 @@ public class DentistService {
                     try {
                         mqttClient.disconnect();
                         mqttClient.close();
-                    }catch(Exception e){
+                    } catch (Exception e) {
                         log.info("Connection lost:" + e.getMessage());
                     }
                 }
@@ -43,10 +45,11 @@ public class DentistService {
                 @Override
                 public void messageArrived(String topic, MqttMessage mqttMessage) {
                     log.info("Message arrived: {}", mqttMessage.toString());
-                    try{
+                    try {
                         createDentist(mqttMessage);
+                    } catch (Exception e) {
+                        log.info(e.getMessage());
                     }
-                    catch (Exception e){log.info(e.getMessage());}
                 }
 
                 @Override
@@ -78,9 +81,14 @@ public class DentistService {
             log.info("Dentist Office {} has been registered successfully", dentist.getOfficeName());
             mqttClient.publish(DENTIST_REGISTRATION_RESPONSE, payload.getBytes(), 1, false);
             mqttClient.publish(DENTIST_REGISTRATION_EMAIL, emailPayload.getBytes(), 1, false);
+        } catch (Exception e) {
+            log.info(e.getMessage());
         }
-        catch (Exception e){log.info(e.getMessage());}
 
+    }
+
+    public List<Dentist> getAllDentists() {
+        return dentistRepository.findAll();
     }
 
 }
