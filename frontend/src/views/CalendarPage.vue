@@ -1,10 +1,10 @@
 <template>
   <div id="container">
-    <h1>Appointment calendar</h1>
+    <h1>Appointment Calendar</h1>
     <div v-if="loading">Loading...</div>
     <div v-else-if="error">{{ error }}</div>
     <div v-else class="calendar">
-      <div>
+      <div class="week-selector">
         <label for="weekNumber">Week Number:</label>
         <input type="number" id="weekNumber" v-model="weekNumber" min="1" max="52">
         <button @click="fetchTimeSlots">Fetch Calendar</button>
@@ -13,21 +13,22 @@
         <h3>{{ formatDate(day.date) }}</h3>
         <div class="column-of-timeslots">
           <button
-              v-for="slot in day.slots"
-              :key="slot.time"
-              :class="{ selected: slot.selected }"
-              @click="selectSlot(day, slot)"
+            v-for="slot in day.slots"
+            :key="slot.id"
+            :class="{ selected: slot.selected, booked: slot.booked }"
+            @click="selectSlot(day, slot)"
+            :disabled="slot.booked"
           >
-            {{ slot.time }}
+            {{ formatTime(slot.startTime) }}
           </button>
         </div>
       </div>
     </div>
-    <div v-if="selectedSlot">
+    <div v-if="selectedSlot" class="selected-slot">
       <h2>Selected Slot</h2>
       <p>
         Date: {{ formatDate(selectedSlot.date) }} <br />
-        Time: {{ selectedSlot.time }}
+        Time: {{ formatTime(selectedSlot.startTime) }} - {{ formatTime(selectedSlot.endTime) }}
       </p>
       <button @click="bookAppointment" :disabled="selectedSlot.booked">Book Appointment</button>
     </div>
@@ -35,114 +36,81 @@
 </template>
 
 <script>
-import { defineComponent, ref, onMounted, onUnmounted } from "vue";
-import mqtt from 'mqtt';
+import { defineComponent, ref, onMounted } from "vue";
 import { useStore } from 'vuex';
 
 export default defineComponent({
   setup() {
-    // Reactive references for component state
     const store = useStore();
     const selectedSlot = ref(null);
     const days = ref([]);
     const loading = ref(false);
     const error = ref(null);
-    const client = ref(null);
     const weekNumber = ref(getCurrentWeekNumber());
-// MQTT configuration
-    const MQTT_BROKER_URL = 'ws://localhost:1883';
-    const CALENDAR_GET_TOPIC = 'calendar/get';
-    const CALENDAR_GET_RESPONSE = 'calendar/get/response';
-    const APPOINTMENT_BOOK_TOPIC = 'appointment/book';
-    const APPOINTMENT_BOOK_RESPONSE = 'appointment/book/response';
 
-    const getCurrentWeekNumber = () => {
+    function getCurrentWeekNumber() {
       const now = new Date();
       const start = new Date(now.getFullYear(), 0, 1);
       const diff = now - start;
       const oneWeek = 1000 * 60 * 60 * 24 * 7;
       return Math.ceil((diff + start.getTimezoneOffset() * 60 * 1000) / oneWeek);
-    };
+    }
 
-    const connectMqtt = () => {
-// Create and store MQTT client instance
-      client.value = mqtt.connect(MQTT_BROKER_URL);
-// Set up event handlers for MQTT client
-      client.value.on('connect', () => {
-        console.log('Connected to MQTT broker');
-        client.value.subscribe(CALENDAR_GET_RESPONSE);
-        client.value.subscribe(APPOINTMENT_BOOK_RESPONSE);
+    function formatDate(dateString) {
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      return new Date(dateString).toLocaleDateString(undefined, options);
+    }
 
-// Fetch time slots once connected
-        fetchTimeSlots();
-      });
-// Handle incoming MQTT messages
-      client.value.on('message', (topic, message) => {
-        if (topic === CALENDAR_GET_RESPONSE) {
-// Parse and process the calendar data
-          handleCalendarResponse(JSON.parse(message.toString()));
-        }else if (topic === APPOINTMENT_BOOK_RESPONSE) {
-          handleBookingResponse(JSON.parse(message.toString()));
-        }
-      });
+    function formatTime(timeString) {
+      return new Date(timeString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
 
-      client.value.on('error', (err) => {
-        console.error('MQTT Error:', err);
-        error.value = "Failed to connect to the server. Please try again later.";
-      });
-    };
+    function selectSlot(day, slot) {
+      if (selectedSlot.value) {
+        selectedSlot.value.selected = false;
+      }
+      slot.selected = true;
+      selectedSlot.value = { ...slot, date: day.date };
+    }
 
-    const fetchTimeSlots = () => {
+    const fetchTimeSlots = async () => {
       loading.value = true;
       error.value = null;
-      const request = {
-        weekNumber: weekNumber.value,
-        ownerId: store.state.user.id
-      };
-      client.value.publish(CALENDAR_GET_TOPIC, JSON.stringify(request));
+      try {
+        const response = await fetch(`${import.meta.env.VITE_APIGATEWAY_URL}/calendar/get`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            weekNumber: weekNumber.value,
+            ownerId: store.state.user.id
+          })
+        });
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        handleCalendarResponse(data);
+      } catch (err) {
+        console.error('Error fetching time slots:', err);
+        error.value = "Failed to fetch time slots. Please try again later.";
+      } finally {
+        loading.value = false;
+      }
     };
 
     const handleCalendarResponse = (data) => {
-      const dayMap = {};
-
-      data.timeSlots.forEach(slot => {
-        const date = slot.date;
-        if (!dayMap[date]) {
-          dayMap[date] = {
-            date: date,
-            slots: []
-          };
-        }
-
-        dayMap[date].slots.push({
-          id: slot.id,
-          time: `${new Date(slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
-          booked: slot.booked,
-          selected: false,
-          startTime: slot.startTime,
-          endTime: slot.endTime
-        });
-      });
-
-      days.value = Object.values(dayMap);
-      loading.value = false;
+      days.value = data.map(day => ({
+        date: day.date,
+        slots: day.timeSlots.map(slot => ({
+          ...slot,
+          selected: false
+        }))
+      }));
     };
 
-    const selectSlot = (day, slot) => {
-      days.value.forEach(d => {
-        d.slots.forEach(s => {
-          s.selected = false;
-        });
-      });
-      slot.selected = true;
-      selectedSlot.value = { ...slot, date: day.date };
-    };
-
-    const formatDate = (dateString) => {
-      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-      return new Date(dateString).toLocaleDateString(undefined, options);
-    };
-    const bookAppointment = () => {
+    const bookAppointment = async () => {
       if (!selectedSlot.value || selectedSlot.value.booked) {
         return;
       }
@@ -150,12 +118,28 @@ export default defineComponent({
       const bookingRequest = {
         timeSlotId: selectedSlot.value.id,
         userId: store.state.user.id,
-        dentistId: store.state.user.id, // Assuming the logged-in user is the dentist
+        dentistId: selectedSlot.value.dentistId,
         startTime: selectedSlot.value.startTime,
         endTime: selectedSlot.value.endTime
       };
 
-      client.value.publish(APPOINTMENT_BOOK_TOPIC, JSON.stringify(bookingRequest));
+      try {
+        const response = await fetch(`${import.meta.env.VITE_APIGATEWAY_URL}/appointment/book`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(bookingRequest)
+        });
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        handleBookingResponse(data);
+      } catch (err) {
+        console.error('Error booking appointment:', err);
+        alert("Failed to book appointment. Please try again later.");
+      }
     };
 
     const handleBookingResponse = (response) => {
@@ -174,21 +158,17 @@ export default defineComponent({
         alert("Failed to book appointment: " + response.message);
       }
     };
-// Lifecycle hooks
-    onMounted(connectMqtt);
 
-    onUnmounted(() => {
-      if (client.value) {
-        client.value.end();
-      }
-    });
-// Return reactive references and methods for use in the template
+    // Lifecycle hooks
+    onMounted(fetchTimeSlots);
+
     return {
       days,
       selectedSlot,
       loading,
       error,
       formatDate,
+      formatTime,
       selectSlot,
       weekNumber,
       fetchTimeSlots,
@@ -197,7 +177,6 @@ export default defineComponent({
   }
 });
 </script>
-
 
 <style scoped>
 #container {
@@ -208,8 +187,14 @@ export default defineComponent({
 
 .calendar {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   gap: 20px;
+}
+
+.week-selector {
+  width: 100%;
+  margin-bottom: 20px;
 }
 
 .day {
@@ -217,11 +202,11 @@ export default defineComponent({
   padding: 20px;
   border-radius: 5px;
   background: #f9f9f9;
-  width: 400px;
+  width: 300px;
 }
 
 h3 {
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   margin-bottom: 10px;
 }
 
@@ -232,17 +217,16 @@ h3 {
 }
 
 button {
-  padding: 30px 50px;
+  padding: 10px;
   border: 1px solid #ddd;
   border-radius: 3px;
   background: #fff;
   cursor: pointer;
   transition: 0.3s;
-  font-size: 15px;
-  font-weight: bold;
+  font-size: 14px;
 }
 
-button:hover {
+button:hover:not(:disabled) {
   background: #eef;
 }
 
@@ -251,6 +235,7 @@ button.selected {
   border-color: #00f;
   color: #000;
 }
+
 button.booked {
   background: #f0f0f0;
   color: #888;
@@ -260,5 +245,9 @@ button.booked {
 button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.selected-slot {
+  margin-top: 20px;
 }
 </style>
