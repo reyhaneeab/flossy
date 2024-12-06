@@ -30,7 +30,7 @@ public class CalendarService {
     private static final String CALENDAR_GET_TOPIC = "calendar/get";
     private static final String CALENDAR_REGISTRATION_RESPONSE = CALENDAR_REGISTRATION_TOPIC + "/response";
     private static final String CALENDAR_GET_RESPONSE = CALENDAR_GET_TOPIC + "/response";
-
+// Connect to MQTT broker
     @PostConstruct
     public void init() {
         try {
@@ -73,18 +73,18 @@ public class CalendarService {
             log.error("Error initializing MQTT client", e);
         }
     }
-
+// Map TimeSlot to TimeSlotResponse
     private TimeSlotResponse mapToResponse(TimeSlot slot) {
         return new TimeSlotResponse(slot.getId(), slot.getDate(), slot.getStartTime(), slot.getEndTime(), slot.getOwner());
     }
-
+// Handle calendar creation
     public void createCalendar(MqttMessage message) throws Exception {
-
+// De-serialize request
         CalendarRequest request = mapper.readValue(message.getPayload(), CalendarRequest.class);
-
+// Find dentist by id and check if it exists
         Dentist dentist = dentistRepository.findById(request.ownerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Dentist office not found"));
-
+//Check if time slots are provided and not empty
         if(request.timeSlots() == null) throw new ResourceNotFoundException("TimeSlots not found");
         List<TimeSlot> timeSlots = request.timeSlots().stream().map(slotRequest -> {
             TimeSlot slot = new TimeSlot();
@@ -102,23 +102,24 @@ public class CalendarService {
         calendar.setTimeSlots(timeSlots);
         calendar.setWeekNumber(request.weekNumber());
         calendar.setYear(request.year());
-
+// Save calendar to DB and publish response
         calendarRepository.save(calendar);
         String payload = mapper.writeValueAsString(calendar);
         mqttClient.publish(CALENDAR_REGISTRATION_RESPONSE, payload.getBytes(), 1, true);
     }
 
     public void getCalendar(MqttMessage message) throws Exception {
+// De-serialize request
         CalendarRequest request = mapper.readValue(message.getPayload(), CalendarRequest.class);
-
+// Find dentist by id and check if it exists
         Dentist dentist = dentistRepository.findById(request.ownerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Dentist office not found"));
-
+// Check if calendar exists for the given week number and dentist
         Calendar calendar = calendarRepository.findByOwnerAndWeekNumber(dentist.getId(), request.weekNumber());
         if (calendar == null) {
             throw new ResourceNotFoundException("Calendar not found for dentist " + dentist.getOfficeName() + " and week number " + request.weekNumber());
         }
-
+//sets the owner of calendar to the dentist and publish response
          calendar.setOwner(dentist);
 
         String payload = mapper.writeValueAsString(calendar);
