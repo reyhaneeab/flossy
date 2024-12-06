@@ -29,6 +29,7 @@
         Date: {{ formatDate(selectedSlot.date) }} <br />
         Time: {{ selectedSlot.time }}
       </p>
+      <button @click="bookAppointment" :disabled="selectedSlot.booked">Book Appointment</button>
     </div>
   </div>
 </template>
@@ -36,20 +37,25 @@
 <script>
 import { defineComponent, ref, onMounted, onUnmounted } from "vue";
 import mqtt from 'mqtt';
+import { useStore } from 'vuex';
 
 export default defineComponent({
   setup() {
     // Reactive references for component state
+    const store = useStore();
     const selectedSlot = ref(null);
     const days = ref([]);
     const loading = ref(false);
     const error = ref(null);
     const client = ref(null);
+    const weekNumber = ref(getCurrentWeekNumber());
 // MQTT configuration
     const MQTT_BROKER_URL = 'ws://localhost:1883';
     const CALENDAR_GET_TOPIC = 'calendar/get';
     const CALENDAR_GET_RESPONSE = 'calendar/get/response';
-    const weekNumber = ref(getCurrentWeekNumber());
+    const APPOINTMENT_BOOK_TOPIC = 'appointment/book';
+    const APPOINTMENT_BOOK_RESPONSE = 'appointment/book/response';
+
     const getCurrentWeekNumber = () => {
       const now = new Date();
       const start = new Date(now.getFullYear(), 0, 1);
@@ -65,6 +71,8 @@ export default defineComponent({
       client.value.on('connect', () => {
         console.log('Connected to MQTT broker');
         client.value.subscribe(CALENDAR_GET_RESPONSE);
+        client.value.subscribe(APPOINTMENT_BOOK_RESPONSE);
+
 // Fetch time slots once connected
         fetchTimeSlots();
       });
@@ -73,6 +81,8 @@ export default defineComponent({
         if (topic === CALENDAR_GET_RESPONSE) {
 // Parse and process the calendar data
           handleCalendarResponse(JSON.parse(message.toString()));
+        }else if (topic === APPOINTMENT_BOOK_RESPONSE) {
+          handleBookingResponse(JSON.parse(message.toString()));
         }
       });
 
@@ -87,7 +97,7 @@ export default defineComponent({
       error.value = null;
       const request = {
         weekNumber: weekNumber.value,
-        ownerId: "674a2c3e3881dd327be177fd"
+        ownerId: store.state.user.id
       };
       client.value.publish(CALENDAR_GET_TOPIC, JSON.stringify(request));
     };
@@ -109,6 +119,8 @@ export default defineComponent({
           time: `${new Date(slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
           booked: slot.booked,
           selected: false,
+          startTime: slot.startTime,
+          endTime: slot.endTime
         });
       });
 
@@ -130,6 +142,38 @@ export default defineComponent({
       const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
       return new Date(dateString).toLocaleDateString(undefined, options);
     };
+    const bookAppointment = () => {
+      if (!selectedSlot.value || selectedSlot.value.booked) {
+        return;
+      }
+
+      const bookingRequest = {
+        timeSlotId: selectedSlot.value.id,
+        userId: store.state.user.id,
+        dentistId: store.state.user.id, // Assuming the logged-in user is the dentist
+        startTime: selectedSlot.value.startTime,
+        endTime: selectedSlot.value.endTime
+      };
+
+      client.value.publish(APPOINTMENT_BOOK_TOPIC, JSON.stringify(bookingRequest));
+    };
+
+    const handleBookingResponse = (response) => {
+      if (response.success) {
+        // Update the local state to reflect the booked appointment
+        days.value.forEach(day => {
+          day.slots.forEach(slot => {
+            if (slot.id === response.timeSlotId) {
+              slot.booked = true;
+            }
+          });
+        });
+        selectedSlot.value.booked = true;
+        alert("Appointment booked successfully!");
+      } else {
+        alert("Failed to book appointment: " + response.message);
+      }
+    };
 // Lifecycle hooks
     onMounted(connectMqtt);
 
@@ -148,6 +192,7 @@ export default defineComponent({
       selectSlot,
       weekNumber,
       fetchTimeSlots,
+      bookAppointment
     };
   }
 });
@@ -205,5 +250,15 @@ button.selected {
   background: #add8e6;
   border-color: #00f;
   color: #000;
+}
+button.booked {
+  background: #f0f0f0;
+  color: #888;
+  cursor: not-allowed;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style>
