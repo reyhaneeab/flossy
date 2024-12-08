@@ -45,7 +45,12 @@ export default {
     async fetchDentists() {
       try {
         const response = await fetch('http://localhost:8084/api/dentists');
-        this.dentists = await response.json();
+        const data = await response.json();
+        this.dentists = data.map(dentist => ({
+          ...dentist,
+          latitude: parseFloat(dentist.latitude),
+          longitude: parseFloat(dentist.longitude),
+        }));
       } catch (error) {
         console.error('Error fetching dentist offices:', error);
       }

@@ -18,7 +18,8 @@ public class Dentist {
     private String password;
     private String address;
     private String phone;
-    private List<String> doctors;
     private double latitude;
     private double longitude;
+    private List<String> doctors;
+
 }
