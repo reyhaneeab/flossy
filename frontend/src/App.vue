@@ -7,6 +7,7 @@
         <router-link to="/about">About</router-link>
         <router-link to="/contact">Contact</router-link>
         <router-link to="/calendar">Calendar</router-link>
+        <router-link to="/appointments">My Appointments</router-link>
       </nav>
     </header>
 
