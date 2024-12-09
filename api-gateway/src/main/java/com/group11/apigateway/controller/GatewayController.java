@@ -1,6 +1,9 @@
 package com.group11.apigateway.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.group11.apigateway.config.MqttConfig;
 import com.group11.apigateway.handler.MqttHandler;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +20,12 @@ public class GatewayController {
     private static final Logger logger = Logger.getLogger(GatewayController.class.getName());
 
     private final MqttHandler mqttHandler;
+    @Autowired
+    private MqttConfig mqttConfig;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
 
     public GatewayController(MqttHandler mqttHandler) {
         this.mqttHandler = mqttHandler;
@@ -26,9 +35,19 @@ public class GatewayController {
     public ResponseEntity<JsonNode> handleRequest(
             @PathVariable String entity,
             @PathVariable String action,
-            @RequestBody Object requestBody) {
-        return processRequest(entity, action, requestBody);
+            @RequestBody JsonNode requestBody) throws Exception {
+        // Construct the MQTT topic from the entity and action
+        String topic = String.format("%s/%s", entity, action);
+        // Convert the request body to a JSON string
+        String payload = objectMapper.writeValueAsString(requestBody);
+        // Publish the message and wait for the response
+        String response = mqttConfig.publishAndReceive(topic, payload);
+        // Parse the response string back into a JsonNode
+        JsonNode responseJson = objectMapper.readTree(response);
+
+        return ResponseEntity.ok(responseJson);
     }
+
 
     @GetMapping("/{entity}/{action}")
     public ResponseEntity<JsonNode> handleGetRequest(
