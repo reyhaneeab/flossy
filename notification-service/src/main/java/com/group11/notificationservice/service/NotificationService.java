@@ -45,7 +45,7 @@ public class NotificationService {
         handlers.put("DENTIST_REGISTRATION", new DentistRegistrationHandler(emailEngine));
         handlers.put("USER_REGISTRATION", new UserRegistrationHandler(emailEngine));
         handlers.put("DENTIST_BOOKING", new DentistBookingHandler(emailEngine));
-        // Add more handlers as needed
+
     }
 
     public String handleRequest(String request) {
