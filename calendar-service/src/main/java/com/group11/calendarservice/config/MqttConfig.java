@@ -20,11 +20,6 @@ public class MqttConfig {
     @Value("${mqtt.client.id}")
     private String clientId;
 
-    @Value("${mqtt.username}")
-    private String username;
-
-    @Value("${mqtt.password}")
-    private String password;
 
     @Bean
     public MqttClient mqttClient() throws MqttException {
@@ -35,8 +30,6 @@ public class MqttConfig {
         options.setConnectionTimeout(30);
         options.setKeepAliveInterval(60);
         options.setAutomaticReconnect(true);
-        options.setUserName(username);
-        options.setPassword(password.toCharArray());
 
         try {
             logger.info("Attempting to connect MQTT client...");

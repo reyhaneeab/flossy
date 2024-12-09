@@ -1,39 +1,35 @@
 package com.group11.appointmentservice.config;
 
-import org.eclipse.paho.client.mqttv3.MqttClient;
-import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
-import org.springframework.beans.factory.annotation.Value;
 
 @Configuration
 public class MqttConfig {
 
+    // Inject the MQTT broker URL from application properties
     @Value("${mqtt.broker.url}")
     private String brokerUrl;
 
+    // Inject the MQTT client ID from application properties
     @Value("${mqtt.client.id}")
     private String clientId;
 
-    @Value("${mqtt.username}")
-    private String username;
-
-    @Value("${mqtt.password}")
-    private String password;
-
     @Bean
     public MqttClient mqttClient() throws MqttException {
-        MqttClient client = new MqttClient(brokerUrl, clientId);
+        // Create a new MQTT client with the specified broker URL and client ID
+        MqttClient mqttClient = new MqttClient(brokerUrl, clientId);
+
+        // Configure MQTT connection options
         MqttConnectOptions options = new MqttConnectOptions();
-        // ensure a clean session for each connection
-        options.setCleanSession(true);
-        options.setConnectionTimeout(30);
-        options.setKeepAliveInterval(60);
-        options.setAutomaticReconnect(true);
-        options.setUserName(username);
-        options.setPassword(password.toCharArray());
-        client.connect(options);
-        return client;
+        options.setCleanSession(true);  // Start a clean session on each connect
+        options.setConnectionTimeout(30);  // Set connection timeout to 30 seconds
+        options.setKeepAliveInterval(60);  // Send keep alive message every 60 seconds
+        options.setAutomaticReconnect(true);  // Enable automatic reconnection
+
+         mqttClient.connect(options);
+
+         return mqttClient;
     }
 }

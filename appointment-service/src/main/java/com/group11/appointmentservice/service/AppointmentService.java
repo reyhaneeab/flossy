@@ -21,13 +21,22 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
-public class AppointmentService {
+public class AppointmentService implements MqttMessageHandler {
 
     private final TimeSlotRepository timeSlotRepository;
     private final UserRepository userRepository;
     private final ObjectMapper mapper;
     private final MqttClient mqttClient;
+    public AppointmentService(TimeSlotRepository timeSlotRepository,
+                              UserRepository userRepository,
+                              ObjectMapper mapper,
+                              MqttClient mqttClient) {
+        this.timeSlotRepository = timeSlotRepository;
+        this.userRepository = userRepository;
+        this.mapper = mapper;
+        this.mqttClient = mqttClient;
+    }
+
     // MQTT topic constants
     private static final String APPOINTMENT_TOPIC_BASE = "appointment/";
     private static final String BOOK_APPOINTMENT_TOPIC = APPOINTMENT_TOPIC_BASE + "book";
@@ -40,86 +49,64 @@ public class AppointmentService {
     private static final int RECONNECT_DELAY_SECONDS = 5;
 
     @PostConstruct
-    public void init() {
-        connectMqttClient();
-    }
-// Connects the MQTT client and sets up subscriptions.
-    private void connectMqttClient() {
-        try {
-            if (!mqttClient.isConnected()) {
-                log.info("Attempting to connect MQTT client...");
-                mqttClient.connect();
-                mqttClient.subscribe(BOOK_APPOINTMENT_TOPIC, 2);
-                mqttClient.subscribe(CANCEL_APPOINTMENT_TOPIC, 2);
-                setMqttCallback();
-                log.info("MQTT client connected successfully");
-            }
-        } catch (MqttException e) {
-            log.error("Error connecting MQTT client", e);
-            scheduleReconnection();
-        }
-    }
-// Sets up the MQTT callback for handling incoming messages and connection issues.
-
-    private void setMqttCallback() {
-        mqttClient.setCallback(new MqttCallback() {
-            @Override
-            public void connectionLost(Throwable cause) {
-                log.error("MQTT connection lost", cause);
-                scheduleReconnection();
-            }
-
-            @Override
-            public void messageArrived(String topic, MqttMessage message) throws Exception {
-                log.info("Message arrived on topic: {}", topic);
-                try {
-                    String correlationId = UUID.randomUUID().toString();
-                    handleRequest(topic, message, correlationId);
-                } catch (Exception e) {
-                    log.error("Error processing message on topic: {}", topic, e);
-                    publishErrorMessage(ERROR_TOPIC, e.getMessage(), UUID.randomUUID().toString());
-                }
-            }
-
-            @Override
-            public void deliveryComplete(IMqttDeliveryToken token) {
-                try {
-                    log.info("Message delivery complete. Topic: {}, Message ID: {}",
-                            token.getTopics(), token.getMessage().getId());
-                } catch (MqttException e) {
-                    log.error("Error getting delivery token details", e);
-                }
-            }
+    public void setupMqttSubscription() throws MqttException {
+        mqttClient.subscribe("appointment/#", (topic, message) -> {
+            String correlationId = UUID.randomUUID().toString();
+            handleMessage(topic, message, correlationId);
         });
     }
 
-    private void scheduleReconnection() {
-        scheduler.schedule(this::connectMqttClient, RECONNECT_DELAY_SECONDS, TimeUnit.SECONDS);
-    }
-// Cleans up resources when the service is being destroyed.
-    @PreDestroy
-    public void cleanup() {
+    @PostConstruct
+    public void init() {
         try {
-            if (mqttClient.isConnected()) {
-                mqttClient.disconnect();
-            }
-            scheduler.shutdown();
+            connectMqttClient();
         } catch (MqttException e) {
-            log.error("Error during cleanup", e);
+            log.error("Failed to connect to MQTT broker", e);
+            scheduleReconnection();
         }
     }
-// Handles incoming MQTT requests based on the topic.
-    public void handleRequest(String topic, MqttMessage message, String correlationId) throws Exception {
+
+    private void connectMqttClient() throws MqttException {
+        if (!mqttClient.isConnected()) {
+            mqttClient.connect();
+            mqttClient.subscribe(BOOK_APPOINTMENT_TOPIC);
+            mqttClient.subscribe(CANCEL_APPOINTMENT_TOPIC);
+            log.info("Connected to MQTT broker and subscribed to topics");
+        }
+    }
+
+    private void scheduleReconnection() {
+        scheduler.schedule(() -> {
+            try {
+                connectMqttClient();
+            } catch (MqttException e) {
+                log.error("Reconnection attempt failed", e);
+                scheduleReconnection();
+            }
+        }, RECONNECT_DELAY_SECONDS, TimeUnit.SECONDS);
+    }
+    public void handleMessage(String topic, MqttMessage message, String correlationId) {
         String payload = new String(message.getPayload());
-        if (topic.equals(BOOK_APPOINTMENT_TOPIC)) {
-            bookAppointment(payload, correlationId);
-        } else if (topic.equals(CANCEL_APPOINTMENT_TOPIC)) {
-            cancelAppointment(payload, correlationId);
-        } else {
-            log.warn("Received message on unexpected topic: {}", topic);
+        log.info("Handling message on topic: {} with correlationId: {}", topic, correlationId);
+
+        try {
+            switch (topic) {
+                case BOOK_APPOINTMENT_TOPIC:
+                    bookAppointment(payload, correlationId);
+                    break;
+                case CANCEL_APPOINTMENT_TOPIC:
+                    cancelAppointment(payload, correlationId);
+                    break;
+                default:
+                    log.warn("Received message on unexpected topic: {}", topic);
+                    publishErrorMessage(ERROR_TOPIC, "Unexpected topic: " + topic, correlationId);
+            }
+        } catch (Exception e) {
+            log.error("Error processing message on topic: {}", topic, e);
+            publishErrorMessage(ERROR_TOPIC, "Error processing message: " + e.getMessage(), correlationId);
         }
     }
-// Processes a booking appointment request.
+
     private void bookAppointment(String payload, String correlationId) throws Exception {
         BookAppointmentRequest request = mapper.readValue(payload, BookAppointmentRequest.class);
         String timeSlotId = request.getTimeSlotId();
@@ -153,7 +140,7 @@ public class AppointmentService {
             publishErrorMessage(RESPONSE_TOPIC, e.getMessage(), correlationId);
         }
     }
-// Processes a canceling appointment request.
+
     private void cancelAppointment(String payload, String correlationId) throws Exception {
         BookAppointmentRequest request = mapper.readValue(payload, BookAppointmentRequest.class);
         String timeSlotId = request.getTimeSlotId();
@@ -188,7 +175,7 @@ public class AppointmentService {
             publishErrorMessage(RESPONSE_TOPIC, e.getMessage(), correlationId);
         }
     }
-// Publishes a message to the specified MQTT topic.
+
     private void publishMessage(String topic, String payload, boolean retained, String correlationId) throws MqttException {
         MqttMessage mqttMessage = new MqttMessage(payload.getBytes());
         mqttMessage.setQos(2);
@@ -198,7 +185,7 @@ public class AppointmentService {
         mqttMessage.setPayload(payloadWithCorrelationId.getBytes());
         mqttClient.publish(topic, mqttMessage);
     }
-//Publishes an error message to the error topic.
+
     private void publishErrorMessage(String topic, String errorMessage, String correlationId) {
         try {
             AppointmentResponse errorResponse = new AppointmentResponse(false, errorMessage, null, null);
@@ -208,11 +195,25 @@ public class AppointmentService {
             log.error("Error publishing error message", e);
         }
     }
-// Creates the payload for email notifications.
 
     private String createEmailPayload(User user, TimeSlot timeSlot) {
-        return String.format("%s %s,%s,%s", 
-            user.getFirstName(), user.getLastName(), 
-            timeSlot.getOwner().getEmail(), timeSlot.getOwner().getOfficeName());
+        return String.format("%s %s,%s,%s",
+                user.getFirstName(), user.getLastName(),
+                timeSlot.getOwner().getEmail(), timeSlot.getOwner().getOfficeName());
+    }
+
+    
+
+// Cleans up resources when the service is being destroyed.
+    @PreDestroy
+    public void cleanup() {
+        try {
+            if (mqttClient.isConnected()) {
+                mqttClient.disconnect();
+            }
+            scheduler.shutdown();
+        } catch (MqttException e) {
+            log.error("Error during cleanup", e);
+        }
     }
 }
