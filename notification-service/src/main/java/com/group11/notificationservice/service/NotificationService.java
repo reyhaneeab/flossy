@@ -22,38 +22,39 @@ public class NotificationService {
 
     // Define topics
     private static final String[] topics = {
-            "dentist/registration/email",
-            "timeSlot/book/email"
+            "dentist/registration/response",
+            "timeSlot/book/response",
+            "timeSlot/cancel/response",
     };
 
     // PostConstruct to set up subscriptions
     @PostConstruct
     public void init() {
         try {
-            // Connect and subscribe to the relevant topic
             if (!mqttClient.isConnected()) {
-                mqttClient.connect();
+                MqttConnectOptions options = new MqttConnectOptions();
+                options.setAutomaticReconnect(true);
+                options.setCleanSession(false);
+                options.setConnectionTimeout(10);
+                options.setKeepAliveInterval(60);
+                mqttClient.connect(options);
             }
 
             for (String topic : topics) {
-                mqttClient.subscribe(topic,1);
+                mqttClient.subscribe(topic, 1);
                 log.info("Subscribed to topic: {}", topic);
             }
 
             handlers.put(topics[0], new DentistRegistrationHandler(new EmailEngine(mailSender)));
             handlers.put(topics[1], new DentistBookingHandler(new EmailEngine(mailSender)));
+            handlers.put(topics[2], new DentistCancellationHandler(new EmailEngine(mailSender)));
 
             mqttClient.setCallback(new MqttCallback() {
                 @Override
                 public void connectionLost(Throwable cause) {
-                    try {
-                        mqttClient.disconnect();
-                        mqttClient.close();
-                    }
-                    catch (MqttException e) {
-                        log.error(e.getMessage());
-                    }
+                    log.error("Connection lost", cause);
                 }
+
 
                 @Override
                 public void messageArrived(String topic, MqttMessage message) {
@@ -68,9 +69,10 @@ public class NotificationService {
             });
 
         } catch (MqttException e) {
-            log.error(e.getMessage());
+            log.error("Error initializing MQTT client: {}", e.getMessage());
         }
     }
+
 
     private void handleMessage(String topic, String payload) {
         NotificationHandler handler = handlers.get(topic);

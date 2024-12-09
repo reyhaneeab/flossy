@@ -1,30 +1,50 @@
 package com.group11.notificationservice.handler;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.group11.dto.DentistResponse;
 import com.group11.notificationservice.engine.EmailEngine;
-import jakarta.mail.MessagingException;
+import lombok.extern.slf4j.Slf4j;
 
+
+@Slf4j
 public class DentistRegistrationHandler implements NotificationHandler{
 
     private final EmailEngine emailEngine;
+    private final ObjectMapper mapper;
 
     public DentistRegistrationHandler(EmailEngine emailEngine) {
-       this.emailEngine = emailEngine;
+        this.mapper = new ObjectMapper();
+        this.emailEngine = emailEngine;
    }
 
     @Override
-    public void process(String payload) throws MessagingException {
-        String[] details = payload.split(",");
-        String email = details[0];
-        String name = details[1];
-        String content = String.format(
-                "Dear %s,\n\n" +
-                        "Welcome to Flossy!\n\n" +
-                        "We are thrilled to have you join our platform. Flossy is dedicated to helping professionals like you connect with patients efficiently and grow your practice.\n\n" +
-                        "If you have any questions or need assistance getting started, please do not hesitate to reach out to our support team.\n\n" +
-                        "Best regards,\n" +
-                        "The Flossy Team",
-                name
-        );
-        emailEngine.sendEmail(email, "Welcome to Flossy", content);
+    public void process(String payload){
+        try {
+            DentistResponse response = mapper.readValue(payload, DentistResponse.class);
+
+            String content = String.format(
+                    """
+                            Dear Owner of %s,
+                            
+                            Welcome to Flossy!
+                            
+                            We are thrilled to have you join our platform. Flossy is dedicated to helping professionals like you connect with patients efficiently and grow your practice.
+                            
+                            Your dentist office with an address: %s, will be visible on the map shortly!
+                         
+                            If you have any questions or need assistance getting started, please do not hesitate to reach out to our support team.
+                            
+                            
+                            Best regards,
+                            The Flossy Team""",
+                    response.officeName(), response.address()
+            );
+
+            emailEngine.sendEmail(response.email(), "Welcome to Flossy", content);
+        }
+        catch (Exception e) {
+                log.info("Error occurred when trying to send email: ", e);
+            }
+        }
     }
-}
+
