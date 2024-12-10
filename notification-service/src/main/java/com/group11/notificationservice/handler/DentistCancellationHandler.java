@@ -1,38 +1,49 @@
 package com.group11.notificationservice.handler;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.group11.model.TimeSlot;
 import com.group11.notificationservice.engine.EmailEngine;
-import jakarta.mail.MessagingException;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class DentistCancellationHandler implements NotificationHandler{
     private final EmailEngine emailEngine;
+    private final ObjectMapper mapper;
 
-    public DentistCancellationHandler(EmailEngine emailEngine) {
+    public DentistCancellationHandler(EmailEngine emailEngine, ObjectMapper mapper) {
+        this.mapper = mapper;
         this.emailEngine = emailEngine;
     }
 
     @Override
-    public void process(String payload) throws MessagingException {
-        String[] details = payload.split(",");
-        String user = details[0];
-        String officeEmail = details[1];
-
-        String officeName = details[2];
-        String content = String.format(
-                "Dear %s,\n\n" +
-                        "We are pleased to inform you that %s has successfully booked one of your available time slots.\n\n" +
-                        "Here are the booking details:\n" +
-                        "...\n\n" +
-                        "Thank you for using our service. If you have any questions or need further assistance, please feel free to reach out.\n\n" +
-                        "Best regards,\n" +
-                        "The Flossy Team",
-                officeName, user
-        );
+    public void process(String payload) {
         try {
-            emailEngine.sendEmail(officeEmail, "New Booking", content);
+            TimeSlot timeSlot = mapper.readValue(payload, TimeSlot.class);
+
+            String content = String.format(
+                    """
+                            Dear owner of %s,
+                            
+                            We are sorry to inform you that one of your appointments has unfortunately been cancelled.
+                            
+                            Don't give up yet though, this appointment is now available to be booked again:
+                            
+                            Date: %s
+                            Start: %s
+                            End: %s
+                            Doctor: %s
+                            
+                            Thank you for using our service. If you have any questions or need further assistance, please feel free to reach out.
+                            
+                            Best regards,
+                            The Flossy Team""",
+                    timeSlot.getOwner().getOfficeName(), timeSlot.getDate(),
+                    timeSlot.getStartTime(), timeSlot.getEndTime(), timeSlot.getDentistName()
+            );
+
+            emailEngine.sendEmail(timeSlot.getOwner().getEmail(), "Booking Cancelled", content);
         }
-        catch (MessagingException e) {
+        catch (Exception e) {
             log.info("Error occurred when trying to send email: ", e);
         }
     }

@@ -1,7 +1,7 @@
 package com.group11.notificationservice.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.group11.dto.DentistResponse;
+import com.group11.model.Dentist;
 import com.group11.notificationservice.engine.EmailEngine;
 import lombok.extern.slf4j.Slf4j;
 
@@ -20,7 +20,7 @@ public class DentistRegistrationHandler implements NotificationHandler{
     @Override
     public void process(String payload){
         try {
-            DentistResponse response = mapper.readValue(payload, DentistResponse.class);
+            Dentist dentist = mapper.readValue(payload, Dentist.class);
 
             String content = String.format(
                     """
@@ -37,10 +37,10 @@ public class DentistRegistrationHandler implements NotificationHandler{
                             
                             Best regards,
                             The Flossy Team""",
-                    response.officeName(), response.address()
+                    dentist.getOfficeName(), dentist.getAddress()
             );
 
-            emailEngine.sendEmail(response.email(), "Welcome to Flossy", content);
+            emailEngine.sendEmail(dentist.getEmail(), "Welcome to Flossy", content);
         }
         catch (Exception e) {
                 log.info("Error occurred when trying to send email: ", e);

@@ -50,7 +50,7 @@ public class NotificationService {
 
             handlers.put(topics[0], new DentistRegistrationHandler(new EmailEngine(mailSender), mapper));
             handlers.put(topics[1], new DentistBookingHandler(new EmailEngine(mailSender), mapper));
-            handlers.put(topics[2], new DentistCancellationHandler(new EmailEngine(mailSender)));
+            handlers.put(topics[2], new DentistCancellationHandler(new EmailEngine(mailSender), mapper));
 
             mqttClient.setCallback(new MqttCallback() {
                 @Override

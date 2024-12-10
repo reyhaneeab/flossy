@@ -93,8 +93,10 @@ public class AppointmentService {
             timeSlot.setBooked(true);
             timeSlot.setBookedBy(user);
             timeSlotRepository.save(timeSlot);
+
             String payload = mapper.writeValueAsString(timeSlot);
             mqttClient.publish(BOOK_APPOINTMENT_RESPONSE, payload.getBytes() , 1, false);
+            log.info("Booking successful for UserId: {} and TimeSlotId: {}", request.getUserId(), request.getTimeSlotId());
         }
 
     }
@@ -120,10 +122,8 @@ public class AppointmentService {
             timeSlot.setBookedBy(null);
             timeSlotRepository.save(timeSlot);
 
-            String payload = user.getFirstName() + " " + user.getLastName() + "," +
-                    timeSlot.getOwner().getEmail() + "," + timeSlot.getOwner().getOfficeName();
+            String payload = mapper.writeValueAsString(timeSlot);
             mqttClient.publish(CANCEL_APPOINTMENT_RESPONSE, payload.getBytes(), 1, false);
-
             log.info("Cancellation successful for UserId: {} and TimeSlotId: {}", request.getUserId(), request.getTimeSlotId());
         }
     }
