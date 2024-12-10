@@ -17,11 +17,17 @@
       </div>
     </div>
     <div v-if="selectedSlot">
-      <h2>Selected Slot</h2>
+      <h2>Selected Time Slot</h2>
       <p>
         Date: {{ formatDate(selectedSlot.date) }} <br />
         Time: {{ selectedSlot.time }}
       </p>
+      <div @click="book">BOOK APPOINTMENT</div>
+      <div v-if="showBooking" class="alert-box">
+        <p>Are you sure you want to book this appointment?</p>
+        <button @click="confirmCancel">Yes</button>
+        <button @click="closeAlert">No</button>
+      </div>
     </div>
   </div>
 </template>
@@ -32,6 +38,7 @@ import { defineComponent, ref, onMounted } from "vue";
 export default defineComponent({
   setup() {
     const selectedSlot = ref(null);
+    const showBooking = ref(false);
     const days = ref([]);
     const URL = `http://localhost:8091/api/calendar/get`
 
@@ -95,6 +102,20 @@ export default defineComponent({
       const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
       return new Date(dateString).toLocaleDateString(undefined, options);
     };
+    const book = ()=>{
+      showBooking.value = true;
+    };
+
+    const confirmBooking = ()=>{
+      alert(
+          'Your appointment has been successfully booked'
+      );
+      showBooking.value=false;
+    };
+
+    const closeAlert = ()=>{
+      showBooking.value=false;
+    };
 
     onMounted(() => {
       fetchTimeSlots();
@@ -103,8 +124,12 @@ export default defineComponent({
     return {
       days,
       selectedSlot,
+      showBooking,
       formatDate,
       selectSlot,
+      book,
+      confirmBooking,
+      closeAlert,
     };
   },
 });
@@ -161,5 +186,42 @@ button.selected {
   background: #add8e6;
   border-color: #00f;
   color: #000;
+}
+
+.alert-box {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border: 1px solid #ccc;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+.alert-box p {
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+}
+
+.alert-box button {
+  margin: 0 10px;
+  padding: 10px 20px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.alert-box button:first-child {
+  background-color: #add8e6;
+  color: white;
+}
+
+.alert-box button:last-child {
+  background-color: #dc3545;
+  color: white;
 }
 </style>
