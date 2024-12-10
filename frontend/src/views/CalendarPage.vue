@@ -1,24 +1,31 @@
 <template>
-  <div id="container">
-    <h1>Appointment calendar</h1>
-    <div class="calendar">
-      <div v-for="day in days" :key="day.date" class="day">
-        <h3>{{ formatDate(day.date) }}</h3>
-        <div class="column-of-timeslots">
-          <button
-              v-for="slot in day.slots"
-              :key="slot.time"
-              :class="{ selected: slot.selected }"
-              @click="selectSlot(day, slot)"
-          >
-            {{ slot.time }}
-          </button>
+  <div class="container mt-4">
+    <h1 class="text-center mb-4">Appointment Calendar</h1>
+    <div class="row">
+      <div v-for="day in days" :key="day.date" class="col-md-6 col-lg-4 mb-4">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">{{ formatDate(day.date) }}</h3>
+          </div>
+          <div class="card-body">
+            <div class="d-flex flex-column">
+              <button
+                v-for="slot in day.slots"
+                :key="slot.time"
+                class="btn btn-outline-primary mb-2"
+                :class="{ 'btn-primary text-white': slot.selected }"
+                @click="selectSlot(day, slot)"
+              >
+                {{ slot.time }}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-    <div v-if="selectedSlot">
-      <h2>Selected Slot</h2>
-      <p>
+    <div v-if="selectedSlot" class="mt-4">
+      <h2 class="text-center">Selected Slot</h2>
+      <p class="text-center">
         Date: {{ formatDate(selectedSlot.date) }} <br />
         Time: {{ selectedSlot.time }}
       </p>
@@ -111,55 +118,5 @@ export default defineComponent({
 </script>
 
 <style scoped>
-#container {
-  font-family: "Avenir", Helvetica, Arial, sans-serif;
-  text-align: center;
-  margin: 20px;
-}
 
-.calendar {
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-}
-
-.day {
-  border: 1px solid #ddd;
-  padding: 20px;
-  border-radius: 5px;
-  background: #f9f9f9;
-  width: 400px;
-}
-
-h3 {
-  font-size: 1.5rem;
-  margin-bottom: 10px;
-}
-
-.column-of-timeslots {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-button {
-  padding: 30px 50px;
-  border: 1px solid #ddd;
-  border-radius: 3px;
-  background: #fff;
-  cursor: pointer;
-  transition: 0.3s;
-  font-size: 15px;
-  font-weight: bold;
-}
-
-button:hover {
-  background: #eef;
-}
-
-button.selected {
-  background: #add8e6;
-  border-color: #00f;
-  color: #000;
-}
 </style>
