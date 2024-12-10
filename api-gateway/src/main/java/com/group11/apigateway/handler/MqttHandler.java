@@ -5,6 +5,7 @@ import com.group11.apigateway.config.MqttConfig;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.paho.client.mqttv3.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -15,8 +16,12 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class MqttHandler {
 
-    private final IMqttClient mqttClient = MqttConfig.getClient();
+    private final MqttClient mqttClient ;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    @Autowired
+    public MqttHandler(MqttClient mqttClient) {
+        this.mqttClient = mqttClient;
+    }
 
     public JsonNode forwardRequest(String topic, Object requestBody) throws Exception {
         String responseTopic = topic + "/response";
@@ -41,7 +46,7 @@ public class MqttHandler {
             latch.countDown();
         });
 
-        if (!latch.await(5, TimeUnit.SECONDS)) {
+        if (!latch.await(15, TimeUnit.SECONDS)) {
             throw new ResponseStatusException(HttpStatus.REQUEST_TIMEOUT, "MQTT response timed out");
         }
 

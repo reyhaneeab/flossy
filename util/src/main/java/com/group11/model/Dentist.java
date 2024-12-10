@@ -22,4 +22,11 @@ public class Dentist {
     private double longitude;
     private List<String> doctors;
 
+<<<<<<< HEAD
+=======
+
+    public String getName() {
+        return officeName;
+    }
+>>>>>>> origin/9-implement-api-gateway
 }
