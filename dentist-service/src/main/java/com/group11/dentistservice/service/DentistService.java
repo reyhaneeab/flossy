@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -92,5 +94,9 @@ public class DentistService {
         } catch (Exception e) {
             log.error("Error publishing dentist registration", e);
         }
+    }
+
+    public List<Dentist> getAllDentists() {
+        return dentistRepository.findAll();
     }
 }
