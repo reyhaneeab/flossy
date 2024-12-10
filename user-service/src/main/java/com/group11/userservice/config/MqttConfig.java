@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationContext;
 
 import javax.annotation.PostConstruct;
 import java.util.UUID;
@@ -26,14 +27,12 @@ public class MqttConfig {
     @Value("${mqtt.topic.user:user}")
     private String userTopic;
 
-    // Service to handle user requests
-    private final UserService userService;
+    private final ApplicationContext applicationContext;
 
     private MqttClient mqttClient;
 
-    // Constructor injection of UserService
-    public MqttConfig(UserService userService) {
-        this.userService = userService;
+    public MqttConfig(ApplicationContext applicationContext) {
+        this.applicationContext = applicationContext;
     }
 
     @PostConstruct
@@ -59,6 +58,7 @@ public class MqttConfig {
                 // Handle incoming messages
                 if (topic.equals(userTopic)) {
                     String request = new String(message.getPayload());
+                    UserService userService = applicationContext.getBean(UserService.class);
                     String response = userService.handleRequest(request);
                     mqttClient.publish(topic + "/response", new MqttMessage(response.getBytes()));
                 }
