@@ -43,8 +43,8 @@ export default defineComponent({
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            weekNumber: "50",
-            ownerId: "674a2c3e3881dd327be177fd"
+            weekNumber: "1",
+            ownerId: "675478941fc975f2914c2650"
           })
         })
 
