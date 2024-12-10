@@ -18,11 +18,21 @@ cache:
   paths:
     - .m2/repository
 
-compile_and_deploy: 
+compile_and_deploy:
   stage: build
   script:
+    - |
+      # Verify if maven is installed, if not then install
+      if ! command -v mvn &> /dev/null; then
+        echo "Maven no encontrado, instalando..."
+        sudo apt-get update && sudo apt-get install -y maven
+      fi
     - 'mvn $MAVEN_CLI_OPTS clean compile'
     - echo "succesful compilation. Uploading changes to development branch"
   only:
     - 15-add-basic-ci-cd-stages-to-the-project
+
+
+
+
 
