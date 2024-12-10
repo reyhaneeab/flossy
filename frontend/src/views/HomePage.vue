@@ -1,12 +1,26 @@
 <template>
   <div>
-    <h1>Welcome Home!</h1>
-    <p>You are logged in.</p>
+    <h1>Welcome to the Home Page!</h1>
+    <button @click="logout">Logout</button>
   </div>
 </template>
 
-<script setup>
+<script>
+import { authService } from '@/authService';
+import { useRouter } from 'vue-router';
 
+export default {
+  setup() {
+    const router = useRouter();
+
+    const logout = () => {
+      authService.logout();
+      router.push('/login'); // Redirect to login
+    };
+
+    return { logout };
+  },
+};
 </script>
 
 <style scoped>

@@ -1,10 +1,29 @@
 <template>
-  <div class="login-container">
-    <form @submit.prevent="handleLogin">
+  <div class="signup-container">
+    <h1>Signup Page</h1>
+    <form @submit.prevent="handleSignup">
+      <input
+          type="text"
+          v-model="firstName"
+          placeholder="First Name"
+          required
+      />
+      <input
+          type="text"
+          v-model="lastName"
+          placeholder="Last Name"
+          required
+      />
       <input
           type="email"
           v-model="email"
           placeholder="Email"
+          required
+      />
+      <input
+          type="tel"
+          v-model="phone"
+          placeholder="Phone"
           required
       />
       <input
@@ -13,26 +32,27 @@
           placeholder="Password"
           required
       />
-      <button type="submit">Login</button>
+      <button type="submit">Sign Up</button>
     </form>
-    <p v-if="error" class="error-message">{{ error }}</p>
   </div>
 </template>
 
-<script>
+<script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-const URL = `http://localhost:8090/api/users/login`
-
-export default {
-  setup() {
-    const email = ref('')
-    const password = ref('')
-    const error = ref('')
+    const URL = `http://localhost:8091/api/user/registration`
     const router = useRouter()
 
-    const handleLogin = async () => {
+
+
+    const lastName = ref('')
+    const firstName = ref('')
+    const email = ref('')
+    const phone = ref('')
+    const password = ref('')
+
+    async function handleSignup() {
       try {
         const response = await fetch(URL, {
           method: 'POST',
@@ -41,43 +61,62 @@ export default {
           },
           body: JSON.stringify({
             email: email.value,
-            password: password.value,
-          }),
-          credentials: 'include',
-        });
+            firstName: firstName.value,
+            lastName: lastName.value,
+            phone: phone.value,
+            password: password.value
+          })
+        })
 
         if (response.ok) {
-          const data = await response.json()
-          localStorage.setItem('token', data.token)
-          router.push('/home')
+          // Redirect to success page or login
+          await router.push('/')
+          console.log('Signup successful')
         } else {
-          const errorData = await response.text();
-          try {
-            const parsedError = JSON.parse(errorData);
-            error.value = parsedError.message || 'Login failed';
-          } catch (e) {
-            error.value = errorData || 'Login failed';
-          }
+          // Handle signup failure
+          console.error('Signup failed')
         }
-      } catch (err) {
-        console.error('Login error:', err)
-        error.value = 'An unexpected error occurred'
+      } catch (error) {
+        console.error('Signup error:', error)
       }
     }
 
-    return {
-      email,
-      password,
-      error,
-      handleLogin
-    }
-  }
-}
 </script>
 
 <style scoped>
-.error-message {
-  color: red;
-  margin-top: 10px;
+.signup-container {
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+h1 {
+  text-align: center;
+  color: #333;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+}
+
+input {
+  margin-bottom: 15px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+button {
+  padding: 10px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #218838;
 }
 </style>
