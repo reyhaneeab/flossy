@@ -1,43 +1,8 @@
-variables:
-  MAVEN_OPTS: >-
-    -Dhttps.protocols=TLSv1.2
-    -Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository
-    -Dorg.slf4j.simpleLogger.showDateTime=true
-    -Djava.awt.headless=true
+stages:
+  - build
 
-  MAVEN_CLI_OPTS: >-
-    --batch-mode
-    --errors
-    --fail-at-end
-    --show-version
-    --no-transfer-progress
-
-image: maven:3-openjdk-8
-
-cache:
-  paths:
-    - .m2/repository
-
-compile_and_deploy:
+build-job:
   stage: build
+  image: maven:3.8.7-eclipse-temurin-21
   script:
-    - |
-      if ! command -v mvn &> /dev/null; then
-        echo "Maven no encontrado, instalando en el directorio del proyecto..."
-        mkdir -p maven
-        echo "create directory"
-
-        curl -fsSL https://downloads.apache.org/maven/maven-3/3.8.7/binaries/apache-maven-3.8.7-bin.tar.gz | tar -xz -C maven --strip-components=1
-        echo "installed maven"
-        export PATH="$CI_PROJECT_DIR/maven/bin:$PATH"
-        echo "finish"
-
-      fi
-    - 'mvn $MAVEN_CLI_OPTS clean compile'
-  only:
-    - 15-add-basic-ci-cd-stages-to-the-project
-
-
-
-
-
+    - mvn clean compile
