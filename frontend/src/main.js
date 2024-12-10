@@ -9,6 +9,7 @@ app.use(VueGoogleMaps, {
   load: {
     key: 'AIzaSyD0d8O6v_7_CBdIobTLvfTGRjGLcd_DSbs',
     libraries: 'places', // This is required if you use the Autocomplete plugin
+    async: true, // Add async attribute
   },
 })
 app.mount('#app')

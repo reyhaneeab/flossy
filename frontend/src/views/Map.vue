@@ -1,9 +1,9 @@
 <template>
-  <div>
+  <div class="map-container">
     <GMapMap
       :center="mapCenter"
       :zoom="zoomLevel"
-      style="width: 100%; height: 100vh; position: relative;"
+      class="map"
     >
       <GMapMarker
         v-for="dentist in dentists"
@@ -46,11 +46,13 @@ export default {
       try {
         const response = await fetch('http://localhost:8084/api/dentists');
         const data = await response.json();
+        console.log('Fetched dentists data:', data); // Debugging line
         this.dentists = data.map(dentist => ({
           ...dentist,
           latitude: parseFloat(dentist.latitude),
           longitude: parseFloat(dentist.longitude),
         }));
+        console.log('Parsed dentists data:', this.dentists); // Debugging line
       } catch (error) {
         console.error('Error fetching dentist offices:', error);
       }
@@ -77,5 +79,14 @@ export default {
 </script>
 
 <style scoped>
+.map-container {
+  width: 100%;
+  height: 100vh;
+  position: relative;
+}
 
+.map {
+  width: 100%;
+  height: 100%;
+}
 </style>
