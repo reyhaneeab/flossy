@@ -25,8 +25,13 @@ compile_and_deploy:
       if ! command -v mvn &> /dev/null; then
         echo "Maven no encontrado, instalando en el directorio del proyecto..."
         mkdir -p maven
+        echo "create directory"
+
         curl -fsSL https://downloads.apache.org/maven/maven-3/3.8.7/binaries/apache-maven-3.8.7-bin.tar.gz | tar -xz -C maven --strip-components=1
+        echo "installed maven"
         export PATH="$CI_PROJECT_DIR/maven/bin:$PATH"
+        echo "finish"
+
       fi
     - 'mvn $MAVEN_CLI_OPTS clean compile'
   only:
