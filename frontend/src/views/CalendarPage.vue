@@ -25,7 +25,7 @@
       <div @click="book">BOOK APPOINTMENT</div>
       <div v-if="showBooking" class="alert-box">
         <p>Are you sure you want to book this appointment?</p>
-        <button @click="confirmCancel">Yes</button>
+        <button @click="confirmBooking">Yes</button>
         <button @click="closeAlert">No</button>
       </div>
     </div>
@@ -40,7 +40,8 @@ export default defineComponent({
     const selectedSlot = ref(null);
     const showBooking = ref(false);
     const days = ref([]);
-    const URL = `http://localhost:8091/api/calendar/get`
+    const URL = `http://localhost:8091/api/calendar/get`;
+    const bookingURL = `http://localhost:8091/api/timeSlot/book`;
 
     const fetchTimeSlots = async () => {
       try {
@@ -51,7 +52,7 @@ export default defineComponent({
           },
           body: JSON.stringify({
             weekNumber: "1",
-            ownerId: "675478941fc975f2914c2650"
+            ownerId: "675844ff73a9ad601e5a77a9"
           })
         })
 
@@ -106,11 +107,28 @@ export default defineComponent({
       showBooking.value = true;
     };
 
-    const confirmBooking = ()=>{
-      alert(
-          'Your appointment has been successfully booked'
-      );
-      showBooking.value=false;
+    const confirmBooking = async () => {
+      try {
+        await fetch(bookingURL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            slotId: selectedSlot.value.id,
+            userId: "", // put id of a user that booked the appointment
+            booked: true,
+          }),
+        });
+
+
+        alert(`Appointment has been booked successfully!`);
+        showBooking.value = false;
+      } catch (error) {
+        console.error("Error booking appointment:", error);
+        alert("Failed to book the appointment. Please try again later.");
+        showBooking.value = false;
+      }
     };
 
     const closeAlert = ()=>{
