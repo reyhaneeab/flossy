@@ -36,7 +36,7 @@ public class MqttConfig {
             mqttClient.connect(connectOptions);
             LOGGER.info("Connected to MQTT broker: " + brokerUrl);
 
-            mqttClient.subscribe(dentistTopic);
+            mqttClient.subscribe(dentistTopic, 1);
             LOGGER.info("Subscribed to topic: " + dentistTopic);
 
         } catch (MqttException e) {

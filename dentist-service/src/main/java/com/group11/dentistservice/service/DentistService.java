@@ -29,13 +29,18 @@ public class DentistService {
     @PostConstruct
     public void init() {
         try {
-            if (!mqttClient.isConnected()) {
-                mqttClient.connect();
-                mqttClient.subscribe(DENTIST_REGISTRATION_TOPIC, 1);
-            }
+            connectAndSubscribe();
             mqttClient.setCallback(createMqttCallback());
+            log.info("MQTT client initialized and subscribed to topic: {}", DENTIST_REGISTRATION_TOPIC);
         } catch (MqttException e) {
             log.error("Error initializing MQTT client", e);
+        }
+    }
+
+    private void connectAndSubscribe() throws MqttException {
+        if (!mqttClient.isConnected()) {
+            mqttClient.connect();
+            mqttClient.subscribe(DENTIST_REGISTRATION_TOPIC, 1);
         }
     }
 
@@ -47,14 +52,17 @@ public class DentistService {
                 try {
                     mqttClient.disconnect();
                     mqttClient.close();
+                    // Attempt to reconnect
+                    connectAndSubscribe();
                 } catch (MqttException e) {
-                    log.error("Error disconnecting MQTT client", e);
+                    log.error("Error disconnecting or reconnecting MQTT client", e);
                 }
             }
 
             @Override
             public void messageArrived(String topic, MqttMessage mqttMessage) {
                 log.info("Message arrived on topic: {}", topic);
+                log.info("Message content: {}", new String(mqttMessage.getPayload()));
                 try {
                     createDentist(mqttMessage);
                 } catch (Exception e) {
@@ -72,6 +80,7 @@ public class DentistService {
     public void createDentist(MqttMessage message) throws Exception {
         log.info("Received MQTT message: {}", new String(message.getPayload()));
         DentistRequest request = mapper.readValue(message.getPayload(), DentistRequest.class);
+        log.info("Parsed DentistRequest: {}", request);
 
         Dentist dentist = Dentist.builder()
                 .officeName(request.officeName())
@@ -81,6 +90,7 @@ public class DentistService {
                 .address(request.address())
                 .latitude(request.latitude())
                 .longitude(request.longitude())
+                .doctors(request.doctors()) // Ensure doctors field is included
                 .build();
         log.info("Saving dentist: {}", dentist);
         dentistRepository.save(dentist);

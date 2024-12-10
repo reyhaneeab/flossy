@@ -24,6 +24,7 @@ public class MqttPublishUtil {
             message.setRetained(retained);
             mqttClient.publish(topic, message);
             logger.info("Message published to topic: {}", topic);
+            logger.info("Message content: {}", payload);
         } catch (MqttException e) {
             logger.error("Failed to publish message to topic: {}", topic, e);
             throw new RuntimeException("Failed to publish message: " + e.getMessage(), e);
