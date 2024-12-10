@@ -1,147 +1,195 @@
 <template>
-  <v-container
-      id="container"
-      :class="isSignInPanelActive ? 'container right-panel-active' : 'container'"
-  >
-    <SignUpForm v-if="currentSignUpStep == 1" />
-    <SignUpContinuationForm v-if="currentSignUpStep == 2" />
-    <SignInForm />
-    <div class="overlay-container">
+  <div class="container">
+    <div class="auth-container" :class="{ 'signup-mode': isSignUp }">
+      <!-- Left Panel -->
+      <div class="auth-panel left-panel">
+        <div class="content">
+          <h2>Welcome Back!</h2>
+          <p>To keep connected with us, please login with your personal info.</p>
+          <button @click="setSignUp(false)" class="btn">Sign In</button>
+        </div>
+      </div>
+
+      <!-- Right Panel -->
+      <div class="auth-panel right-panel">
+        <div class="content">
+          <h2>Create Account</h2>
+          <p>Use your email for registration:</p>
+          <form @submit.prevent="handleSignUp" v-if="isSignUp">
+            <input type="text" placeholder="Name" v-model="signUpData.username" required />
+            <input type="email" placeholder="Email" v-model="signUpData.email" required />
+            <input type="password" placeholder="Password" v-model="signUpData.password" required />
+            <button type="submit" class="btn">Sign Up</button>
+          </form>
+          <form @submit.prevent="handleLogin" v-else>
+            <input type="text" placeholder="Username" v-model="loginData.username" required />
+            <input type="password" placeholder="Password" v-model="loginData.password" required />
+            <button type="submit" class="btn">Login</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Overlay -->
       <div class="overlay">
-        <OverlaySignUp />
-        <OverlaySignIn />
+        <div class="overlay-panel overlay-left">
+          <h2>Hello, Friend!</h2>
+          <p>Enter your personal details and start your journey with us.</p>
+          <button @click="setSignUp(true)" class="btn">Sign Up</button>
+        </div>
+        <div class="overlay-panel overlay-right">
+          <h2>Welcome Back!</h2>
+          <p>To keep connected with us, please login with your personal info.</p>
+          <button @click="setSignUp(false)" class="btn">Sign In</button>
+        </div>
       </div>
     </div>
-  </v-container>
+  </div>
 </template>
 
 <script>
-import SignInForm from "../components/sign-in-form.vue";
-import SignUpForm from "../components/sign-up-form.vue";
-import SignUpContinuationForm from "../components/sign-up-continuation-form.vue";
-import OverlaySignUp from "../components/overlay-sign-up.vue";
-import OverlaySignIn from "../components/overlay-sign-in.vue";
 export default {
-  components: {
-    SignInForm,
-    SignUpForm,
-    OverlaySignUp,
-    OverlaySignIn,
-    SignUpContinuationForm,
+  data() {
+    return {
+      isSignUp: false,
+      signUpData: {
+        username: "",
+        email: "",
+        password: "",
+      },
+      loginData: {
+        username: "",
+        password: "",
+      },
+    };
   },
-  computed: {
-    isSignInPanelActive: {
-      get: function () {
-        return this.$store.getters["authPageModule/getIsSignInPanelActive"];
-      },
-      set: function (newVal) {
-        this.$store.commit("authPageModule/setIsSignInPanelActive", newVal);
-      },
+  methods: {
+    setSignUp(status) {
+      this.isSignUp = status;
     },
-    currentSignUpStep: {
-      get: function () {
-        return this.$store.getters["authPageModule/getCurrentSignUpStep"];
-      },
-      set: function (newVal) {
-        this.$store.commit("authPageModule/setCurrentSignUpStep", newVal);
-      },
+    handleSignUp() {
+      console.log("Sign Up:", this.signUpData);
+    },
+    handleLogin() {
+      console.log("Login:", this.loginData);
     },
   },
 };
 </script>
 
-
-<style>
-@import url("https://fonts.googleapis.com/css?family=Montserrat:400,800");
-
-form {
-  background-color: #ffffff;
-  height: 100%;
-}
-
+<style scoped>
+/* General Container */
 .container {
-  background-color: #fff;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(to right, #74ebd5, #9face6);
+}
+
+/* Auth Container */
+.auth-container {
+  position: relative;
+  width: 900px;
+  height: 600px;
+  background: #fff;
   border-radius: 10px;
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22);
-  position: relative;
   overflow: hidden;
-  max-width: 100%;
-  min-height: 680px;
-}
-
-.form-container {
-  position: absolute;
-  top: 0;
-  height: 100%;
-  transition: all 0.6s ease-in-out;
-}
-
-.overlay-container {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  width: 50%;
-  height: 100%;
-  overflow: hidden;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  display: flex;
   transition: transform 0.6s ease-in-out;
-  z-index: 100;
 }
 
-.container.right-panel-active .overlay-container {
-  transform: translateX(-100%);
+/* Panels */
+.auth-panel {
+  flex: 1;
+  padding: 50px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  transition: 0.6s ease-in-out;
 }
 
+.left-panel {
+  background: linear-gradient(to right, #667eea, #764ba2);
+  color: white;
+}
+
+.right-panel {
+  background: white;
+  color: #667eea;
+}
+
+.auth-panel input {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.auth-panel .btn {
+  margin-top: 20px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 25px;
+  background: linear-gradient(to right, #667eea, #764ba2);
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.auth-panel .btn:hover {
+  background: linear-gradient(to right, #5a67d8, #6b46c1);
+}
+
+/* Overlay */
 .overlay {
-  background: #ff416c;
-  background: -webkit-linear-gradient(to right, #e260c6, #417dff);
-  background: linear-gradient(to right, #284563, #89c7fa);
-  background-repeat: no-repeat;
-  background-size: cover;
-  background-position: 0 0;
-  color: #ffffff;
-  position: relative;
-  left: -100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
   height: 100%;
-  width: 200%;
-  transform: translateX(0);
+  z-index: 100;
+  display: flex;
   transition: transform 0.6s ease-in-out;
-}
-
-.container.right-panel-active .overlay {
-  transform: translateX(50%);
 }
 
 .overlay-panel {
-  position: absolute;
+  flex: 1;
   display: flex;
-  align-items: center;
-  justify-content: center;
   flex-direction: column;
+  justify-content: center;
+  align-items: center;
   text-align: center;
-  top: 0;
-  height: 100%;
-  width: 50%;
-  transform: translateX(0);
-  transition: transform 0.6s ease-in-out;
-}
-.container.right-panel-active .overlay-left {
-  transform: translateX(0);
+  padding: 50px;
+  color: white;
 }
 
-.container.right-panel-active .overlay-right {
-  transform: translateX(20%);
+.overlay-left {
+  background: linear-gradient(to right, #764ba2, #667eea);
+  transform: translateX(-100%);
 }
-/* font sizes */
-.sm-title {
-  font-size: 18px;
+
+.overlay-right {
+  background: linear-gradient(to right, #667eea, #764ba2);
+  transform: translateX(100%);
 }
-.md-title {
-  font-size: 44px;
+
+/* Signup Mode */
+.auth-container.signup-mode .overlay {
+  transform: translateX(-100%);
 }
-.sm-description {
-  font-size: 12px;
+
+.auth-container.signup-mode .left-panel {
+  transform: translateX(-100%);
 }
-.md-description {
-  font-size: 16px;
+
+.auth-container.signup-mode .right-panel {
+  transform: translateX(-100%);
 }
 </style>
+
