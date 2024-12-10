@@ -3,18 +3,19 @@
     <h1 class="text-center mb-4">Appointment Calendar</h1>
     <div class="row">
       <div v-for="day in days" :key="day.date" class="col-md-6 col-lg-4 mb-4">
-        <div class="card">
+        <div class="card calendar-card">
           <div class="card-header">
             <h3 class="card-title">{{ formatDate(day.date) }}</h3>
           </div>
           <div class="card-body">
             <div class="d-flex flex-column">
               <button
-                v-for="slot in day.slots"
-                :key="slot.time"
-                class="btn btn-outline-primary mb-2"
-                :class="{ 'btn-primary text-white': slot.selected }"
-                @click="selectSlot(day, slot)"
+                  v-for="slot in day.slots"
+                  :key="slot.time"
+                  class="btn btn-outline-primary mb-2 time-slot"
+                  :class="{ 'btn-primary text-white': slot.selected, 'disabled': slot.booked }"
+                  @click="selectSlot(day, slot)"
+                  :disabled="slot.booked"
               >
                 {{ slot.time }}
               </button>
@@ -23,7 +24,7 @@
         </div>
       </div>
     </div>
-    <div v-if="selectedSlot" class="mt-4">
+    <div v-if="selectedSlot" class="mt-4 selected-slot-info">
       <h2 class="text-center">Selected Slot</h2>
       <p class="text-center">
         Date: {{ formatDate(selectedSlot.date) }} <br />
@@ -32,6 +33,7 @@
     </div>
   </div>
 </template>
+
 
 <script>
 import { defineComponent, ref, onMounted } from "vue";
@@ -118,5 +120,54 @@ export default defineComponent({
 </script>
 
 <style scoped>
+.calendar-card {
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
 
+.calendar-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #007bff;
+}
+
+.card-title {
+  color: #007bff;
+  font-size: 1.2rem;
+  margin-bottom: 0;
+}
+
+.time-slot {
+  transition: all 0.2s ease;
+}
+
+.time-slot:hover:not(.disabled) {
+  transform: scale(1.05);
+}
+
+.time-slot.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.selected-slot-info {
+  background-color: #e9ecef;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+h1, h2 {
+  color: #343a40;
+}
+
+@media (max-width: 768px) {
+  .calendar-card {
+    margin-bottom: 20px;
+  }
+}
 </style>
