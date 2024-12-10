@@ -7,7 +7,10 @@ cache:
 
 build-job:
   stage: build
+  tags:
+    - docker
   script:
+    # Install Maven
     - echo "Installing Maven..."
     - wget https://archive.apache.org/dist/maven/maven-3/3.8.7/binaries/apache-maven-3.8.7-bin.tar.gz
     - tar -xzf apache-maven-3.8.7-bin.tar.gz
@@ -15,14 +18,14 @@ build-job:
     - export PATH=$MAVEN_HOME/bin:$PATH
     - mvn --version  
 
+    # Compile the code
+    - "cd dentist-service"
     - echo "Compiling the code..."
     - mvn clean compile
     - echo "Compile complete."
 
-  artifacts:
-    paths:
-      - target
-    expire_in: never
-
+  except:
+    - tags
+  
   only:
     - 15-add-basic-ci-cd-stages-to-the-project
