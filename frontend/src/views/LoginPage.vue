@@ -1,122 +1,147 @@
 <template>
-  <div class="signup-container">
-    <h1>Signup Page</h1>
-    <form @submit.prevent="handleSignup">
-      <input
-          type="text"
-          v-model="firstName"
-          placeholder="First Name"
-          required
-      />
-      <input
-          type="text"
-          v-model="lastName"
-          placeholder="Last Name"
-          required
-      />
-      <input
-          type="email"
-          v-model="email"
-          placeholder="Email"
-          required
-      />
-      <input
-          type="tel"
-          v-model="phone"
-          placeholder="Phone"
-          required
-      />
-      <input
-          type="password"
-          v-model="password"
-          placeholder="Password"
-          required
-      />
-      <button type="submit">Sign Up</button>
-    </form>
-  </div>
+  <v-container
+      id="container"
+      :class="isSignInPanelActive ? 'container right-panel-active' : 'container'"
+  >
+    <SignUpForm v-if="currentSignUpStep == 1" />
+    <SignUpContinuationForm v-if="currentSignUpStep == 2" />
+    <SignInForm />
+    <div class="overlay-container">
+      <div class="overlay">
+        <OverlaySignUp />
+        <OverlaySignIn />
+      </div>
+    </div>
+  </v-container>
 </template>
 
-<script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-
-    const URL = `http://localhost:8091/api/user/registration`
-    const router = useRouter()
-
-
-
-    const lastName = ref('')
-    const firstName = ref('')
-    const email = ref('')
-    const phone = ref('')
-    const password = ref('')
-
-    async function handleSignup() {
-      try {
-        const response = await fetch(URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: email.value,
-            firstName: firstName.value,
-            lastName: lastName.value,
-            phone: phone.value,
-            password: password.value
-          })
-        })
-
-        if (response.ok) {
-          // Redirect to success page or login
-          await router.push('/')
-          console.log('Signup successful')
-        } else {
-          // Handle signup failure
-          console.error('Signup failed')
-        }
-      } catch (error) {
-        console.error('Signup error:', error)
-      }
-    }
-
+<script>
+import SignInForm from "../components/sign-in-form.vue";
+import SignUpForm from "../components/sign-up-form.vue";
+import SignUpContinuationForm from "../components/sign-up-continuation-form.vue";
+import OverlaySignUp from "../components/overlay-sign-up.vue";
+import OverlaySignIn from "../components/overlay-sign-in.vue";
+export default {
+  components: {
+    SignInForm,
+    SignUpForm,
+    OverlaySignUp,
+    OverlaySignIn,
+    SignUpContinuationForm,
+  },
+  computed: {
+    isSignInPanelActive: {
+      get: function () {
+        return this.$store.getters["authPageModule/getIsSignInPanelActive"];
+      },
+      set: function (newVal) {
+        this.$store.commit("authPageModule/setIsSignInPanelActive", newVal);
+      },
+    },
+    currentSignUpStep: {
+      get: function () {
+        return this.$store.getters["authPageModule/getCurrentSignUpStep"];
+      },
+      set: function (newVal) {
+        this.$store.commit("authPageModule/setCurrentSignUpStep", newVal);
+      },
+    },
+  },
+};
 </script>
 
-<style scoped>
-.signup-container {
-  max-width: 400px;
-  margin: 0 auto;
-  padding: 20px;
-}
 
-h1 {
-  text-align: center;
-  color: #333;
-}
+<style>
+@import url("https://fonts.googleapis.com/css?family=Montserrat:400,800");
 
 form {
+  background-color: #ffffff;
+  height: 100%;
+}
+
+.container {
+  background-color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22);
+  position: relative;
+  overflow: hidden;
+  max-width: 100%;
+  min-height: 680px;
+}
+
+.form-container {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  transition: all 0.6s ease-in-out;
+}
+
+.overlay-container {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 50%;
+  height: 100%;
+  overflow: hidden;
+  transition: transform 0.6s ease-in-out;
+  z-index: 100;
+}
+
+.container.right-panel-active .overlay-container {
+  transform: translateX(-100%);
+}
+
+.overlay {
+  background: #ff416c;
+  background: -webkit-linear-gradient(to right, #e260c6, #417dff);
+  background: linear-gradient(to right, #284563, #89c7fa);
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: 0 0;
+  color: #ffffff;
+  position: relative;
+  left: -100%;
+  height: 100%;
+  width: 200%;
+  transform: translateX(0);
+  transition: transform 0.6s ease-in-out;
+}
+
+.container.right-panel-active .overlay {
+  transform: translateX(50%);
+}
+
+.overlay-panel {
+  position: absolute;
   display: flex;
+  align-items: center;
+  justify-content: center;
   flex-direction: column;
+  text-align: center;
+  top: 0;
+  height: 100%;
+  width: 50%;
+  transform: translateX(0);
+  transition: transform 0.6s ease-in-out;
+}
+.container.right-panel-active .overlay-left {
+  transform: translateX(0);
 }
 
-input {
-  margin-bottom: 15px;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+.container.right-panel-active .overlay-right {
+  transform: translateX(20%);
 }
-
-button {
-  padding: 10px;
-  background-color: #28a745;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
+/* font sizes */
+.sm-title {
+  font-size: 18px;
 }
-
-button:hover {
-  background-color: #218838;
+.md-title {
+  font-size: 44px;
+}
+.sm-description {
+  font-size: 12px;
+}
+.md-description {
+  font-size: 16px;
 }
 </style>
