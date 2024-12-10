@@ -8,4 +8,5 @@ public record TimeSlotRequest(
         LocalDate date,
         LocalDateTime startTime,
         LocalDateTime endTime
+
 ) {}

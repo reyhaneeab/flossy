@@ -2,7 +2,7 @@ package com.group11.calendarservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.group11.calendarservice.dto.CalendarRequest;
-import com.group11.calendarservice.dto.TimeSlotResponse;
+import com.group11.calendarservice.dto.TimeSlotRequest;
 import com.group11.model.Calendar;
 import com.group11.model.Dentist;
 import com.group11.model.TimeSlot;
@@ -16,9 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import jakarta.annotation.PostConstruct;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static com.group11.calendarservice.config.JacksonConfig.createObjectMapper;
 
@@ -26,86 +24,63 @@ import static com.group11.calendarservice.config.JacksonConfig.createObjectMappe
 @Service
 @RequiredArgsConstructor
 public class CalendarService {
+
     private final DentistRepository dentistRepository;
     private final CalendarRepository calendarRepository;
     private final TimeSlotRepository timeSlotRepository;
     private final MqttClient mqttClient;
+
+
     private static final ObjectMapper mapper = createObjectMapper();
+
 
     private static final String CALENDAR_REGISTRATION_TOPIC = "calendar/registration";
     private static final String CALENDAR_GET_TOPIC = "calendar/get";
     private static final String CALENDAR_REGISTRATION_RESPONSE = CALENDAR_REGISTRATION_TOPIC + "/response";
     private static final String CALENDAR_GET_RESPONSE = CALENDAR_GET_TOPIC + "/response";
 
-    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-//Initializes the MQTT connection and sets up a periodic reconnection check.
+    /**
+     * Initializes the MQTT connection after bean construction.
+     */
     @PostConstruct
     public void init() {
-        connectMqtt();
-        scheduler.scheduleAtFixedRate(this::checkAndReconnectMqtt, 0, 1, TimeUnit.MINUTES);
-    }
-//Establishes a connection to the MQTT broker and subscribes to relevant topics.
-    private void connectMqtt() {
         try {
-            if (!mqttClient.isConnected()) {
-                mqttClient.connect();
-                mqttClient.subscribe(CALENDAR_REGISTRATION_TOPIC, 1);
-                mqttClient.subscribe(CALENDAR_GET_TOPIC, 1);
-                setMqttCallback();
-            }
-        } catch (MqttException e) {
-            log.error("Error connecting to MQTT broker", e);
-        }
-    }
-//Periodically checks the MQTT connection and reconnects if necessary.
-    private void checkAndReconnectMqtt() {
-        if (!mqttClient.isConnected()) {
-            log.info("MQTT client disconnected. Attempting to reconnect...");
             connectMqtt();
-        }
-    }
-//Sets up the MQTT callback for handling incoming messages.
-    private void setMqttCallback() {
-        mqttClient.setCallback(new MqttCallback() {
-            @Override
-            public void connectionLost(Throwable cause) {
-                log.error("Connection to MQTT broker lost", cause);
-            }
-
-            @Override
-            public void messageArrived(String topic, MqttMessage mqttMessage) {
-                log.info("Message arrived on topic: {}", topic);
-                try {
-                    if (topic.equals(CALENDAR_REGISTRATION_TOPIC)) {
-                        createCalendar(mqttMessage);
-                    } else if (topic.equals(CALENDAR_GET_TOPIC)) {
-                        getCalendar(mqttMessage);
-                    }
-                } catch (Exception e) {
-                    log.error("Error processing MQTT message", e);
-                    publishErrorResponse(topic + "/error", e.getMessage());
-                }
-            }
-
-            @Override
-            public void deliveryComplete(IMqttDeliveryToken token) {
-                log.info("MQTT delivery complete: {}", token.isComplete());
-            }
-        });
-    }
-
-    private void publishErrorResponse(String topic, String errorMessage) {
-        try {
-            mqttClient.publish(topic, errorMessage.getBytes(), 1, false);
         } catch (MqttException e) {
-            log.error("Failed to publish error response", e);
+            log.error("Error initializing MQTT connection", e);
         }
     }
-// Maps a TimeSlot entity to a TimeSlotResponse DTO.
-    private TimeSlotResponse mapToResponse(TimeSlot slot) {
-        return new TimeSlotResponse(slot.getId(), slot.getDate(), slot.getStartTime(), slot.getEndTime(), slot.getOwner());
+
+    /**
+     * Establishes MQTT connection and subscribes to relevant topics.
+     */
+    private void connectMqtt() throws MqttException {
+        if (!mqttClient.isConnected()) {
+            mqttClient.connect();
+            mqttClient.subscribe(CALENDAR_REGISTRATION_TOPIC, (topic, message) -> handleMqttMessage(topic, message));
+            mqttClient.subscribe(CALENDAR_GET_TOPIC, (topic, message) -> handleMqttMessage(topic, message));
+        }
     }
-// Creates a new calendar based on the received MQTT message.
+
+    /**
+     * Handles incoming MQTT messages based on the topic.
+     */
+    private void handleMqttMessage(String topic, MqttMessage message) {
+        try {
+            if (CALENDAR_REGISTRATION_TOPIC.equals(topic)) {
+                createCalendar(message);
+            } else if (CALENDAR_GET_TOPIC.equals(topic)) {
+                getCalendar(message);
+            }
+        } catch (Exception e) {
+            log.error("Error processing MQTT message on topic: {}", topic, e);
+            publishErrorResponse(topic + "/error", e.getMessage());
+        }
+    }
+
+    /**
+     * Creates a new calendar based on the received MQTT message.
+     */
     @Transactional
     public void createCalendar(MqttMessage message) throws Exception {
         CalendarRequest request = mapper.readValue(message.getPayload(), CalendarRequest.class);
@@ -123,7 +98,10 @@ public class CalendarService {
         calendarRepository.save(calendar);
         publishResponse(CALENDAR_REGISTRATION_RESPONSE, calendar);
     }
-//Retrieves a calendar based on the received MQTT message.
+
+    /**
+     * Retrieves a calendar based on the received MQTT message.
+     */
     @Transactional(readOnly = true)
     public void getCalendar(MqttMessage message) throws Exception {
         CalendarRequest request = mapper.readValue(message.getPayload(), CalendarRequest.class);
@@ -134,39 +112,68 @@ public class CalendarService {
             throw new ResourceNotFoundException("Calendar not found for dentist " + dentist.getOfficeName() + " and week number " + request.weekNumber());
         }
 
-        calendar.setOwner(dentist);
         publishResponse(CALENDAR_GET_RESPONSE, calendar);
     }
-// Retrieves a dentist by ID or throws a ResourceNotFoundException.
-    private Dentist getDentist(String dentistId) {
-        return dentistRepository.findById(dentistId)
-                .orElseThrow(() -> new ResourceNotFoundException("Dentist office not found with id: " + dentistId));
+
+    /**
+     * Publishes a response to the specified MQTT topic.
+     */
+    private void publishResponse(String topic, Object response) {
+        try {
+            String payload = mapper.writeValueAsString(response);
+            mqttClient.publish(topic, payload.getBytes(), 1, false);
+        } catch (Exception e) {
+            log.error("Error publishing response to topic: {}", topic, e);
+        }
     }
-//Validates the calendar request, ensuring that time slots are provided.
+
+    /**
+     * Publishes an error response to the specified MQTT topic.
+     */
+    private void publishErrorResponse(String topic, String errorMessage) {
+        try {
+            mqttClient.publish(topic, errorMessage.getBytes(), 1, false);
+        } catch (MqttException e) {
+            log.error("Error publishing error response to topic: {}", topic, e);
+        }
+    }
+
+    /**
+     * Validates the calendar request.
+     */
     private void validateCalendarRequest(CalendarRequest request) {
         if (request.timeSlots() == null || request.timeSlots().isEmpty()) {
-            throw new CalendarServiceException("TimeSlots not provided or empty");
+            throw new CalendarServiceException("Time slots must be provided");
         }
-
     }
-//Creates and saves time slots based on the calendar request.
+
+    /**
+     * Retrieves a dentist by ID or throws a ResourceNotFoundException.
+     */
+    private Dentist getDentist(String dentistId) {
+        return dentistRepository.findById(dentistId)
+                .orElseThrow(() -> new ResourceNotFoundException("Dentist not found with id: " + dentistId));
+    }
+
+    /**
+     * Creates and saves time slots based on the calendar request.
+     */
     private List<TimeSlot> createAndSaveTimeSlots(CalendarRequest request, Dentist dentist) {
-        List<TimeSlot> timeSlots = request.timeSlots().stream()
-                .map(slotRequest -> {
-                    TimeSlot slot = new TimeSlot();
-                    slot.setDate(slotRequest.date());
-                    slot.setStartTime(slotRequest.startTime());
-                    slot.setEndTime(slotRequest.endTime());
-                    slot.setOwner(dentist);
-                    return slot;
-                })
-                .toList();
-
-        return timeSlotRepository.saveAll(timeSlots);
+        return request.timeSlots().stream()
+                .map(slotRequest -> createTimeSlot(slotRequest, dentist))
+                .map(timeSlotRepository::save)
+                .collect(Collectors.toList());
     }
-//Publishes a response to the specified MQTT topic.
-    private void publishResponse(String topic, Object response) throws Exception {
-        String payload = mapper.writeValueAsString(response);
-        mqttClient.publish(topic, payload.getBytes(), 1, false);
+
+    /**
+     * Creates a TimeSlot entity from a TimeSlotRequest.
+     */
+    private TimeSlot createTimeSlot(TimeSlotRequest slotRequest, Dentist dentist) {
+        return TimeSlot.builder()
+                .date(slotRequest.date())
+                .startTime(slotRequest.startTime())
+                .endTime(slotRequest.endTime())
+                .owner(dentist)
+                .build();
     }
 }
