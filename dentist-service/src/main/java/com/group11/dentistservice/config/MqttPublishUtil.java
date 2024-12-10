@@ -4,10 +4,13 @@ import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Component
 public class MqttPublishUtil {
 
+    private static final Logger logger = LoggerFactory.getLogger(MqttPublishUtil.class);
     private final MqttClient mqttClient;
 
     public MqttPublishUtil(MqttClient mqttClient) {
@@ -20,8 +23,10 @@ public class MqttPublishUtil {
             message.setQos(qos);
             message.setRetained(retained);
             mqttClient.publish(topic, message);
+            logger.info("Message published to topic: {}", topic);
         } catch (MqttException e) {
-            throw new RuntimeException("Failed to publish message: " + e.getMessage());
+            logger.error("Failed to publish message to topic: {}", topic, e);
+            throw new RuntimeException("Failed to publish message: " + e.getMessage(), e);
         }
     }
 }

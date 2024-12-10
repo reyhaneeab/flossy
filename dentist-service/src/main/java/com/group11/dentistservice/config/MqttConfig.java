@@ -1,6 +1,5 @@
 package com.group11.dentistservice.config;
 
-import com.group11.dentistservice.service.DentistService;
 import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,12 +23,9 @@ public class MqttConfig {
     @Value("${mqtt.topic.dentist}")
     private String dentistTopic;
 
-    @Value("${mqtt.topic.dentist.response}")
-    private String dentistResponseTopic;
-
     @Bean
-    public MqttClient mqttClient(DentistService dentistService) throws MqttException {
-        String generatedClientId = clientId + UUID.randomUUID().toString();
+    public MqttClient mqttClient() throws MqttException {
+        String generatedClientId = clientId + UUID.randomUUID();
         MqttClient mqttClient = new MqttClient(brokerUrl, generatedClientId);
 
         MqttConnectOptions connectOptions = new MqttConnectOptions();
@@ -40,28 +36,6 @@ public class MqttConfig {
             mqttClient.connect(connectOptions);
             LOGGER.info("Connected to MQTT broker: " + brokerUrl);
 
-            mqttClient.setCallback(new MqttCallback() {
-                @Override
-                public void connectionLost(Throwable cause) {
-                    LOGGER.log(Level.WARNING, "Connection to MQTT broker lost", cause);
-                }
-
-                @Override
-                public void messageArrived(String topic, MqttMessage message) throws Exception {
-                    LOGGER.info("Message received on topic: " + topic);
-                    if (topic.equals(dentistTopic)) {
-                        String request = new String(message.getPayload());
-                        String response = dentistService.handleRequest(request);
-                        mqttClient.publish(dentistResponseTopic, new MqttMessage(response.getBytes()));
-                    }
-                }
-
-                @Override
-                public void deliveryComplete(IMqttDeliveryToken token) {
-                    LOGGER.info("Message delivery completed");
-                }
-            });
-
             mqttClient.subscribe(dentistTopic);
             LOGGER.info("Subscribed to topic: " + dentistTopic);
 
@@ -71,5 +45,26 @@ public class MqttConfig {
         }
 
         return mqttClient;
+    }
+
+    @Bean
+    public MqttCallback mqttCallback() {
+        return new MqttCallback() {
+            @Override
+            public void connectionLost(Throwable cause) {
+                LOGGER.log(Level.WARNING, "Connection to MQTT broker lost", cause);
+            }
+
+            @Override
+            public void messageArrived(String topic, MqttMessage message) {
+                LOGGER.info("Message received on topic: " + topic);
+                // The actual message handling will be done in DentistService
+            }
+
+            @Override
+            public void deliveryComplete(IMqttDeliveryToken token) {
+                LOGGER.info("Message delivery completed");
+            }
+        };
     }
 }
