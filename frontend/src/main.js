@@ -7,9 +7,9 @@ const app = createApp(App)
 app.use(router)
 app.use(VueGoogleMaps, {
   load: {
-    key: 'AIzaSyD0d8O6v_7_CBdIobTLvfTGRjGLcd_DSbs',
+    key: process.env.VUE_APP_GOOGLE_MAPS_API_KEY,
     libraries: 'places', // This is required if you use the Autocomplete plugin
-    async: true, // Add async attribute
+    async: true, // Ensure async loading
     v: 'weekly' // Specify the version to use a supported version
   },
 })

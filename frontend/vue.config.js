@@ -19,7 +19,10 @@ module.exports = defineConfig({
   configureWebpack: {
     plugins: [
       new webpack.DefinePlugin({
-        __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: JSON.stringify(true)
+        __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: JSON.stringify(true),
+        'process.env': {
+          VUE_APP_GOOGLE_MAPS_API_KEY: JSON.stringify(process.env.VUE_APP_GOOGLE_MAPS_API_KEY)
+        }
       })
     ]
   }
