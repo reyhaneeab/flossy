@@ -18,7 +18,7 @@ cache:
   paths:
     - .m2/repository
 
-compile_and_deploy:
+compile_and_deploy: 
   stage: build
   script:
     - 'mvn $MAVEN_CLI_OPTS clean compile'
