@@ -98,6 +98,12 @@ public class DentistService {
         publishDentistRegistration(dentist);
     }
 
+    public List<Dentist> getAllDentists() {
+        List<Dentist> dentists = dentistRepository.findAll();
+        log.info("Retrieved dentists from database: {}", dentists);
+        return dentists;
+    }
+
     private void publishDentistRegistration(Dentist dentist) {
         try {
             String payload = mapper.writeValueAsString(dentist);
@@ -108,9 +114,5 @@ public class DentistService {
         } catch (Exception e) {
             log.error("Error publishing dentist registration", e);
         }
-    }
-
-    public List<Dentist> getAllDentists() {
-        return dentistRepository.findAll();
     }
 }
