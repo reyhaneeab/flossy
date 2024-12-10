@@ -24,48 +24,6 @@ public class DentistService {
     private static final String DENTIST_REGISTRATION_RESPONSE = DENTIST_REGISTRATION_TOPIC + "/response";
     private static final String DENTIST_REGISTRATION_EMAIL = DENTIST_REGISTRATION_TOPIC + "/email";
 
-    @PostConstruct
-    public void init() {
-        try {
-            if (!mqttClient.isConnected()) {
-                mqttClient.connect();
-                mqttClient.subscribe(DENTIST_REGISTRATION_TOPIC, 1);
-            }
-            mqttClient.setCallback(createMqttCallback());
-        } catch (MqttException e) {
-            log.error("Error initializing MQTT client", e);
-        }
-    }
-
-    private MqttCallback createMqttCallback() {
-        return new MqttCallback() {
-            @Override
-            public void connectionLost(Throwable cause) {
-                log.error("Connection lost", cause);
-                try {
-                    mqttClient.disconnect();
-                    mqttClient.close();
-                } catch (MqttException e) {
-                    log.error("Error disconnecting MQTT client", e);
-                }
-            }
-
-            @Override
-            public void messageArrived(String topic, MqttMessage mqttMessage) {
-                log.info("Message arrived on topic: {}", topic);
-                try {
-                    createDentist(mqttMessage);
-                } catch (Exception e) {
-                    log.error("Error processing message", e);
-                }
-            }
-
-            @Override
-            public void deliveryComplete(IMqttDeliveryToken token) {
-                log.info("MQTT delivery complete: {}", token.isComplete());
-            }
-        };
-    }
 
     public void createDentist(MqttMessage message) throws Exception {
         DentistRequest request = mapper.readValue(message.getPayload(), DentistRequest.class);
@@ -74,8 +32,9 @@ public class DentistService {
                 .officeName(request.officeName())
                 .email(request.email())
                 .password(request.password())
-                .phone(request.phone())
                 .address(request.address())
+                .phone(request.phone())
+                .doctors(request.doctors())
                 .build();
         dentistRepository.save(dentist);
 

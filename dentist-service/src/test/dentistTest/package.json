@@ -1,0 +1,8 @@
+{
+  "officeName": "Test Dental Office",
+  "email": "test@dentist.com",
+  "password": "securepassword",
+  "address": "123 Test Street, Test City",
+  "phone": "1234567890",
+  "doctors": ["Dr. John Doe", "Dr. Jane Smith"]
+}

@@ -20,13 +20,8 @@ public class GatewayController {
     private static final Logger logger = Logger.getLogger(GatewayController.class.getName());
 
     private final MqttHandler mqttHandler;
-    @Autowired
-    private MqttConfig mqttConfig;
 
     @Autowired
-    private ObjectMapper objectMapper;
-
-
     public GatewayController(MqttHandler mqttHandler) {
         this.mqttHandler = mqttHandler;
     }
@@ -36,43 +31,27 @@ public class GatewayController {
             @PathVariable String entity,
             @PathVariable String action,
             @RequestBody JsonNode requestBody) throws Exception {
-        // Construct the MQTT topic from the entity and action
-        String topic = String.format("%s/%s", entity, action);
-        // Convert the request body to a JSON string
-        String payload = objectMapper.writeValueAsString(requestBody);
-        // Publish the message and wait for the response
-        String response = mqttConfig.publishAndReceive(topic, payload);
-        // Parse the response string back into a JsonNode
-        JsonNode responseJson = objectMapper.readTree(response);
-
-        return ResponseEntity.ok(responseJson);
+        return processRequest(entity, action, requestBody);
     }
-
 
     @GetMapping("/{entity}/{action}")
     public ResponseEntity<JsonNode> handleGetRequest(
             @PathVariable String entity,
-            @PathVariable String action) {
+            @PathVariable String action) throws Exception {
         return processRequest(entity, action, null);
     }
-// Process all requests regardless of HTTP method. it constructs an MQTT topic from the entity and action.
-    private ResponseEntity<JsonNode> processRequest(String entity, String action, Object requestBody) {
+
+    private ResponseEntity<JsonNode> processRequest(String entity, String action, JsonNode requestBody) {
         String topic = String.format("%s/%s", entity, action);
         logger.info("Handling request for topic: " + topic);
-// it uses MQTTHandler to forward the request to appropriate service.
 
         try {
             JsonNode response = mqttHandler.forwardRequest(topic, requestBody);
             logger.info("Request processed successfully for topic: " + topic);
             return ResponseEntity.ok(response);
-        } catch (ServiceUnavailableException e) {
-            logger.log(Level.SEVERE, "Service unavailable for topic: " + topic, e);
-            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-                    .body(null);
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error processing request for topic: " + topic, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(null);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 }
