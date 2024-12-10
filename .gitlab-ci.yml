@@ -1,19 +1,28 @@
 stages:
   - build
 
+cache:
+  paths:
+    - .m2/repository
+
 build-job:
   stage: build
   script:
     - echo "Installing Maven..."
-    - wget https://downloads.apache.org/maven/maven-3/3.8.7/binaries/apache-maven-3.8.7-bin.tar.gz
+    - wget https://archive.apache.org/dist/maven/maven-3/3.8.7/binaries/apache-maven-3.8.7-bin.tar.gz
     - tar -xzf apache-maven-3.8.7-bin.tar.gz
     - export MAVEN_HOME=$(pwd)/apache-maven-3.8.7
     - export PATH=$MAVEN_HOME/bin:$PATH
-    - mvn --version 
+    - mvn --version  
 
     - echo "Compiling the code..."
     - mvn clean compile
     - echo "Compile complete."
+
+  artifacts:
+    paths:
+      - target
+    expire_in: never
 
   only:
     - 15-add-basic-ci-cd-stages-to-the-project
