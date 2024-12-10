@@ -1,13 +1,21 @@
 <template>
-  <div class="success-container">
-    <h1>Registration Successful!</h1>
-    <router-link to="/login" class="login-link">Go to Login</router-link>
+  <div class="container mt-5">
+    <div class="row justify-content-center">
+      <div class="col-md-6">
+        <div class="card success-container">
+          <div class="card-body">
+            <h1 class="card-title">Registration Successful!</h1>
+            <router-link to="/login" class="btn btn-primary login-link">Go to Login</router-link>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 export default {
-  name:'Success'
+  name: 'Success'
 }
 </script>
 
