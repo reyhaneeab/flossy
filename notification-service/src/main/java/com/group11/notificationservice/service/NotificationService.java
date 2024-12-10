@@ -1,5 +1,6 @@
 package com.group11.notificationservice.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.group11.notificationservice.engine.EmailEngine;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,7 @@ import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.stereotype.Service;
 import com.group11.notificationservice.handler.*;
 import java.util.HashMap;
+import static com.group11.config.JacksonConfig.createObjectMapper;
 
 
 @Service
@@ -18,6 +20,7 @@ public class NotificationService {
 
     private final MqttClient mqttClient;
     private final JavaMailSenderImpl mailSender;
+    private final ObjectMapper mapper = createObjectMapper();
     private final HashMap<String, NotificationHandler> handlers = new HashMap<>();
 
     // Define topics
@@ -45,8 +48,8 @@ public class NotificationService {
                 log.info("Subscribed to topic: {}", topic);
             }
 
-            handlers.put(topics[0], new DentistRegistrationHandler(new EmailEngine(mailSender)));
-            handlers.put(topics[1], new DentistBookingHandler(new EmailEngine(mailSender)));
+            handlers.put(topics[0], new DentistRegistrationHandler(new EmailEngine(mailSender), mapper));
+            handlers.put(topics[1], new DentistBookingHandler(new EmailEngine(mailSender), mapper));
             handlers.put(topics[2], new DentistCancellationHandler(new EmailEngine(mailSender)));
 
             mqttClient.setCallback(new MqttCallback() {

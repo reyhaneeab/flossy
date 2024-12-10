@@ -14,7 +14,7 @@ import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import jakarta.annotation.PostConstruct;
 import java.util.List;
-import static com.group11.calendarservice.config.JacksonConfig.createObjectMapper;
+import static com.group11.config.JacksonConfig.createObjectMapper;
 
 @Slf4j
 @Service

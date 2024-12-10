@@ -12,8 +12,8 @@ public class DentistRegistrationHandler implements NotificationHandler{
     private final EmailEngine emailEngine;
     private final ObjectMapper mapper;
 
-    public DentistRegistrationHandler(EmailEngine emailEngine) {
-        this.mapper = new ObjectMapper();
+    public DentistRegistrationHandler(EmailEngine emailEngine, ObjectMapper mapper) {
+        this.mapper = mapper;
         this.emailEngine = emailEngine;
    }
 
