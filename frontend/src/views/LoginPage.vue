@@ -1,21 +1,44 @@
 <template>
-  <div class="login-container">
-    <form @submit.prevent="handleLogin">
-      <input
-          type="email"
-          v-model="email"
-          placeholder="Email"
-          required
-      />
-      <input
-          type="password"
-          v-model="password"
-          placeholder="Password"
-          required
-      />
-      <button type="submit">Login</button>
-    </form>
-    <p v-if="error" class="error-message">{{ error }}</p>
+  <div class="container mt-5">
+    <div class="row justify-content-center">
+      <div class="col-md-6">
+        <div class="card login-container">
+          <div class="card-header">
+            <h2 class="text-center">Login</h2>
+          </div>
+          <div class="card-body">
+            <form @submit.prevent="handleLogin">
+              <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input
+                  type="email"
+                  class="form-control"
+                  id="email"
+                  v-model="email"
+                  placeholder="Enter your email"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="password"
+                  v-model="password"
+                  placeholder="Enter your password"
+                  required
+                />
+              </div>
+              <div class="d-grid">
+                <button type="submit" class="btn btn-primary login-btn">Login</button>
+              </div>
+            </form>
+            <p v-if="error" class="text-danger mt-3 error-message">{{ error }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -76,6 +99,21 @@ export default {
 </script>
 
 <style scoped>
+.login-container {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.login-btn {
+  background-color: #007bff;
+  border-color: #007bff;
+}
+
+.login-btn:hover {
+  background-color: #0056b3;
+  border-color: #0056b3;
+}
+
 .error-message {
   color: red;
   margin-top: 10px;
