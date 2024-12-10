@@ -70,6 +70,7 @@ public class DentistService {
     }
 
     public void createDentist(MqttMessage message) throws Exception {
+        log.info("Received MQTT message: {}", new String(message.getPayload()));
         DentistRequest request = mapper.readValue(message.getPayload(), DentistRequest.class);
 
         Dentist dentist = Dentist.builder()
@@ -78,7 +79,10 @@ public class DentistService {
                 .password(request.password())
                 .phone(request.phone())
                 .address(request.address())
+                .latitude(request.latitude())
+                .longitude(request.longitude())
                 .build();
+        log.info("Saving dentist: {}", dentist);
         dentistRepository.save(dentist);
 
         publishDentistRegistration(dentist);
