@@ -22,11 +22,11 @@
         Date: {{ formatDate(selectedSlot.date) }} <br />
         Time: {{ selectedSlot.time }}
       </p>
-      <div @click="book">BOOK APPOINTMENT</div>
+      <div @click="book" id="bookButton">BOOK APPOINTMENT</div>
       <div v-if="showBooking" class="alert-box">
         <p>Are you sure you want to book this appointment?</p>
-        <button @click="confirmBooking">Yes</button>
-        <button @click="closeAlert">No</button>
+        <button @click="confirmBooking" id="yes">Yes</button>
+        <button @click="closeAlert" id="no">No</button>
       </div>
     </div>
   </div>
@@ -52,7 +52,7 @@ export default defineComponent({
           },
           body: JSON.stringify({
             weekNumber: "1",
-            ownerId: "675844ff73a9ad601e5a77a9"
+
           })
         })
 
@@ -196,9 +196,6 @@ button {
   font-weight: bold;
 }
 
-button:hover {
-  background: #eef;
-}
 
 button.selected {
   background: #add8e6;
@@ -233,13 +230,26 @@ button.selected {
   cursor: pointer;
 }
 
-.alert-box button:first-child {
-  background-color: #add8e6;
-  color: white;
+#bookButton{
+  display: inline-block;
+  padding: 15px 30px;
+  border: 1px solid #ffffff;
+  background: #0b6623;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: bold;
+  border-radius: 8px;
+  color: #ffffff;
 }
 
-.alert-box button:last-child {
+
+#yes{
+  background-color: #0b6623;
+  color: white;
+}
+#no{
   background-color: #dc3545;
   color: white;
 }
+
 </style>
