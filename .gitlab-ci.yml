@@ -1,3 +1,4 @@
+image: maven:4.0.0 eclipse-temurin-21
 stages:
    - build
    - deploy
@@ -5,13 +6,11 @@ stages:
 build_job:
    stage: build
    script:
-     - npm install
      - echo "Building the project..."
-     - npm run build
+     - mvn clean install
      - echo "Build complete."
-     - npm run serve
      - echo "run serve"
-
+     - mvn compile
 deploy_job:
    stage: deploy
    script:
