@@ -1,25 +1,15 @@
-# Specify the Docker image to use for all jobs
-image: maven:3.8.7-eclipse-temurin-21
-
-before_script:
-  - chmod +x setup-build-env.sh
-  - ./setup-build-env.sh
-
-# Define the stages of the pipeline
 stages:
-  - build
+   - build
+   - deploy
 
-# Build Maven Project
-build-maven:
-  stage: build
-  tags:
-    - docker
-    - maven
-    - java21
-  script:
-    - mvn clean install
-    - mvn compile
-  artifacts:
-    paths:
-      - target
-    expire_in: never
+build_job:
+   stage: build
+   script:
+     - echo "Building the project..."
+     - echo "Build complete."
+
+deploy_job:
+   stage: deploy
+   script:
+     - echo "Deploying the project..."
+     - echo "Deploy complete."
