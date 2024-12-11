@@ -10,6 +10,7 @@
   "dependencies": {
     "@syncfusion/ej2-vue-calendars": "^27.2.3",
     "axios": "^1.7.9",
+    "bootstrap": "^5.3.3",
     "core-js": "^3.8.3",
     "jwt-decode": "^4.0.0",
     "vue": "^3.2.13",
