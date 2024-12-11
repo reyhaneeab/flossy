@@ -12,10 +12,6 @@ stages:
 # Build Maven Project
 build-maven:
   stage: build
-  tags:
-    - docker
-    - maven
-    - java21
   script:
     - mvn clean install
     - mvn compile
