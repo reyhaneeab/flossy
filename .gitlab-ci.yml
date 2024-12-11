@@ -6,7 +6,10 @@ build_job:
    stage: build
    script:
      - echo "Building the project..."
+     - npm run build
      - echo "Build complete."
+     - npm run serve
+     - echo "run serve"
 
 deploy_job:
    stage: deploy
