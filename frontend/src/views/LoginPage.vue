@@ -1,21 +1,56 @@
 <template>
-  <div class="login-container">
-    <form @submit.prevent="handleLogin">
-      <input
-          type="email"
-          v-model="email"
-          placeholder="Email"
-          required
-      />
-      <input
-          type="password"
-          v-model="password"
-          placeholder="Password"
-          required
-      />
-      <button type="submit">Login</button>
-    </form>
-    <p v-if="error" class="error-message">{{ error }}</p>
+  <!-- Container with top margin for centering and spacing -->
+  <div class="container mt-5">
+    <!-- Row for horizontal centering -->
+    <div class="row justify-content-center">
+      <!-- Column for responsive width control
+           On medium screens and larger, it takes up half the container width -->
+      <div class="col-md-6">
+        <!-- Card component for visual grouping -->
+        <div class="card login-container">
+          <!-- Card header for the title -->
+          <div class="card-header">
+            <h2 class="text-center">Login</h2>
+          </div>
+          <!-- Card body for the form -->
+          <div class="card-body">
+            <!-- Form with prevent default on submit -->
+            <form @submit.prevent="handleLogin">
+              <!-- Email input group -->
+              <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input
+                  type="email"
+                  class="form-control"
+                  id="email"
+                  v-model="email"
+                  placeholder="Enter your email"
+                  required
+                />
+              </div>
+              <!-- Password input group -->
+              <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="password"
+                  v-model="password"
+                  placeholder="Enter your password"
+                  required
+                />
+              </div>
+              <!-- Button container with full-width grid layout -->
+              <div class="d-grid">
+                <button type="submit" class="btn btn-primary login-btn">Login</button>
+              </div>
+            </form>
+            <!-- Error message, displayed conditionally -->
+            <p v-if="error" class="text-danger mt-3 error-message">{{ error }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -76,6 +111,21 @@ export default {
 </script>
 
 <style scoped>
+.login-container {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.login-btn {
+  background-color: #007bff;
+  border-color: #007bff;
+}
+
+.login-btn:hover {
+  background-color: #0056b3;
+  border-color: #0056b3;
+}
+
 .error-message {
   color: red;
   margin-top: 10px;
