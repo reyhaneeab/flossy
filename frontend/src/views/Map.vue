@@ -4,29 +4,20 @@
       :center="mapCenter"
       :zoom="zoomLevel"
       class="map"
+      @load="onMapLoad"
     >
-      <GMapMarker
-        v-for="dentist in dentists"
-        :key="dentist.id"
-        :position="{ lat: dentist.latitude, lng: dentist.longitude }"
-      />
-      <GMapMarker
-        v-if="userLocation"
-        :position="userLocation"
-        icon="http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
-      />
+      <!-- Markers will be added programmatically -->
     </GMapMap>
   </div>
 </template>
 
 <script>
-import { GMapMap, GMapMarker } from '@fawmi/vue-google-maps'
+import { GMapMap } from '@fawmi/vue-google-maps'
 
 export default {
   name: 'GoogleMap',
   components: {
     GMapMap,
-    GMapMarker,
   },
   data() {
     return {
@@ -35,6 +26,7 @@ export default {
       mapCenter: { lat: 57.70887, lng: 11.97456 }, // Default to Gothenburg
       zoomLevel: 12,
       userLocation: null,
+      map: null,
     };
   },
   mounted() {
@@ -46,13 +38,12 @@ export default {
       try {
         const response = await fetch('http://localhost:8084/api/dentists');
         const data = await response.json();
-        console.log('Fetched dentists data:', data); // Debugging line
         this.dentists = data.map(dentist => ({
           ...dentist,
           latitude: parseFloat(dentist.latitude),
           longitude: parseFloat(dentist.longitude),
         }));
-        console.log('Parsed dentists data:', this.dentists); // Debugging line
+        this.addDentistMarkers();
       } catch (error) {
         console.error('Error fetching dentist offices:', error);
       }
@@ -66,6 +57,7 @@ export default {
               lng: position.coords.longitude,
             };
             this.mapCenter = { ...this.userLocation };
+            this.addUserLocationMarker();
           },
           error => {
             console.error('Error getting user location:', error);
@@ -74,6 +66,31 @@ export default {
         );
       }
     },
+    onMapLoad(map) {
+      this.map = map;
+      this.addDentistMarkers();
+      this.addUserLocationMarker();
+    },
+    addDentistMarkers() {
+      if (!this.map) return;
+      this.dentists.forEach(dentist => {
+        // eslint-disable-next-line no-undef
+        new google.maps.marker.AdvancedMarkerElement({
+          map: this.map,
+          position: { lat: dentist.latitude, lng: dentist.longitude },
+          title: dentist.name,
+        });
+      });
+    },
+    addUserLocationMarker() {
+      if (!this.map || !this.userLocation) return;
+      // eslint-disable-next-line no-undef
+      new google.maps.marker.AdvancedMarkerElement({
+        map: this.map,
+        position: this.userLocation,
+        icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+      });
+    }
   },
 }
 </script>
