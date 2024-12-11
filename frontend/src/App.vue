@@ -45,7 +45,7 @@ export default {
 </script>
 
 <style>
-/* You can keep some custom styles here if needed */
+/* other styles can be added here */
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   color: #2c3e50;

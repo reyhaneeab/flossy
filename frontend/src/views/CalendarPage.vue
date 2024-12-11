@@ -1,14 +1,24 @@
 <template>
+  <!-- Container with top margin for overall layout -->
   <div class="container mt-4">
+    <!-- Centered heading with bottom margin -->
     <h1 class="text-center mb-4">Appointment Calendar</h1>
+    <!-- Bootstrap row for grid layout -->
     <div class="row">
+      <!--
+           - On medium screens (md) and up, each card takes 6 columns (half width)
+           - On large screens (lg) and up, each card takes 4 columns (one-third width)
+           - mb-4 adds bottom margin for vertical spacing between cards -->
       <div v-for="day in days" :key="day.date" class="col-md-6 col-lg-4 mb-4">
+        <!-- Card component for each day -->
         <div class="card calendar-card">
           <div class="card-header">
             <h3 class="card-title">{{ formatDate(day.date) }}</h3>
           </div>
           <div class="card-body">
+            <!-- Flexbox container for vertical alignment of buttons -->
             <div class="d-flex flex-column">
+              <!-- Time slot buttons -->
               <button
                   v-for="slot in day.slots"
                   :key="slot.time"
@@ -24,6 +34,7 @@
         </div>
       </div>
     </div>
+    <!-- Selected slot information, shown conditionally -->
     <div v-if="selectedSlot" class="mt-4 selected-slot-info">
       <h2 class="text-center">Selected Slot</h2>
       <p class="text-center">
