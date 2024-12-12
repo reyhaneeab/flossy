@@ -32,6 +32,15 @@ backend_build_job:
 
 backend_test_job:
   stage: backend_test
+  tags:
+    - docker
+  services:
+    - name: mongo:7.0.5
+      alias: mongo
+    - name: eclipse-mosquitto:latest
+      alias: mqtt
+  variables:
+    MONGODB_URI: "mongodb://mongo:27017/serverTestDB"
   script:
     - echo "Starting services for testing..."
     - docker-compose up -d
