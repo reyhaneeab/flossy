@@ -17,11 +17,14 @@ before_script:
   # Install dependencies and set up the environment
   - echo "Setting up the environment..."
   - apt-get update && apt-get install -y openjdk-21-jdk maven docker.io docker-compose
+  - service docker start  # Start Docker service
+  - chmod 666 /var/run/docker.sock  # Ensure proper permissions for Docker
   - export "PATH=$MAVEN_HOME/bin:$PATH"
   - java -version
   - mvn -version
   - docker -v
   - docker-compose -v
+  - docker ps  # Verify Docker is running
 
 backend_build_job:
   stage: backend_build
@@ -32,14 +35,22 @@ backend_build_job:
 
 backend_test_job:
   stage: backend_test
+  tags:
+    - docker
+  services:
+    - name: mongo:7.0.5
+      alias: mongo
+    - name: eclipse-mosquitto:latest
+      alias: mqtt
+  variables:
+    MONGODB_URI: "mongodb://mongo:27017/serverTestDB"
   script:
-    - echo "Starting services for testing..."
-    - docker-compose up -d
+    - echo "Starting backend tests..."
+    - mvn test
     - echo "Running integration tests..."
-    - mvn verify
+    - mvn failsafe:integration-test
+    - mvn failsafe:verify
     - echo "Tests completed successfully."
-    - echo "Stopping services after testing..."
-    - docker-compose down
 
 deploy_job:
   stage: deploy
