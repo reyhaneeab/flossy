@@ -12,9 +12,8 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, shallowRef } from 'vue'
 import { Map } from '@fawmi/vue-google-maps'
-import { shallowRef } from 'vue'
 
 const URL = `http://localhost:8091/api/dentists/get`
 
@@ -26,14 +25,24 @@ const map = shallowRef(null)
 
 async function fetchDentists() {
   try {
-    const response = await fetch(URL)
-    const data = await response.json()
-    dentists.value = data.map(dentist => ({
-      ...dentist,
-      latitude: parseFloat(dentist.latitude),
-      longitude: parseFloat(dentist.longitude),
-    }))
-    addDentistMarkers()
+    const response = await fetch(URL, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      dentists.value = data.map(dentist => ({
+        ...dentist,
+        latitude: parseFloat(dentist.latitude),
+        longitude: parseFloat(dentist.longitude),
+      }))
+      addDentistMarkers()
+    } else {
+      console.error('Error fetching dentist offices:', await response.text())
+    }
   } catch (error) {
     console.error('Error fetching dentist offices:', error)
   }
