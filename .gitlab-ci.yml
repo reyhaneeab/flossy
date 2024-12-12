@@ -17,11 +17,14 @@ before_script:
   # Install dependencies and set up the environment
   - echo "Setting up the environment..."
   - apt-get update && apt-get install -y openjdk-21-jdk maven docker.io docker-compose
+  - service docker start  # Start Docker service
+  - chmod 666 /var/run/docker.sock  # Ensure proper permissions for Docker
   - export "PATH=$MAVEN_HOME/bin:$PATH"
   - java -version
   - mvn -version
   - docker -v
   - docker-compose -v
+  - docker ps  # Verify Docker is running
 
 backend_build_job:
   stage: backend_build
@@ -34,6 +37,7 @@ backend_test_job:
   stage: backend_test
   script:
     - echo "Starting services for testing..."
+    - mkdir -p ./data  
     - docker-compose up -d  # Start MongoDB, Mosquitto, and other services
     - echo "Running unit tests..."
     - mvn test
