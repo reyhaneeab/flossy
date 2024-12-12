@@ -34,9 +34,12 @@ backend_test_job:
   stage: backend_test
   script:
     - echo "Starting services for testing..."
-    - docker-compose up -d
+    - docker-compose up -d  # Start MongoDB, Mosquitto, and other services
+    - echo "Running unit tests..."
+    - mvn test
     - echo "Running integration tests..."
-    - mvn verify
+    - mvn failsafe:integration-test
+    - mvn failsafe:verify
     - echo "Tests completed successfully."
     - echo "Stopping services after testing..."
     - docker-compose down
