@@ -2,6 +2,7 @@ package com.group11.userservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.group11.model.User;
+import com.group11.userservice.config.MqttConfig;
 import com.group11.userservice.dto.UserRequest;
 import com.group11.userservice.repository.UserRepository;
 import com.group11.userservice.dto.LoginRequest;
@@ -22,8 +23,8 @@ public class UserService {
     private final UserRepository userRepository;
     private final MqttClient mqttClient;
     private final PasswordEncoder passwordEncoder;
-    private final ObjectMapper mapper = new ObjectMapper();
-    private final JwtTokenProvider jwtTokenProvider;
+    private final ObjectMapper mapper;
+    private final JwtTokenProvider jwtTokenProvider = new JwtTokenProvider();
 
     private static final String USER_REGISTRATION_TOPIC = "user/registration";
     private static final String USER_REGISTRATION_RESPONSE = USER_REGISTRATION_TOPIC + "/response";
@@ -33,15 +34,23 @@ public class UserService {
     @PostConstruct
     public void init() {
         try {
+            if (!mqttClient.isConnected()) {
+                MqttConnectOptions options = new MqttConnectOptions();
+                options.setAutomaticReconnect(true);
+                options.setCleanSession(false);
+                options.setConnectionTimeout(10);
+                options.setKeepAliveInterval(60);
+                mqttClient.connect(options);
+            }
+
+            mqttClient.subscribe(USER_REGISTRATION_TOPIC);
+            mqttClient.subscribe(USER_LOGIN_TOPIC);
+
+
             mqttClient.setCallback(new MqttCallback() {
                 @Override
                 public void connectionLost(Throwable cause) {
-                    try {
-                        mqttClient.disconnect();
-                        mqttClient.close();
-                    } catch (Exception e) {
-                        log.info("Connection lost:" + e.getMessage());
-                    }
+                    log.error("Connection lost", cause);
                 }
 
                 @Override
@@ -64,13 +73,6 @@ public class UserService {
                 }
             });
 
-            if (!mqttClient.isConnected()) {
-                mqttClient.connect();
-                log.info("MQTT client connected during initialization.");
-            }
-
-            mqttClient.subscribe(USER_REGISTRATION_TOPIC);
-            mqttClient.subscribe(USER_LOGIN_TOPIC);
         } catch (MqttException e) {
             log.error("Error initializing MQTT client", e);
             throw new RuntimeException("MQTT initialization failed", e);
@@ -105,12 +107,21 @@ public class UserService {
     public LoginResponse loginUser(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
+        log.info(user.toString());
     
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new RuntimeException("Invalid password");
         }
-    
-        String token = jwtTokenProvider.generateToken(user);
+
+        String token="";
+
+        try {
+            token = jwtTokenProvider.generateToken(user);
+        }
+        catch (Exception e) {
+            log.error(e.getMessage());
+        }
+
         return new LoginResponse(token);
     }
 
