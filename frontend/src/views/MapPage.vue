@@ -18,15 +18,14 @@
 <script setup>
 import { ref } from 'vue'
 import { Map } from '@fawmi/vue-google-maps'
-import { shallowRef, toRaw } from 'vue'
+import { shallowRef } from 'vue'
 
-const URL = `http://localhost:8091/api/dentists/getAll`
+const URL = `http://localhost:8091/api/dentists`
 
 const dentists = ref([])
 const markers = ref([])
 const mapCenter = ref({ lat: 57.70887, lng: 11.97456 }) // Default to Gothenburg
 const zoomLevel = ref(12)
-const userLocation = ref(null)
 const map = shallowRef(null)
 const placePicker = ref(null)
 const infowindow = ref(null)
@@ -46,30 +45,10 @@ async function fetchDentists() {
   }
 }
 
-function watchUserLocation() {
-  if (navigator.geolocation) {
-    navigator.geolocation.watchPosition(
-      position => {
-        userLocation.value = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        }
-        mapCenter.value = { ...userLocation.value }
-        addUserLocationMarker()
-      },
-      error => {
-        console.error('Error getting user location:', error)
-      },
-      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-    )
-  }
-}
-
 function onMapLoad(loadedMap) {
   console.log('Map loaded:', loadedMap)
   map.value = loadedMap
   addDentistMarkers()
-  addUserLocationMarker()
   initPlacePicker()
 }
 
@@ -87,17 +66,6 @@ function addDentistMarkers() {
     })
 
     markers.value.push(marker) // Keep track of added markers
-  })
-}
-
-function addUserLocationMarker() {
-  if (!map.value || !userLocation.value) return
-  console.log(`Adding user location marker at (${userLocation.value.lat}, ${userLocation.value.lng})`)
-  // eslint-disable-next-line no-undef
-  new google.maps.marker.AdvancedMarkerElement({
-    map: toRaw(map.value),
-    position: userLocation.value,
-    icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
   })
 }
 
@@ -137,7 +105,6 @@ function onPlaceChange() {
 }
 
 fetchDentists()
-watchUserLocation()
 </script>
 
 <style scoped>
