@@ -1,5 +1,7 @@
 default:
   image: ubuntu:22.04
+  tags:
+    - docker
 
 stages:
   - setup
