@@ -6,9 +6,11 @@ stages:
 
 build_job:
    stage: build
+   tags:
+    - docker
    script:
      - echo "Updating package lists and installing dependencies..."
-     - apt-get update && apt-get install -y maven openjdk-17-jdk
+     - sudo apt-get update && apt-get install -y maven openjdk-17-jdk
      - echo "Java and Maven installed."
      
      - java -version
