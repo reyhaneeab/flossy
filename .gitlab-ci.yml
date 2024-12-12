@@ -7,12 +7,20 @@ stages:
 build_job:
    stage: build
    script:
+     - echo "Updating package lists and installing dependencies..."
+     - apt-get update && apt-get install -y maven openjdk-17-jdk
+     - echo "Java and Maven installed."
+     
+     - java -version
+     - mvn -version
+
      - echo "Building the project..."
-     - apt-get update && apt-get install -y maven
      - mvn clean install
      - echo "Build complete."
+
      - echo "Compiling the project..."
      - mvn compile
+
 deploy_job:
    stage: deploy
    script:
