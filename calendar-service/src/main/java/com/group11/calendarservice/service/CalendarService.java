@@ -2,6 +2,7 @@ package com.group11.calendarservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.group11.calendarservice.dto.CalendarRequest;
+import com.group11.calendarservice.dto.TimeSlotRequest;
 import com.group11.calendarservice.dto.TimeSlotResponse;
 import com.group11.model.Calendar;
 import com.group11.model.Dentist;
@@ -13,8 +14,14 @@ import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import jakarta.annotation.PostConstruct;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import static com.group11.config.JacksonConfig.createObjectMapper;
+import org.springframework.scheduling.annotation.Scheduled;
+import java.time.LocalDate;
+import java.time.temporal.ChronoField;
 
 @Slf4j
 @Service
@@ -30,6 +37,52 @@ public class CalendarService {
     private static final String CALENDAR_GET_TOPIC = "calendar/get";
     private static final String CALENDAR_REGISTRATION_RESPONSE = CALENDAR_REGISTRATION_TOPIC + "/response";
     private static final String CALENDAR_GET_RESPONSE = CALENDAR_GET_TOPIC + "/response";
+
+    @Scheduled(cron = "0 0 1 * * MON") // Run every Monday at 1:00 AM
+    public void scheduleWeeklyCalendarRegistration() {
+        List<Dentist> dentists = dentistRepository.findAll();
+        LocalDate now = LocalDate.now();
+        int weekNumber = now.get(ChronoField.ALIGNED_WEEK_OF_YEAR);
+        int year = now.getYear();
+    
+        for (Dentist dentist : dentists) {
+            List<TimeSlotRequest> timeSlots = generateDefaultTimeSlots(now);
+            
+            CalendarRequest request = new CalendarRequest(
+                year,
+                weekNumber,
+                timeSlots,
+                dentist.getId()
+            );
+    
+            try {
+                String message = mapper.writeValueAsString(request);
+                mqttClient.publish(CALENDAR_REGISTRATION_TOPIC, message.getBytes(), 1, false);
+                log.info("Published weekly calendar registration for dentist: {}", dentist.getId());
+            } catch (Exception e) {
+                log.error("Error publishing weekly calendar registration for dentist: {}", dentist.getId(), e);
+            }
+        }
+    }
+    
+    
+    private List<TimeSlotRequest> generateDefaultTimeSlots(LocalDate startOfWeek) {
+        List<TimeSlotRequest> timeSlots = new ArrayList<>();
+        for (int i = 0; i < 7; i++) {
+            LocalDate date = startOfWeek.plusDays(i);
+            LocalDateTime startTime = date.atTime(9, 0); // 9:00 AM
+            LocalDateTime endTime = date.atTime(17, 0); // 5:00 PM
+    
+            while (startTime.isBefore(endTime)) {
+                LocalDateTime slotEndTime = startTime.plusMinutes(30);
+                timeSlots.add(new TimeSlotRequest(date, startTime, slotEndTime));
+                startTime = slotEndTime;
+            }
+        }
+        return timeSlots;
+    }
+
+  
 
     @PostConstruct
     public void init() {
