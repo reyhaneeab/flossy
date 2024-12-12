@@ -52,13 +52,22 @@ function addDentistMarkers() {
     console.log(`Adding marker for dentist: ${dentist.name} at (${dentist.latitude}, ${dentist.longitude})`)
 
     // eslint-disable-next-line no-undef
-    const marker = new google.maps.marker.AdvancedMarkerElement({
+    const marker = new google.maps.Marker({
       position: { lat: dentist.latitude, lng: dentist.longitude },
-      map: map.value, 
+      map: map.value,
       title: dentist.name,
     })
 
     markers.value.push(marker) // Keep track of added markers
+
+    // Optionally: Add an info window or other UI components
+    // eslint-disable-next-line no-undef
+    const infoWindow = new google.maps.InfoWindow({
+      content: `<h3>${dentist.name}</h3><p>${dentist.address}</p>`,
+    })
+    marker.addListener('click', () => {
+      infoWindow.open(map.value, marker)
+    })
   })
 }
 
