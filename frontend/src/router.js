@@ -4,7 +4,7 @@ import Calendar from "@/views/CalendarPage.vue";
 import Signup from "@/views/SignUpPage.vue";
 import Login from "@/views/LoginPage.vue";
 import Home from "@/views/HomePage.vue";
-import GoogleMap from "@/views/Map.vue"; 
+import GoogleMap from "@/views/MapPage.vue"; 
 
 const routes=[
     {path: '/', name: 'Home', component: Home },

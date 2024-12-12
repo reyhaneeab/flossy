@@ -1,6 +1,6 @@
 <template>
   <div class="map-container">
-    <GMapMap
+    <Map
       :center="mapCenter"
       :zoom="zoomLevel"
       class="map"
@@ -11,13 +11,13 @@
       <div slot="control-block-start-inline-start" class="place-picker-container">
         <gmpx-place-picker placeholder="Enter an address" @gmpx-placechange="onPlaceChange"></gmpx-place-picker>
       </div>
-    </GMapMap>
+    </Map>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
-import { GMapMap } from '@fawmi/vue-google-maps'
+import { Map } from '@fawmi/vue-google-maps'
 import { shallowRef, toRaw } from 'vue'
 
 const URL = `http://localhost:8091/api/dentists/getAll`
