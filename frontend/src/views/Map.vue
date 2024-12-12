@@ -13,6 +13,7 @@
 
 <script>
 import { GMapMap } from '@fawmi/vue-google-maps'
+import { shallowRef, toRaw } from 'vue'
 
 export default {
   name: 'GoogleMap',
@@ -26,7 +27,7 @@ export default {
       mapCenter: { lat: 57.70887, lng: 11.97456 }, // Default to Gothenburg
       zoomLevel: 12,
       userLocation: null,
-      map: null,
+      map: shallowRef(null),
     };
   },
   mounted() {
@@ -74,9 +75,10 @@ export default {
     addDentistMarkers() {
       if (!this.map) return;
       this.dentists.forEach(dentist => {
+        console.log(`Adding marker for dentist: ${dentist.name} at (${dentist.latitude}, ${dentist.longitude})`);
         // eslint-disable-next-line no-undef
         new google.maps.marker.AdvancedMarkerElement({
-          map: this.map,
+          map: toRaw(this.map),
           position: { lat: dentist.latitude, lng: dentist.longitude },
           title: dentist.name,
         });
@@ -84,9 +86,10 @@ export default {
     },
     addUserLocationMarker() {
       if (!this.map || !this.userLocation) return;
+      console.log(`Adding user location marker at (${this.userLocation.lat}, ${this.userLocation.lng})`);
       // eslint-disable-next-line no-undef
       new google.maps.marker.AdvancedMarkerElement({
-        map: this.map,
+        map: toRaw(this.map),
         position: this.userLocation,
         icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
       });
