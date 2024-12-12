@@ -15,132 +15,129 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref } from 'vue'
 import { GMapMap } from '@fawmi/vue-google-maps'
 import { shallowRef, toRaw } from 'vue'
 
-export default {
-  name: 'GoogleMap',
-  components: {
-    GMapMap,
-  },
-  data() {
-    return {
-      dentists: [],
-      markers: [],
-      mapCenter: { lat: 57.70887, lng: 11.97456 }, // Default to Gothenburg
-      zoomLevel: 12,
-      userLocation: null,
-      map: shallowRef(null),
-      placePicker: null,
-      infowindow: null,
-    };
-  },
-  mounted() {
-    this.fetchDentists();
-    this.watchUserLocation();
-  },
-  methods: {
-    async fetchDentists() {
-      try {
-        const response = await fetch('http://localhost:8084/api/dentists');
-        const data = await response.json();
-        this.dentists = data.map(dentist => ({
-          ...dentist,
-          latitude: parseFloat(dentist.latitude),
-          longitude: parseFloat(dentist.longitude),
-        }));
-        this.addDentistMarkers();
-      } catch (error) {
-        console.error('Error fetching dentist offices:', error);
-      }
-    },
-    watchUserLocation() {
-      if (navigator.geolocation) {
-        navigator.geolocation.watchPosition(
-          position => {
-            this.userLocation = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-            };
-            this.mapCenter = { ...this.userLocation };
-            this.addUserLocationMarker();
-          },
-          error => {
-            console.error('Error getting user location:', error);
-          },
-          { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-        );
-      }
-    },
-    onMapLoad(map) {
-      console.log('Map loaded:', map);
-      this.map = map;
-      this.addDentistMarkers();
-      this.addUserLocationMarker();
-      this.initPlacePicker();
-    },
-    addDentistMarkers() {
-      if (!this.map) return;
+const URL = `http://localhost:8091/api/dentists/getAll`
 
-      this.dentists.forEach(dentist => {
-        console.log(`Adding marker for dentist: ${dentist.name} at (${dentist.latitude}, ${dentist.longitude})`);
+const dentists = ref([])
+const markers = ref([])
+const mapCenter = ref({ lat: 57.70887, lng: 11.97456 }) // Default to Gothenburg
+const zoomLevel = ref(12)
+const userLocation = ref(null)
+const map = shallowRef(null)
+const placePicker = ref(null)
+const infowindow = ref(null)
 
-        // eslint-disable-next-line no-undef
-        const marker = new google.maps.marker.AdvancedMarkerElement({
-          position: { lat: dentist.latitude, lng: dentist.longitude },
-          map: this.map, // Ensure 'this.map' is passed directly
-          title: dentist.name,
-        });
-
-        this.markers.push(marker); // Keep track of added markers
-      });
-    },
-    addUserLocationMarker() {
-      if (!this.map || !this.userLocation) return;
-      console.log(`Adding user location marker at (${this.userLocation.lat}, ${this.userLocation.lng})`);
-      // eslint-disable-next-line no-undef
-      new google.maps.marker.AdvancedMarkerElement({
-        map: toRaw(this.map),
-        position: this.userLocation,
-        icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-      });
-    },
-    initPlacePicker() {
-      this.placePicker = document.querySelector('gmpx-place-picker');
-      // eslint-disable-next-line no-undef
-      this.infowindow = new google.maps.InfoWindow();
-    },
-    onPlaceChange() {
-      const place = this.placePicker.value;
-
-      if (!place.location) {
-        window.alert("No details available for input: '" + place.name + "'");
-        this.infowindow.close();
-        return;
-      }
-
-      if (place.viewport) {
-        this.map.innerMap.fitBounds(place.viewport);
-      } else {
-        this.map.center = place.location;
-        this.map.zoom = 17;
-      }
-
-      // eslint-disable-next-line no-undef
-      const marker = new google.maps.marker.AdvancedMarkerElement({
-        position: place.location,
-        map: this.map,
-      });
-
-      this.infowindow.setContent(
-        `<strong>${place.displayName}</strong><br>
-         <span>${place.formattedAddress}</span>`
-      );
-      this.infowindow.open(this.map.innerMap, marker);
-    }
-  },
+async function fetchDentists() {
+  try {
+    const response = await fetch(URL)
+    const data = await response.json()
+    dentists.value = data.map(dentist => ({
+      ...dentist,
+      latitude: parseFloat(dentist.latitude),
+      longitude: parseFloat(dentist.longitude),
+    }))
+    addDentistMarkers()
+  } catch (error) {
+    console.error('Error fetching dentist offices:', error)
+  }
 }
+
+function watchUserLocation() {
+  if (navigator.geolocation) {
+    navigator.geolocation.watchPosition(
+      position => {
+        userLocation.value = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        }
+        mapCenter.value = { ...userLocation.value }
+        addUserLocationMarker()
+      },
+      error => {
+        console.error('Error getting user location:', error)
+      },
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+    )
+  }
+}
+
+function onMapLoad(loadedMap) {
+  console.log('Map loaded:', loadedMap)
+  map.value = loadedMap
+  addDentistMarkers()
+  addUserLocationMarker()
+  initPlacePicker()
+}
+
+function addDentistMarkers() {
+  if (!map.value) return
+
+  dentists.value.forEach(dentist => {
+    console.log(`Adding marker for dentist: ${dentist.name} at (${dentist.latitude}, ${dentist.longitude})`)
+
+    // eslint-disable-next-line no-undef
+    const marker = new google.maps.marker.AdvancedMarkerElement({
+      position: { lat: dentist.latitude, lng: dentist.longitude },
+      map: map.value, // Ensure 'map.value' is passed directly
+      title: dentist.name,
+    })
+
+    markers.value.push(marker) // Keep track of added markers
+  })
+}
+
+function addUserLocationMarker() {
+  if (!map.value || !userLocation.value) return
+  console.log(`Adding user location marker at (${userLocation.value.lat}, ${userLocation.value.lng})`)
+  // eslint-disable-next-line no-undef
+  new google.maps.marker.AdvancedMarkerElement({
+    map: toRaw(map.value),
+    position: userLocation.value,
+    icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+  })
+}
+
+function initPlacePicker() {
+  placePicker.value = document.querySelector('gmpx-place-picker')
+  // eslint-disable-next-line no-undef
+  infowindow.value = new google.maps.InfoWindow()
+}
+
+function onPlaceChange() {
+  const place = placePicker.value.value
+
+  if (!place.location) {
+    window.alert("No details available for input: '" + place.name + "'")
+    infowindow.value.close()
+    return
+  }
+
+  if (place.viewport) {
+    map.value.innerMap.fitBounds(place.viewport)
+  } else {
+    map.value.center = place.location
+    map.value.zoom = 17
+  }
+
+  // eslint-disable-next-line no-undef
+  const marker = new google.maps.marker.AdvancedMarkerElement({
+    position: place.location,
+    map: map.value,
+  })
+
+  infowindow.value.setContent(
+    `<strong>${place.displayName}</strong><br>
+     <span>${place.formattedAddress}</span>`
+  )
+  infowindow.value.open(map.value.innerMap, marker)
+}
+
+fetchDentists()
+watchUserLocation()
 </script>
 
 <style scoped>
