@@ -1,4 +1,3 @@
-
 default:
   image: ubuntu:22.04
   tags:
@@ -13,13 +12,12 @@ stages:
 variables:
   MAVEN_HOME: "/opt/maven"
   JAVA_HOME: "/usr/lib/jvm/java-21-openjdk-amd64"
-  PATH: "$PATH:$MAVEN_HOME/bin"
 
 before_script:
   # Install dependencies and set up the environment
-  - export "PATH=${CARGO_HOME}/bin:$PATH"
   - echo "Setting up the environment..."
   - apt-get update && apt-get install -y openjdk-21-jdk maven docker.io docker-compose
+  - export "PATH=$MAVEN_HOME/bin:$PATH"
   - java -version
   - mvn -version
   - docker -v
