@@ -1,30 +1,34 @@
 image: ubuntu:22.04
 
 stages:
-   - build
-   - deploy
+  - setup
+  - backend_build
+  - backend_run
 
-build_job:
-   stage: build
-   tags:
-    - docker
-   script:
-     - echo "Updating package lists and installing dependencies..."
-     - sudo apt-get update && apt-get install -y maven openjdk-17-jdk
-     - echo "Java and Maven installed."
-     
-     - java -version
-     - mvn -version
+variables:
+  MAVEN_HOME: "/opt/maven"
+  JAVA_HOME: "/usr/lib/jvm/java-21-openjdk-amd64"
+  PATH: "$PATH:$MAVEN_HOME/bin"
 
-     - echo "Building the project..."
-     - mvn clean install
-     - echo "Build complete."
+before_script:
+  # Install Java, Maven, and Docker
+  - echo "Installing Java, Maven, and Docker..."
+  - apt-get update && apt-get install -y openjdk-21-jdk maven docker.io
+  - java -version
+  - mvn -version
+  - docker -v
 
-     - echo "Compiling the project..."
-     - mvn compile
+backend_build_job:
+  stage: backend_build
+  script:
+    - echo "Building the backend with Maven..."
+    - mvn clean install
+    - mvn verify
+    - echo "Backend build complete."
 
-deploy_job:
-   stage: deploy
-   script:
-     - echo "Deploying the project..."
-     - echo "Deploy complete."
+backend_run_job:
+  stage: backend_run
+  script:
+    - echo "Running backend services..."
+    - docker-compose up -d
+    - echo "Backend services started successfully."
