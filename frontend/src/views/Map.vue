@@ -74,14 +74,18 @@ export default {
     },
     addDentistMarkers() {
       if (!this.map) return;
+
       this.dentists.forEach(dentist => {
         console.log(`Adding marker for dentist: ${dentist.name} at (${dentist.latitude}, ${dentist.longitude})`);
+
         // eslint-disable-next-line no-undef
-        new google.maps.marker.AdvancedMarkerElement({
-          map: toRaw(this.map),
+        const marker = new google.maps.marker.AdvancedMarkerElement({
           position: { lat: dentist.latitude, lng: dentist.longitude },
+          map: this.map, // Ensure 'this.map' is passed directly
           title: dentist.name,
         });
+
+        this.markers.push(marker); // Keep track of added markers
       });
     },
     addUserLocationMarker() {
