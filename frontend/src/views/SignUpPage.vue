@@ -110,7 +110,7 @@ async function handleSignup() {
 
     if (response.ok) {
       // Redirect to home page on successful signup
-      await router.push('/')
+      await router.push('/login')
       console.log('Signup successful')
     } else {
       console.error('Signup failed')
