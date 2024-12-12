@@ -7,6 +7,10 @@
       @load="onMapLoad"
     >
       <!-- Markers will be added programmatically -->
+      <!-- eslint-disable-next-line vue/no-deprecated-slot-attribute -->
+      <div slot="control-block-start-inline-start" class="place-picker-container">
+        <gmpx-place-picker placeholder="Enter an address" @gmpx-placechange="onPlaceChange"></gmpx-place-picker>
+      </div>
     </GMapMap>
   </div>
 </template>
@@ -28,6 +32,8 @@ export default {
       zoomLevel: 12,
       userLocation: null,
       map: shallowRef(null),
+      placePicker: null,
+      infowindow: null,
     };
   },
   mounted() {
@@ -68,9 +74,11 @@ export default {
       }
     },
     onMapLoad(map) {
+      console.log('Map loaded:', map);
       this.map = map;
       this.addDentistMarkers();
       this.addUserLocationMarker();
+      this.initPlacePicker();
     },
     addDentistMarkers() {
       if (!this.map) return;
@@ -97,6 +105,39 @@ export default {
         position: this.userLocation,
         icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
       });
+    },
+    initPlacePicker() {
+      this.placePicker = document.querySelector('gmpx-place-picker');
+      // eslint-disable-next-line no-undef
+      this.infowindow = new google.maps.InfoWindow();
+    },
+    onPlaceChange() {
+      const place = this.placePicker.value;
+
+      if (!place.location) {
+        window.alert("No details available for input: '" + place.name + "'");
+        this.infowindow.close();
+        return;
+      }
+
+      if (place.viewport) {
+        this.map.innerMap.fitBounds(place.viewport);
+      } else {
+        this.map.center = place.location;
+        this.map.zoom = 17;
+      }
+
+      // eslint-disable-next-line no-undef
+      const marker = new google.maps.marker.AdvancedMarkerElement({
+        position: place.location,
+        map: this.map,
+      });
+
+      this.infowindow.setContent(
+        `<strong>${place.displayName}</strong><br>
+         <span>${place.formattedAddress}</span>`
+      );
+      this.infowindow.open(this.map.innerMap, marker);
     }
   },
 }
@@ -112,5 +153,9 @@ export default {
 .map {
   width: 100%;
   height: 100%;
+}
+
+.place-picker-container {
+  padding: 20px;
 }
 </style>
