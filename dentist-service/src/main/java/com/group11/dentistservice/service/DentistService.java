@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -23,6 +25,26 @@ public class DentistService {
     private static final String DENTIST_REGISTRATION_TOPIC = "dentist/registration";
     private static final String DENTIST_REGISTRATION_RESPONSE = DENTIST_REGISTRATION_TOPIC + "/response";
     private static final String DENTIST_REGISTRATION_EMAIL = DENTIST_REGISTRATION_TOPIC + "/email";
+    private static final String DENTIST_GET_TOPIC = "dentist/get";
+
+    @PostConstruct
+    public void subscribeToTopics() {
+        try {
+            mqttClient.subscribe(DENTIST_GET_TOPIC, this::handleGetDentists);
+        } catch (MqttException e) {
+            log.error("Error subscribing to topics", e);
+        }
+    }
+
+    private void handleGetDentists(String topic, MqttMessage message) {
+        try {
+            List<Dentist> dentists = dentistRepository.findAll();
+            String payload = mapper.writeValueAsString(dentists);
+            mqttPublishUtil.publish(DENTIST_GET_TOPIC + "/response", payload, 1, false);
+        } catch (Exception e) {
+            log.error("Error handling get dentists request", e);
+        }
+    }
 
     public void createDentist(MqttMessage message) throws Exception {
         DentistRequest request = mapper.readValue(message.getPayload(), DentistRequest.class);

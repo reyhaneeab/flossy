@@ -16,7 +16,7 @@ import { ref } from 'vue'
 import { Map } from '@fawmi/vue-google-maps'
 import { shallowRef } from 'vue'
 
-const URL = `http://localhost:8091/api/dentists`
+const URL = `http://localhost:8091/api/dentists/get`
 
 const dentists = ref([])
 const markers = ref([])
@@ -42,7 +42,7 @@ async function fetchDentists() {
 function onMapLoad(loadedMap) {
   console.log('Map loaded:', loadedMap)
   map.value = loadedMap
-  addDentistMarkers()
+  fetchDentists()
 }
 
 function addDentistMarkers() {
@@ -62,7 +62,6 @@ function addDentistMarkers() {
   })
 }
 
-fetchDentists()
 </script>
 
 <style scoped>
