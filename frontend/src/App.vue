@@ -1,18 +1,40 @@
 <template>
   <div id="app">
-    <!-- Add a navigation bar or header if needed -->
     <header>
-      <nav>
-        <router-link to="/">Home</router-link>
-        <router-link to="/about">About</router-link>
-        <router-link to="/contact">Contact</router-link>
-        <router-link to="/calendar">Calendar</router-link>
-        <router-link to="/appointments">My Appointments</router-link>
+      <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container">
+          <a class="navbar-brand" href="#">Flossy</a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+              <li class="nav-item">
+                <router-link class="nav-link" to="/">Home</router-link>
+              </li>
+              <li class="nav-item">
+                <router-link class="nav-link" to="/about">About</router-link>
+              </li>
+              <li class="nav-item">
+                <router-link class="nav-link" to="/contact">Contact</router-link>
+              </li>
+              <li class="nav-item">
+                <router-link class="nav-link" to="/calendar">Calendar</router-link>
+              </li>
+            </ul>
+            <ul class="navbar-nav">
+              <li class="nav-item">
+                <router-link class="nav-link" to="/login">Login/Signup</router-link>
+              </li>
+            </ul>
+          </div>
+        </div>
       </nav>
     </header>
 
-    <!-- This is where the current view will be rendered -->
-    <router-view />
+    <main class="container mt-4">
+      <router-view />
+    </main>
   </div>
 </template>
 

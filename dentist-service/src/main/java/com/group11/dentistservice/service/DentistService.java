@@ -1,7 +1,7 @@
 package com.group11.dentistservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.group11.dentistservice.dto.DentistRequest;
+import com.group11.dto.DentistRequest;
 import com.group11.model.Dentist;
 import com.group11.dentistservice.repository.DentistRepository;
 import jakarta.annotation.PostConstruct;
@@ -14,13 +14,12 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class DentistService {
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper;
     private final DentistRepository dentistRepository;
     private final MqttClient mqttClient;
 
     private static final String DENTIST_REGISTRATION_TOPIC = "dentist/registration";
     private static final String DENTIST_REGISTRATION_RESPONSE = DENTIST_REGISTRATION_TOPIC+"/response";
-    private static final String DENTIST_REGISTRATION_EMAIL = DENTIST_REGISTRATION_TOPIC+"/email";
 
     @PostConstruct
     public void init() {
@@ -36,7 +35,7 @@ public class DentistService {
                         mqttClient.disconnect();
                         mqttClient.close();
                     }catch(Exception e){
-                        log.info("Connection lost:" + e.getMessage());
+                        log.info("Connection lost: {}", e.getMessage());
                     }
                 }
 
@@ -59,28 +58,28 @@ public class DentistService {
         }
     }
 
-    public void createDentist(MqttMessage message) throws Exception {
+    public void createDentist(MqttMessage message) {
 
-        DentistRequest request = mapper.readValue(message.getPayload(), DentistRequest.class);
+        try {
+            DentistRequest request = mapper.readValue(message.getPayload(), DentistRequest.class);
 
-        Dentist dentist = Dentist.builder()
+            Dentist dentist = Dentist.builder()
                 .officeName(request.officeName())
                 .email(request.email())
                 .password(request.password())
                 .phone(request.phone())
                 .address(request.address())
                 .build();
-        dentistRepository.save(dentist);
+            dentistRepository.save(dentist);
 
-        try {
-            String payload = mapper.writeValueAsString(dentist);
-            String emailPayload = dentist.getEmail() + "," + dentist.getOfficeName();
-            log.info("Dentist Office {} has been registered successfully", dentist.getOfficeName());
-            mqttClient.publish(DENTIST_REGISTRATION_RESPONSE, payload.getBytes(), 1, false);
-            mqttClient.publish(DENTIST_REGISTRATION_EMAIL, emailPayload.getBytes(), 1, false);
+
+                String payload = mapper.writeValueAsString(dentist);
+                log.info("Dentist Office {} has been registered successfully", dentist.getOfficeName());
+                mqttClient.publish(DENTIST_REGISTRATION_RESPONSE, payload.getBytes(), 1, false);
+            }
+        catch (Exception e) {
+            log.info(e.getMessage());
         }
-        catch (Exception e){log.info(e.getMessage());}
-
     }
 
 }
