@@ -1,4 +1,5 @@
-image: maven:4.0.0 eclipse-temurin-21
+image: ubuntu:22.04
+
 stages:
    - build
    - deploy
@@ -7,9 +8,10 @@ build_job:
    stage: build
    script:
      - echo "Building the project..."
+     - apt-get update && apt-get install -y maven
      - mvn clean install
      - echo "Build complete."
-     - echo "run serve"
+     - echo "Compiling the project..."
      - mvn compile
 deploy_job:
    stage: deploy
