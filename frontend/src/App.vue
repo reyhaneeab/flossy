@@ -45,14 +45,29 @@ export default {
 </script>
 
 <style>
-/* other styles can be added here */
+/* Add global styles here */
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
+  text-align: center;
+  color: #2c3e50;
+  margin-top: 60px;
+}
+
+nav {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  background-color: #f8f9fa;
+  padding: 1rem;
+}
+
+nav a {
+  text-decoration: none;
   color: #2c3e50;
 }
 
-.navbar-nav .router-link-active {
+nav a.router-link-active {
   font-weight: bold;
-  color: #42b983 !important;
+  color: #42b983;
 }
 </style>

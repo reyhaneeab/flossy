@@ -57,8 +57,9 @@
 <script>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import {jwtDecode} from "jwt-decode";
 
-const URL = `http://localhost:8090/api/users/login`
+const URL = `http://localhost:8091/api/user/login`
 
 export default {
   setup() {
@@ -84,6 +85,8 @@ export default {
         if (response.ok) {
           const data = await response.json()
           localStorage.setItem('token', data.token)
+          const decoded = jwtDecode(data.token);
+          console.log(decoded);
           router.push('/home')
         } else {
           const errorData = await response.text();
