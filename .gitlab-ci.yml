@@ -6,7 +6,6 @@ default:
 stages:
   - setup
   - backend_build
-  - user_service_build
   - backend_test
   - deploy
 
@@ -22,14 +21,14 @@ before_script:
   - java -version
   - mvn -version
 
-user_service_build:
+backend_build_job:
   stage: backend_build
   script:
-    - echo "Building API Gateway..."
-    - mvn clean install -pl user-service
-    - echo "API Gateway build complete."
+    - echo "Building the backend with Maven..."
+    - mvn clean install
+    - echo "Backend build complete."
 
-backend_test_job:
+user-service_job:
   stage: backend_test
   tags:
     - docker
@@ -43,10 +42,9 @@ backend_test_job:
   script:
     - echo "Starting services for testing..."
     - echo "Running integration tests..."
-    - mvn verify
+    - mvn test -pl user-service
     - echo "Tests completed successfully."
     - echo "Stopping services after testing..."
-
 
 deploy_job:
   stage: deploy
