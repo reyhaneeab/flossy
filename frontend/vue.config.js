@@ -5,7 +5,7 @@ module.exports = defineConfig({
   transpileDependencies: true,
   devServer: {
     // FRONTEND PORT
-    port: 8081,
+    port: 8080,
     proxy: {
       "/api": {
         target: process.env.VUE_APP_APIGATEWAY_URL || 'http://localhost:8084', 
