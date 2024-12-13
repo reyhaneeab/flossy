@@ -15,7 +15,7 @@
 import { ref, shallowRef } from 'vue'
 import { Map } from '@fawmi/vue-google-maps'
 
-const URL = `http://localhost:8091/api/dentists/get`
+const URL = `http://localhost:8084/api/dentists/get`
 
 const dentists = ref([])
 const markers = ref([])
