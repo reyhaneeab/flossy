@@ -1,68 +1,87 @@
 package com.group11.notificationservice.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.group11.notificationservice.handler.NotificationHandler;
-import com.group11.notificationservice.handler.DentistRegistrationHandler;
-import com.group11.notificationservice.handler.UserRegistrationHandler;
-import com.group11.notificationservice.handler.DentistBookingHandler;
 import com.group11.notificationservice.engine.EmailEngine;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.client.mqttv3.*;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Autowired;
-
+import com.group11.notificationservice.handler.*;
 import java.util.HashMap;
-import java.util.Map;
+
 
 @Service
+@RequiredArgsConstructor
 @Slf4j
 public class NotificationService {
 
-    private final Map<String, NotificationHandler> handlers;
-    private final ObjectMapper objectMapper;
-    private final EmailEngine emailEngine;
+    private final MqttClient mqttClient;
+    private final JavaMailSenderImpl mailSender;
+    private final HashMap<String, NotificationHandler> handlers = new HashMap<>();
 
     // Define topics
     private static final String[] topics = {
             "dentist/registration/email",
-            "timeSlot/book/email",
-            "dentist/registration",
-            "booking/successful"
+            "timeSlot/book/email"
     };
 
-    @Autowired
-    public NotificationService( EmailEngine emailEngine, ObjectMapper objectMapper) {
-        this.emailEngine = emailEngine;
-        this.objectMapper = objectMapper;
-        this.handlers = new HashMap<>();
-        initializeHandlers();
-    }
-
-    private void initializeHandlers() {
-        handlers.put("DENTIST_REGISTRATION", new DentistRegistrationHandler(emailEngine));
-        handlers.put("USER_REGISTRATION", new UserRegistrationHandler(emailEngine));
-        handlers.put("DENTIST_BOOKING", new DentistBookingHandler(emailEngine));
-
-    }
-
-    public String handleRequest(String request) {
+    // PostConstruct to set up subscriptions
+    @PostConstruct
+    public void init() {
         try {
-            Map<String, Object> requestMap = objectMapper.readValue(request, Map.class);
-            String notificationType = (String) requestMap.get("type");
-
-            NotificationHandler handler = handlers.get(notificationType);
-            if (handler == null) {
-                return "Error: Unknown notification type";
+            // Connect and subscribe to the relevant topic
+            if (!mqttClient.isConnected()) {
+                mqttClient.connect();
             }
 
-            handler.process(objectMapper.writeValueAsString(requestMap.get("payload")));
-            return "Notification processed successfully: " + notificationType;
-        } catch (Exception e) {
-            log.error("Error processing notification", e);
-            return "Error processing notification: " + e.getMessage();
+            for (String topic : topics) {
+                mqttClient.subscribe(topic,1);
+                log.info("Subscribed to topic: {}", topic);
+            }
+
+            handlers.put(topics[0], new DentistRegistrationHandler(new EmailEngine(mailSender)));
+            handlers.put(topics[1], new DentistBookingHandler(new EmailEngine(mailSender)));
+
+            mqttClient.setCallback(new MqttCallback() {
+                @Override
+                public void connectionLost(Throwable cause) {
+                    try {
+                        mqttClient.disconnect();
+                        mqttClient.close();
+                    }
+                    catch (MqttException e) {
+                        log.error(e.getMessage());
+                    }
+                }
+
+                @Override
+                public void messageArrived(String topic, MqttMessage message) {
+                    log.info("Message arrived: {}", topic);
+                    handleMessage(topic, new String(message.getPayload()));
+                }
+
+                @Override
+                public void deliveryComplete(IMqttDeliveryToken token) {
+                    log.info("MQTT delivery complete: {}", token.isComplete());
+                }
+            });
+
+        } catch (MqttException e) {
+            log.error(e.getMessage());
+        }
+    }
+
+    private void handleMessage(String topic, String payload) {
+        NotificationHandler handler = handlers.get(topic);
+        if (handler != null) {
+            try {
+                handler.process(payload);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            log.warn("No handler found for topic: {}", topic);
         }
     }
 }

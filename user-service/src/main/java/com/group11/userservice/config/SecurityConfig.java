@@ -1,4 +1,5 @@
 package com.group11.userservice.config;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -19,25 +20,18 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfig {
 
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // Disable CSRF protection
                 .csrf(AbstractHttpConfigurer::disable)
-                // Enable CORS with the configuration defined in corsConfigurationSource()
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                // Configure authorization rules
                 .authorizeHttpRequests(auth -> auth
-                        // Allow unrestricted access to these endpoints
                         .requestMatchers("/api/users/signup", "/success", "/public/**", "/api/users/login").permitAll()
-                        // Require authentication for all other requests
                         .anyRequest().authenticated()
                 );
         return http.build();
     }
 
-    // Define CORS configuration
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
@@ -56,10 +50,8 @@ public class SecurityConfig {
         return source;
     }
 
-
     @Bean
     public PasswordEncoder passwordEncoder() {
-        // Use BCrypt for password hashing
         return new BCryptPasswordEncoder();
     }
 }

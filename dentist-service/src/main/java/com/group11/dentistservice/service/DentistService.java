@@ -1,7 +1,6 @@
 package com.group11.dentistservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.group11.dentistservice.config.MqttPublishUtil;
 import com.group11.dentistservice.dto.DentistRequest;
 import com.group11.model.Dentist;
 import com.group11.dentistservice.repository.DentistRepository;
@@ -17,10 +16,9 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class DentistService {
-    private final ObjectMapper mapper;
+    private final ObjectMapper mapper = new ObjectMapper();
     private final DentistRepository dentistRepository;
     private final MqttClient mqttClient;
-    private final MqttPublishUtil mqttPublishUtil;
 
     private static final String DENTIST_REGISTRATION_TOPIC = "dentist/registration";
     private static final String DENTIST_REGISTRATION_RESPONSE = DENTIST_REGISTRATION_TOPIC + "/response";
@@ -30,19 +28,38 @@ public class DentistService {
     @PostConstruct
     public void subscribeToTopics() {
         try {
-            mqttClient.subscribe(DENTIST_GET_TOPIC, this::handleGetDentists);
+            if (!mqttClient.isConnected()) {
+                mqttClient.connect();
+                mqttClient.subscribe(DENTIST_REGISTRATION_TOPIC, 1);
+            }
+            mqttClient.setCallback(new MqttCallback() {
+                @Override
+                public void connectionLost(Throwable cause) {
+                    try {
+                        mqttClient.disconnect();
+                        mqttClient.close();
+                    } catch (Exception e) {
+                        log.info("Connection lost:" + e.getMessage());
+                    }
+                }
+
+                @Override
+                public void messageArrived(String topic, MqttMessage mqttMessage) {
+                    log.info("Message arrived: {}", mqttMessage.toString());
+                    try {
+                        createDentist(mqttMessage);
+                    } catch (Exception e) {
+                        log.info(e.getMessage());
+                    }
+                }
+
+                @Override
+                public void deliveryComplete(IMqttDeliveryToken token) {
+                    log.info("MQTT delivery complete: {}", token.isComplete());
+                }
+            });
         } catch (MqttException e) {
             log.error("Error subscribing to topics", e);
-        }
-    }
-
-    private void handleGetDentists(String topic, MqttMessage message) {
-        try {
-            List<Dentist> dentists = dentistRepository.findAll();
-            String payload = mapper.writeValueAsString(dentists);
-            mqttPublishUtil.publish(DENTIST_GET_TOPIC + "/response", payload, 1, false);
-        } catch (Exception e) {
-            log.error("Error handling get dentists request", e);
         }
     }
 
@@ -61,18 +78,19 @@ public class DentistService {
                 .build();
         dentistRepository.save(dentist);
 
-        publishDentistRegistration(dentist);
-    }
-
-    private void publishDentistRegistration(Dentist dentist) {
         try {
             String payload = mapper.writeValueAsString(dentist);
             String emailPayload = dentist.getEmail() + "," + dentist.getOfficeName();
             log.info("Dentist Office {} has been registered successfully", dentist.getOfficeName());
-            mqttPublishUtil.publish(DENTIST_REGISTRATION_RESPONSE, payload, 1, false);
-            mqttPublishUtil.publish(DENTIST_REGISTRATION_EMAIL, emailPayload, 1, false);
+            mqttClient.publish(DENTIST_REGISTRATION_RESPONSE, payload.getBytes(), 1, false);
+            mqttClient.publish(DENTIST_REGISTRATION_EMAIL, emailPayload.getBytes(), 1, false);
         } catch (Exception e) {
-            log.error("Error publishing dentist registration", e);
+            log.info(e.getMessage());
         }
     }
+
+    public List<Dentist> getAllDentists() {
+        return dentistRepository.findAll();
+    }
+
 }

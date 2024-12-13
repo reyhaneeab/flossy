@@ -7,41 +7,25 @@ import org.springframework.stereotype.Component;
 import lombok.extern.slf4j.Slf4j;
 import java.util.Date;
 
-/**
- * This class provides functionality for generating, parsing, and validating JWT tokens.
- * It's used for handling user authentication in a stateless manner.
- */
 @Component
 @Slf4j
 public class JwtTokenProvider {
 
-    // Secret key used for signing the JWT
     @Value("${jwt.secret-key}")
     private String jwtSecret;
 
-    // Token expiration time in milliseconds
     @Value("${jwt.expiration}")
     private int jwtExpirationMs;
 
-    /**
-     * Generates a JWT token for a given user.
-       user: The user for whom the token is being generated
-       return A JWT token as a String
-     */
     public String generateToken(User user) {
         return Jwts.builder()
-                .setSubject(user.getEmail())  // Use email as the subject
-                .setIssuedAt(new Date())  // Set the token issue time
-                .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))  // Set the expiration time
-                .signWith(SignatureAlgorithm.HS512, jwtSecret)  // Sign the token with HS512 algorithm and secret key
-                .compact();  // Build the token
+                .setSubject(user.getEmail())
+                .setIssuedAt(new Date())
+                .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
+                .signWith(SignatureAlgorithm.HS512, jwtSecret)
+                .compact();
     }
 
-    /**
-     * Extracts the user email from a JWT token.
-      token :The JWT token
-      return The email of the user
-     */
     public String getUserEmailFromJWT(String token) {
         Claims claims = Jwts.parser()
                 .setSigningKey(jwtSecret)
@@ -51,11 +35,6 @@ public class JwtTokenProvider {
         return claims.getSubject();
     }
 
-    /**
-     * Validates a given JWT token.
-       authToken : The token to validate
-       return true if the token is valid, false otherwise
-     */
     public boolean validateToken(String authToken) {
         try {
             Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(authToken);
