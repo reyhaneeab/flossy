@@ -12,6 +12,7 @@ stages:
 variables:
   MAVEN_HOME: "/opt/maven"
   JAVA_HOME: "/usr/lib/jvm/java-21-openjdk-amd64"
+  DOCKER_HOST: "unix:///var/run/docker.sock" # Ensure Docker can communicate with its daemon
 
 before_script:
   # Install dependencies and set up the environment
@@ -22,6 +23,8 @@ before_script:
   - mvn -version
   - docker -v
   - docker-compose -v
+  - service docker start # Ensure Docker service is started
+  - chmod 666 /var/run/docker.sock # Allow access to Docker socket
 
 backend_build_job:
   stage: backend_build
