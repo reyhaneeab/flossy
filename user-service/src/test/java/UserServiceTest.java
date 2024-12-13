@@ -36,6 +36,7 @@ public class UserServiceTest {
         MockitoAnnotations.openMocks(this);
     }
 
+
     @Test
     void testCreateUser_Success() throws Exception {
         // Arrange
