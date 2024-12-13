@@ -153,11 +153,9 @@ public class CalendarService {
 
     // Retrieve a calendar
     public void getCalendar(MqttMessage message) throws Exception {
-        String[] parts = new String(message.getPayload()).split(":");
-        String ownerId = parts[0];
-        int weekNumber = Integer.parseInt(parts[1]);
+        CalendarRequest request = mapper.readValue(message.getPayload(), CalendarRequest.class);
 
-        Calendar calendar = getCalendarFromCacheOrDatabase(ownerId, weekNumber);
+        Calendar calendar = getCalendarFromCacheOrDatabase(request.ownerId(), request.weekNumber());
 
         if (calendar != null) {
             CalendarResponse response = mapToCalendarResponse(calendar);
@@ -170,11 +168,13 @@ public class CalendarService {
     // Retrieve calendar from cache or database
     private Calendar getCalendarFromCacheOrDatabase(String ownerId, int weekNumber) {
         String cacheKey = CACHE_KEY_PREFIX + ownerId + ":" + weekNumber;
-        Calendar cachedCalendar = (Calendar) redisTemplate.opsForValue().get(cacheKey);
+        Object cachedCalendar =  redisTemplate.opsForValue().get(cacheKey);
     
         if (cachedCalendar != null) {
-            log.info("Calendar found in cache for owner: {} and week: {}", ownerId, weekNumber);
-            return cachedCalendar;
+            if (cachedCalendar instanceof Calendar) {
+                log.info("Calendar found in cache for owner: {} and week: {}", ownerId, weekNumber);
+                return (Calendar) cachedCalendar;
+            }
         }
     
         Dentist owner = dentistRepository.findById(ownerId)
