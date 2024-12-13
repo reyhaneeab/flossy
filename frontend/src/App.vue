@@ -1,8 +1,3 @@
-<script setup>
-
-</script>
-
-
 <template>
   <div id="app">
     <header>
@@ -22,7 +17,7 @@
           <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto">
               <li class="nav-item">
-                <router-link class="nav-link" to="/">Home</router-link>
+                <router-link class="nav-link" to="/home">Home</router-link>
               </li>
               <li class="nav-item">
                 <router-link class="nav-link" to="/about">About</router-link>
@@ -143,14 +138,6 @@ export default {
 .container {
   flex: 1;
   padding: 2rem;
-}
-
-/* Transitions */
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.5s;
-}
-.fade-enter, .fade-leave-to {
-  opacity: 0;
 }
 
 /* Mobile Responsiveness */
