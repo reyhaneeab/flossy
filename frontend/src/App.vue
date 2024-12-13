@@ -1,76 +1,164 @@
+<script setup>
+
+</script>
+
+
 <template>
   <div id="app">
-    <!-- Add a navigation bar or header if needed -->
     <header>
-      <nav>
-        <router-link to="/">Home</router-link>
-        <router-link to="/about">About</router-link>
-        <router-link to="/contact">Contact</router-link>
-        <router-link to="/calendar">Calendar</router-link>
-        <router-link to="/map">Map</router-link>
+      <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+          <a class="navbar-brand fw-bold" href="#">Flossy</a>
+          <button
+              class="navbar-toggler"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#navbarNav"
+              aria-controls="navbarNav"
+              aria-expanded="false"
+              aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+              <li class="nav-item">
+                <router-link class="nav-link" to="/">Home</router-link>
+              </li>
+              <li class="nav-item">
+                <router-link class="nav-link" to="/about">About</router-link>
+              </li>
+              <li class="nav-item">
+                <router-link class="nav-link" to="/contact">Contact</router-link>
+              </li>
+              <li class="nav-item">
+                <router-link class="nav-link" to="/calendar">Calendar</router-link>
+              </li>
+            </ul>
+            <ul class="navbar-nav">
+              <li class="nav-item dropdown" v-if="authView === 'Login'">
+                <router-link class="nav-link auth-button" to="/signup" @click="toggleAuthView">
+                  Sign Up
+                </router-link>
+              </li>
+              <li v-else>
+                <router-link class="nav-link auth-button" to="/login" @click="toggleAuthView">
+                  Log In
+                </router-link>
+              </li>
+            </ul>
+          </div>
+        </div>
       </nav>
     </header>
 
-    <!-- This is where the current view will be rendered -->
-    <router-view />
+    <main class="container mt-4">
+      <router-view />
+    </main>
   </div>
 </template>
 
 <script>
 export default {
   name: "App",
+  data() {
+    return {
+      authView: "Login",
+    };
+  },
+  methods: {
+    toggleAuthView() {
+      this.authView = this.authView === "Login" ? "Sign Up" : "Login";
+    },
+  },
 };
 </script>
 
 <style>
-/* Add global styles here */
+  /* General Layout */
 #app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
-
-nav {
+  font-family: "Inter", Arial, sans-serif;
+  background-color: #0d1b2a;
+  color: #e0e1dd;
+  min-height: 100vh;
   display: flex;
-  gap: 1rem;
-  justify-content: center;
-  background-color: #f8f9fa;
+  flex-direction: column;
+}
+
+/* Navbar Styling */
+.navbar {
+  background-color: #1b263b;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
   padding: 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
 }
 
-nav a {
-  text-decoration: none;
-  color: #2c3e50;
-}
-
-nav a.router-link-active {
+.navbar-brand {
+  font-size: 1.8rem;
   font-weight: bold;
-  color: #42b983;
+  color: #e0e1dd;
+  transition: color 0.3s;
 }
 
-body {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  background-color: #f0f2f5;
+.navbar-brand:hover {
+  color: #f4d35e;
 }
 
-header {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+.nav-link {
+  color: #e0e1dd;
+  margin-right: 1rem;
+  font-size: 1rem;
+  transition: color 0.3s, transform 0.2s;
 }
 
-button {
-  cursor: pointer;
-  background-color: #42b983;
-  color: white;
+.nav-link:hover {
+  color: #f4a261;
+  transform: scale(1.1);
+}
+
+.auth-button {
+  background-color: #f4a261;
+  color: #ffffff;
+  border-radius: 20px;
+  padding: 0.5rem 1rem;
+  text-align: center;
+  transition: background-color 0.3s;
+}
+
+.auth-button:hover {
+  background-color: #1b263b;
+}
+
+.navbar-toggler {
   border: none;
-  border-radius: 5px;
-  padding: 10px 20px;
-  font-size: 16px;
 }
 
-button:hover {
-  background-color: #369f6b;
+.navbar-toggler-icon {
+  background-image: url("data:image/svg+xml;charset=utf8,%3Csvg viewBox='0 0 30 30' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath stroke='rgba%28224, 224, 224, 1%29' stroke-width='2' stroke-linecap='round' stroke-miterlimit='10' d='M4 7h22M4 15h22M4 23h22'/%3E%3C/svg%3E");
+}
+
+/* Main Content */
+.container {
+  flex: 1;
+  padding: 2rem;
+}
+
+/* Transitions */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.5s;
+}
+.fade-enter, .fade-leave-to {
+  opacity: 0;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .navbar-nav {
+    text-align: center;
+  }
+  .auth-button {
+    margin-top: 1rem;
+  }
 }
 </style>

@@ -20,7 +20,7 @@ public class TimeSlot {
     @Id
     private String id;
     private String dentistName;
-    private boolean booked;
+    private Boolean booked;
     private LocalDate date;
     private LocalDateTime startTime;
     private LocalDateTime endTime;

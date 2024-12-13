@@ -1,4 +1,4 @@
-package com.group11.calendarservice.config;
+package com.group11.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.databind.SerializationFeature;

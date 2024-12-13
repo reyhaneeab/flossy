@@ -1,5 +1,5 @@
 {
-  "name": "calendar",
+  "name": "flossy",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -10,9 +10,10 @@
   "dependencies": {
     "@fawmi/vue-google-maps": "^0.9.79",
     "@syncfusion/ej2-vue-calendars": "^27.2.3",
+    "axios": "^1.7.9",
+    "bootstrap": "^5.3.3",
     "core-js": "^3.8.3",
-    "leaflet": "^1.9.4",
-    "leaflet-control-geocoder": "^2.4.0",
+    "jwt-decode": "^4.0.0",
     "vue": "^3.2.13",
     "vue-class-component": "^8.0.0-rc.1",
     "vue-router": "^4.5.0",

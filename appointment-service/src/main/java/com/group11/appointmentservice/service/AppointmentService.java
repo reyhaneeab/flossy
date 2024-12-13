@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
+import static com.group11.config.JacksonConfig.createObjectMapper;
+
 
 @Slf4j
 @Service
@@ -19,12 +21,11 @@ public class AppointmentService {
 
     private final TimeSlotRepository timeSlotRepository;
     private final UserRepository userRepository;
-    ObjectMapper mapper = new ObjectMapper();
+    ObjectMapper mapper = createObjectMapper();
 
     private final MqttClient mqttClient;
     private static final String BOOK_APPOINTMENT_TOPIC = "timeSlot/book";
     private static final String BOOK_APPOINTMENT_RESPONSE = BOOK_APPOINTMENT_TOPIC + "/response";
-    private static final String BOOK_APPOINTMENT_EMAIL = BOOK_APPOINTMENT_TOPIC + "/email";
     private static final String CANCEL_APPOINTMENT_TOPIC = "timeSlot/cancel";
     private static final String CANCEL_APPOINTMENT_RESPONSE = CANCEL_APPOINTMENT_TOPIC + "/response";
 
@@ -87,15 +88,15 @@ public class AppointmentService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking failed. User not found"));
 
-        if(timeSlot.isBooked()) throw new Exception("Appointment is already booked");
+        if(timeSlot.getBooked()) throw new Exception("Appointment is already booked");
         else {
             timeSlot.setBooked(true);
             timeSlot.setBookedBy(user);
             timeSlotRepository.save(timeSlot);
-            String payload = mapper.writeValueAsString(user);
-            String emailPayload = user.getFirstName()+" "+user.getLastName()+","+ timeSlot.getOwner().getEmail() + "," + timeSlot.getOwner().getOfficeName();
+
+            String payload = mapper.writeValueAsString(timeSlot);
             mqttClient.publish(BOOK_APPOINTMENT_RESPONSE, payload.getBytes() , 1, false);
-            mqttClient.publish(BOOK_APPOINTMENT_EMAIL, emailPayload.getBytes() , 1, true);
+            log.info("Booking successful for UserId: {} and TimeSlotId: {}", request.getUserId(), request.getTimeSlotId());
         }
 
     }
@@ -110,7 +111,7 @@ public class AppointmentService {
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("Cancellation failed. User Id not found."));
 
-        if (!timeSlot.isBooked()) {
+        if (!timeSlot.getBooked()) {
             throw new Exception("Cancellation failed. The time slot is not currently booked.");
 
         } else if (!user.equals(timeSlot.getBookedBy())) {
@@ -121,10 +122,8 @@ public class AppointmentService {
             timeSlot.setBookedBy(null);
             timeSlotRepository.save(timeSlot);
 
-            String payload = user.getFirstName() + " " + user.getLastName() + "," +
-                    timeSlot.getOwner().getEmail() + "," + timeSlot.getOwner().getOfficeName();
+            String payload = mapper.writeValueAsString(timeSlot);
             mqttClient.publish(CANCEL_APPOINTMENT_RESPONSE, payload.getBytes(), 1, false);
-
             log.info("Cancellation successful for UserId: {} and TimeSlotId: {}", request.getUserId(), request.getTimeSlotId());
         }
     }

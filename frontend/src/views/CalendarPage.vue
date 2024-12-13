@@ -1,30 +1,50 @@
 <template>
-  <div id="container">
-    <h1>Appointment calendar</h1>
-    <div class="calendar">
-      <div v-for="day in days" :key="day.date" class="day">
-        <h3>{{ formatDate(day.date) }}</h3>
-        <div class="column-of-timeslots">
-          <button
-              v-for="slot in day.slots"
-              :key="slot.time"
-              :class="{ selected: slot.selected }"
-              @click="selectSlot(day, slot)"
-          >
-            {{ slot.time }}
-          </button>
+  <!-- Container with top margin for overall layout -->
+  <div class="container mt-4">
+    <!-- Centered heading with bottom margin -->
+    <h1 class="text-center mb-4">Appointment Calendar</h1>
+    <!-- Bootstrap row for grid layout -->
+    <div class="row">
+      <!--
+           - On medium screens (md) and up, each card takes 6 columns (half width)
+           - On large screens (lg) and up, each card takes 4 columns (one-third width)
+           - mb-4 adds bottom margin for vertical spacing between cards -->
+      <div v-for="day in days" :key="day.date" class="col-md-6 col-lg-4 mb-4">
+        <!-- Card component for each day -->
+        <div class="card calendar-card">
+          <div class="card-header">
+            <h3 class="card-title">{{ formatDate(day.date) }}</h3>
+          </div>
+          <div class="card-body">
+            <!-- Flexbox container for vertical alignment of buttons -->
+            <div class="d-flex flex-column">
+              <!-- Time slot buttons -->
+              <button
+                  v-for="slot in day.slots"
+                  :key="slot.time"
+                  class="btn btn-outline-primary mb-2 time-slot"
+                  :class="{ 'btn-primary text-white': slot.selected, 'disabled': slot.booked }"
+                  @click="selectSlot(day, slot)"
+                  :disabled="slot.booked"
+              >
+                {{ slot.time }}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-    <div v-if="selectedSlot">
-      <h2>Selected Slot</h2>
-      <p>
+    <!-- Selected slot information, shown conditionally -->
+    <div v-if="selectedSlot" class="mt-4 selected-slot-info">
+      <h2 class="text-center">Selected Slot</h2>
+      <p class="text-center">
         Date: {{ formatDate(selectedSlot.date) }} <br />
         Time: {{ selectedSlot.time }}
       </p>
     </div>
   </div>
 </template>
+
 
 <script>
 import { defineComponent, ref, onMounted } from "vue";
@@ -111,55 +131,54 @@ export default defineComponent({
 </script>
 
 <style scoped>
-#container {
-  font-family: "Avenir", Helvetica, Arial, sans-serif;
-  text-align: center;
-  margin: 20px;
+.calendar-card {
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.calendar {
-  display: flex;
-  justify-content: center;
-  gap: 20px;
+.calendar-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
-.day {
-  border: 1px solid #ddd;
+.card-header {
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #007bff;
+}
+
+.card-title {
+  color: #007bff;
+  font-size: 1.2rem;
+  margin-bottom: 0;
+}
+
+.time-slot {
+  transition: all 0.2s ease;
+}
+
+.time-slot:hover:not(.disabled) {
+  transform: scale(1.05);
+}
+
+.time-slot.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.selected-slot-info {
+  background-color: #e9ecef;
   padding: 20px;
-  border-radius: 5px;
-  background: #f9f9f9;
-  width: 400px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-h3 {
-  font-size: 1.5rem;
-  margin-bottom: 10px;
+h1, h2 {
+  color: #343a40;
 }
 
-.column-of-timeslots {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-button {
-  padding: 30px 50px;
-  border: 1px solid #ddd;
-  border-radius: 3px;
-  background: #fff;
-  cursor: pointer;
-  transition: 0.3s;
-  font-size: 15px;
-  font-weight: bold;
-}
-
-button:hover {
-  background: #eef;
-}
-
-button.selected {
-  background: #add8e6;
-  border-color: #00f;
-  color: #000;
+@media (max-width: 768px) {
+  .calendar-card {
+    margin-bottom: 20px;
+  }
 }
 </style>
