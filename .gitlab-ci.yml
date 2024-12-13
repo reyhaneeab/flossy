@@ -1,21 +1,59 @@
+default:
+  image: ubuntu:22.04
+  tags:
+    - docker
+
 stages:
-  - build
+  - setup
+  - backend_build
+  - backend_test
+  - deploy
 
-build-job:
-  stage: build
+variables:
+  MAVEN_HOME: "/opt/maven"
+  JAVA_HOME: "/usr/lib/jvm/java-21-openjdk-amd64"
+
+before_script:
+  # Install dependencies and set up the environment
+  - echo "Setting up the environment..."
+  - apt-get update && apt-get install -y openjdk-21-jdk maven docker.io docker-compose
+  - export "PATH=$MAVEN_HOME/bin:$PATH"
+  - java -version
+  - mvn -version
+  - docker -v
+  - docker-compose -v
+
+backend_build_job:
+  stage: backend_build
   script:
-    # Install Maven
-    - echo "Installing Maven..."
-    - wget https://downloads.apache.org/maven/maven-3/3.8.7/binaries/apache-maven-3.8.7-bin.tar.gz
-    - tar -xzf apache-maven-3.8.7-bin.tar.gz
-    - export MAVEN_HOME=$(pwd)/apache-maven-3.8.7
-    - export PATH=$MAVEN_HOME/bin:$PATH
-    - mvn --version  # Verify Maven installation
+    - echo "Building the backend with Maven..."
+    - mvn clean install
+    - echo "Backend build complete."
 
-    # Compile the code
-    - echo "Compiling the code..."
-    - mvn clean compile
-    - echo "Compile complete."
+backend_test_job:
+  stage: backend_test
+  tags:
+    - docker
+  services:
+    - name: mongo:7.0.5
+      alias: mongo
+    - name: eclipse-mosquitto:latest
+      alias: mqtt
+  variables:
+    MONGODB_URI: "mongodb://mongo:27017/serverTestDB"
+  script:
+    - echo "Starting services for testing..."
+    - docker-compose up -d
+    - echo "Running integration tests..."
+    - mvn verify
+    - echo "Tests completed successfully."
+    - echo "Stopping services after testing..."
+    - docker-compose down
 
-  only:
-    - 15-add-basic-ci-cd-stages-to-the-project
+
+deploy_job:
+  stage: deploy
+  script:
+    - echo "Deploying the application..."
+    - docker-compose up -d
+    - echo "Deployment completed successfully."
