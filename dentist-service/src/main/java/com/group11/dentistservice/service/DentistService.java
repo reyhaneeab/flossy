@@ -23,32 +23,40 @@ public class DentistService {
     private static final String DENTIST_REGISTRATION_TOPIC = "dentist/registration";
     private static final String DENTIST_REGISTRATION_RESPONSE = DENTIST_REGISTRATION_TOPIC + "/response";
     private static final String DENTIST_GET_TOPIC = "dentist/get";
+    private static final String DENTIST_GET_RESPONSE = DENTIST_GET_TOPIC + "/response";
 
     @PostConstruct
-    public void subscribeToTopics() {
+    public void init() {
         try {
             if (!mqttClient.isConnected()) {
-                mqttClient.connect();
-                mqttClient.subscribe(DENTIST_REGISTRATION_TOPIC, 1);
+                MqttConnectOptions options = new MqttConnectOptions();
+                options.setAutomaticReconnect(true);
+                options.setCleanSession(false);
+                options.setConnectionTimeout(10);
+                options.setKeepAliveInterval(60);
+                mqttClient.connect(options);
             }
+
+            mqttClient.subscribe(DENTIST_REGISTRATION_TOPIC);
+            mqttClient.subscribe(DENTIST_GET_TOPIC);
+
             mqttClient.setCallback(new MqttCallback() {
                 @Override
                 public void connectionLost(Throwable cause) {
-                    try {
-                        mqttClient.disconnect();
-                        mqttClient.close();
-                    } catch (Exception e) {
-                        log.info("Connection lost: {}", e.getMessage());
-                    }
+                    log.error("Connection lost", cause);
                 }
 
                 @Override
                 public void messageArrived(String topic, MqttMessage mqttMessage) {
-                    log.info("Message arrived: {}", mqttMessage.toString());
+                    log.info("Message arrived on topic: {}", topic);
                     try {
-                        createDentist(mqttMessage);
+                        if (topic.equals(DENTIST_REGISTRATION_TOPIC)) {
+                            createDentist(mqttMessage);
+                        } else if (topic.equals(DENTIST_GET_TOPIC)) {
+                            getAllDentists();
+                        }
                     } catch (Exception e) {
-                        log.info(e.getMessage());
+                        log.error("Error processing message", e);
                     }
                 }
 
@@ -57,8 +65,10 @@ public class DentistService {
                     log.info("MQTT delivery complete: {}", token.isComplete());
                 }
             });
+
         } catch (MqttException e) {
-            log.error("Error subscribing to topics", e);
+            log.error("Error initializing MQTT client", e);
+            throw new RuntimeException("MQTT initialization failed", e);
         }
     }
 
@@ -73,8 +83,6 @@ public class DentistService {
                     .password(request.password())
                     .address(request.address())
                     .phone(request.phone())
-                    .latitude(request.latitude())
-                    .longitude(request.longitude())
                     .doctors(request.doctors())
                     .build();
             dentistRepository.save(dentist);
@@ -87,8 +95,14 @@ public class DentistService {
         }
     }
 
-    public List<Dentist> getAllDentists() {
-        return dentistRepository.findAll();
+    public void getAllDentists() {
+        List<Dentist> dentists = dentistRepository.findAll();
+        try {
+            String payload = mapper.writeValueAsString(dentists);
+            mqttClient.publish(DENTIST_GET_RESPONSE, payload.getBytes(), 1, false);
+        } catch (Exception e) {
+            log.error("Error getting all dentists", e);
+        }
     }
 
 }
