@@ -50,7 +50,6 @@ backend_test_job:
     - echo "Stopping services after testing..."
     - docker-compose down
 
-
 deploy_job:
   stage: deploy
   script:
