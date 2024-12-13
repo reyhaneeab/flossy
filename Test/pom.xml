@@ -78,6 +78,30 @@
             <artifactId>user-service</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
+        <!-- Dependency for accessing the NotificationService -->
+        <dependency>
+            <groupId>com.group11</groupId>
+            <artifactId>notification-service</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+        <!-- Dependency for accessing the AppointmentService -->
+        <dependency>
+            <groupId>com.group11</groupId>
+            <artifactId>appointment-service</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+        <!-- Dependency for accessing the DentistService -->
+        <dependency>
+            <groupId>com.group11</groupId>
+            <artifactId>dentist-service</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+        <!-- Dependency for accessing the CalendarService -->
+        <dependency>
+            <groupId>com.group11</groupId>
+            <artifactId>calendar-service</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 
     <!-- Build Configuration -->
