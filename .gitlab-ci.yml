@@ -42,7 +42,7 @@ user-service_job:
   script:
     - echo "Starting services for testing..."
     - echo "Running integration tests..."
-    - mvn test -pl user-service
+    - mvn test -pl user-service -am
     - echo "Tests completed successfully."
     - echo "Stopping services after testing..."
 
