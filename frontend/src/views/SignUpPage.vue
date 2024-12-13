@@ -9,55 +9,66 @@
         <div class="card signup-container">
           <!-- Card header for the title -->
           <div class="card-header">
-            <h1 class="text-center">Sign Up</h1>
+            <h1 class="title">Create Your Account!</h1>
+            <p class="subtitle">Join our community today and start caring about your teeth!</p>
           </div>
           <!-- Card body for the form -->
           <div class="card-body">
             <!-- Form with prevent default on submit, calling handleSignup method -->
-            <form @submit.prevent="handleSignup">
+            <form @submit.prevent="handleSignup" class="signup-form">
               <!-- First Name input field -->
               <div class="mb-3">
+                <label for="firstName" class="form-label">First Name</label>
                 <input
+                    id="firstName"
                   type="text"
                   class="form-control"
                   v-model="firstName"
-                  placeholder="First Name"
+                  placeholder="Enter your first name"
                   required
                 />
               </div>
               <!-- Last Name input field -->
               <div class="mb-3">
+                <label for="lastName" class="form-label">Last Name</label>
                 <input
+                    id="lastName"
                   type="text"
                   class="form-control"
                   v-model="lastName"
-                  placeholder="Last Name"
+                  placeholder="Enter your last name"
                   required
                 />
               </div>
               <!-- Email input field -->
               <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
                 <input
+                    id="email"
                   type="email"
                   class="form-control"
                   v-model="email"
-                  placeholder="Email"
+                  placeholder="Enter your email"
                   required
                 />
               </div>
               <!-- Phone input field -->
               <div class="mb-3">
+                <label for="phone" class="form-label">Phone Number</label>
                 <input
-                  type="tel"
+                    id="phone"
+                  type="number"
                   class="form-control"
                   v-model="phone"
-                  placeholder="Phone"
+                  placeholder="Enter your phone number"
                   required
                 />
               </div>
               <!-- Password input field -->
               <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
                 <input
+                    id="password"
                   type="password"
                   class="form-control"
                   v-model="password"
@@ -65,9 +76,24 @@
                   required
                 />
               </div>
+              <!-- Confirm password input field -->
+              <div class="mb-3">
+                <label for="confirm-password" class="form-label">Confirm Password</label>
+                <input
+                    id="confirm-password"
+                    v-model="confirmPassword"
+                    type="password"
+                    class="form-control"
+                    placeholder="Confirm your password"
+                    required
+                />
+              </div>
+
+              <div v-if="error" class="error-message">{{error}}</div>
+
               <!-- Button container with full-width grid layout -->
               <div class="d-grid">
-                <button type="submit" class="btn btn-success">Sign Up</button>
+                <button type="submit" class="btn-primary">Sign Up</button>
               </div>
             </form>
           </div>
@@ -77,90 +103,144 @@
   </div>
 </template>
 
-<script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+<script>
+import router from "@/router";
+import api from "@/api";
 
-
-const URL = `http://localhost:8091/api/user/registration`
-const router = useRouter()
-
-const lastName = ref('')
-const firstName = ref('')
-const email = ref('')
-const phone = ref('')
-const password = ref('')
-
-
-async function handleSignup() {
-  try {
-    const response = await fetch(URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email: email.value,
-        firstName: firstName.value,
-        lastName: lastName.value,
-        phone: phone.value,
-        password: password.value
-      })
-    })
-
-    if (response.ok) {
-      // Redirect to home page on successful signup
-      await router.push('/login')
-      console.log('Signup successful')
-    } else {
-      console.error('Signup failed')
+export default {
+  name: 'SignUpPage',
+  data(){
+    return{
+      firstName:"",
+      lastName:"",
+      email:"",
+      phone:"",
+      password:"",
+      confirmPassword:"",
+      error: null,
+    };
+  },
+methods:{
+  async handleSignup(){
+    if(this.password !== this.confirmPassword){
+      this.error = "Passwords do not match!";
+      return;
     }
-  } catch (error) {
-    console.error('Signup error:', error)
+    try {
+      const response = api.post("/user/registration", {
+        firstName: this.firstName,
+        lastName: this.lastName,
+        email: this.email,
+        phone: this.phone,
+        password: this.password
+      })
+      console.log('User created successfully', response.data)
+      alert("User created successfully")
+      router.push('/login')
+    }
+    catch (error){
+      console.log(error)
+      this.error=error
+    }
+  }
+
   }
 }
 </script>
 
 <style scoped>
-/* Styles for the signup container */
+
+/* Card Styles */
 .signup-container {
-  max-width: 400px;
-  margin: 0 auto;
-  padding: 20px;
+  background-color: #ffffff; /* Clean white card */
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+  padding: 2rem;
+  width: 100%;
+  height: 100%;
 }
 
-/* Styles for the heading */
-h1 {
+/* Title and Subtitle */
+.title {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #343a40; /* Darker color for strong emphasis */
+  margin-bottom: 0.5rem;
   text-align: center;
-  color: #333;
 }
 
-/* Styles for the form layout */
-form {
-  display: flex;
-  flex-direction: column;
+.subtitle {
+  font-size: 1rem;
+  color: #6c757d; /* Muted secondary text */
+  text-align: center;
+  margin-bottom: 1.5rem;
 }
 
-/* Styles for input fields */
-input {
-  margin-bottom: 15px;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+/* Form Styles */
+.signup-form .form-label {
+  font-weight: 500;
+  color: #495057; /* Slightly darker for labels */
 }
 
-/* Styles for the submit button */
-button {
-  padding: 10px;
-  background-color: #28a745;
-  color: white;
+.signup-form .form-control {
+  border: 1px solid #ced4da; /* Light border */
+  border-radius: 6px;
+  padding: 0.75rem;
+  font-size: 1rem;
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.signup-form .form-control:focus {
+  border-color: #00b8d9; /* Highlight with app's primary color */
+  box-shadow: 0 0 4px rgba(0, 184, 217, 0.25);
+  outline: none;
+}
+
+/* Error Message */
+.error-message {
+  color: #dc3545; /* Bootstrap danger color */
+  font-size: 0.875rem;
+  margin-top: -0.5rem;
+  margin-bottom: 1rem;
+}
+
+/* Button Styles */
+.btn-primary {
+  background-color: #00b8d9; /* App's primary color */
+  color: #fff;
+  font-weight: 600;
+  padding: 0.75rem;
   border: none;
-  border-radius: 4px;
-  cursor: pointer;
+  border-radius: 6px;
+  font-size: 1rem;
+  width: 100%;
+  transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
 }
 
-/* Hover effect for the submit button */
-button:hover {
-  background-color: #218838;
+.btn-primary:hover {
+  background-color: #0094ad; /* Darker shade for hover effect */
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  background-color: #007a8d; /* Even darker for active */
+  transform: translateY(0);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .signup-container {
+    padding: 1.5rem;
+  }
+
+  .title {
+    font-size: 1.6rem;
+  }
+
+  .subtitle {
+    font-size: 0.9rem;
+  }
 }
 </style>
+
+

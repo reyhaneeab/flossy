@@ -80,8 +80,9 @@ export default {
   background-color: #0d1b2a;
   color: #e0e1dd;
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  display: grid;
 }
 
 /* Navbar Styling */
