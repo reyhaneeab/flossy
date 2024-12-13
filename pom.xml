@@ -23,6 +23,7 @@
 
 	<!-- Modules -->
 	<modules>
+		<module>Test</module>
 		<module>calendar-service</module>
 		<module>notification-service</module>
 		<module>dentist-service</module>
