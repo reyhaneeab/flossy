@@ -12,19 +12,14 @@ stages:
 variables:
   MAVEN_HOME: "/opt/maven"
   JAVA_HOME: "/usr/lib/jvm/java-21-openjdk-amd64"
-  DOCKER_HOST: "unix:///var/run/docker.sock" # Ensure Docker can communicate with its daemon
 
 before_script:
   # Install dependencies and set up the environment
   - echo "Setting up the environment..."
-  - apt-get update && apt-get install -y openjdk-21-jdk maven docker.io docker-compose
+  - apt-get update && apt-get install -y openjdk-21-jdk maven
   - export "PATH=$MAVEN_HOME/bin:$PATH"
   - java -version
   - mvn -version
-  - docker -v
-  - docker-compose -v
-  - service docker start # Ensure Docker service is started
-  - chmod 666 /var/run/docker.sock # Allow access to Docker socket
 
 backend_build_job:
   stage: backend_build
@@ -46,16 +41,14 @@ backend_test_job:
     MONGODB_URI: "mongodb://mongo:27017/serverTestDB"
   script:
     - echo "Starting services for testing..."
-    - docker-compose up -d
     - echo "Running integration tests..."
     - mvn verify
     - echo "Tests completed successfully."
     - echo "Stopping services after testing..."
-    - docker-compose down
+
 
 deploy_job:
   stage: deploy
   script:
     - echo "Deploying the application..."
-    - docker-compose up -d
     - echo "Deployment completed successfully."
