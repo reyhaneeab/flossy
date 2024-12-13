@@ -6,6 +6,7 @@ default:
 stages:
   - setup
   - backend_build
+  - user_service_build
   - backend_test
   - deploy
 
@@ -21,12 +22,12 @@ before_script:
   - java -version
   - mvn -version
 
-backend_build_job:
+user_service_build:
   stage: backend_build
   script:
-    - echo "Building the backend with Maven..."
-    - mvn clean install
-    - echo "Backend build complete."
+    - echo "Building API Gateway..."
+    - mvn clean install -pl user-service
+    - echo "API Gateway build complete."
 
 backend_test_job:
   stage: backend_test
