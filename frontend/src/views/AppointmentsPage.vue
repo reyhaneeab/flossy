@@ -103,7 +103,8 @@ export default defineComponent({
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              slotId: selectedSlot.value.id, // Pass the selected slot ID to the backend
+              timeSlotId: selectedSlot.value.id, // Pass the selected slot ID to the backend
+              userId: jwtDecode(localStorage.getItem("token")).sub,
             }),
           });
 
