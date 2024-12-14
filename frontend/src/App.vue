@@ -21,6 +21,9 @@
               <li class="nav-item">
                 <router-link class="nav-link" to="/calendar">Calendar</router-link>
               </li>
+              <li class="nav-item">
+                <router-link class="nav-link" to="/appointments">My Appointments</router-link>
+              </li>
             </ul>
             <ul class="navbar-nav">
               <li class="nav-item">

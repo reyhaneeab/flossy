@@ -23,7 +23,7 @@
                   v-for="slot in day.slots"
                   :key="slot.time"
                   class="btn btn-outline-primary mb-2 time-slot"
-                  :class="{ 'btn-primary text-white': slot.selected, 'disabled': slot.booked }"
+                  :class="{ 'btn-primary text-black': slot.selected, 'disabled': slot.booked }"
                   @click="selectSlot(day, slot)"
                   :disabled="slot.booked"
               >
@@ -178,6 +178,9 @@ export default defineComponent({
 </script>
 
 <style scoped>
+.text-center mb-4{
+  color: #ffffff;
+}
 .calendar-card {
   transition: all 0.3s ease;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
