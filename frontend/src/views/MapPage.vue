@@ -1,6 +1,6 @@
 <template>
   <div class="map-container" ref="mapContainer">
-    <!-- Map will be initialized here -->
+  
   </div>
 </template>
 
@@ -49,6 +49,7 @@ async function convertAddressesToCoordinates() {
   const geocoder = new google.maps.Geocoder()
 
   for (const dentist of dentists.value) {
+    if (dentist.latitude && dentist.longitude) continue // Skip if coordinates already exist
     try {
       const result = await geocodeAddress(geocoder, dentist.address)
       dentist.latitude = result.lat()
