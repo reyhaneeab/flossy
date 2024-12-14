@@ -136,7 +136,7 @@ methods:{
       })
       console.log('User created successfully', response.data)
       alert("User created successfully")
-      router.push('/login')
+      await router.push('/login')
     }
     catch (error){
       console.log(error)

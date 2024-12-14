@@ -29,36 +29,37 @@
                 <router-link class="nav-link" to="/calendar">Calendar</router-link>
               </li>
             </ul>
-            <ul class="navbar-nav">
-              <li class="nav-item dropdown" v-if="authView === 'Login' && !loggedIn">
+            <ul class="navbar-nav" v-if="!loggedIn">
+              <li class="nav-item dropdown" v-if="authView === 'Login'">
                 <router-link class="nav-link auth-button" to="/signup" @click="toggleAuthView">
                   Sign Up
                 </router-link>
               </li>
-              <li class="nav-item dropdown" v-else-if="authView === 'Sign Up' && !loggedIn">
+              <li class="nav-item dropdown" v-else-if="authView === 'Sign Up'">
                 <router-link class="nav-link auth-button" to="/login" @click="toggleAuthView">
                   Log In
                 </router-link>
               </li>
-              <li class="nav-item dropdown" v-else-if="loggedIn">
-                <router-link class="nav-link auth-button" to="/login" @click="logout">
-                  Log Out
-                </router-link>
-              </li>
             </ul>
+            <div class="navbar-nav" v-else>
+              <button class="nav-item dropdown" @click="logout">
+                Log Out
+              </button>
+            </div>
           </div>
         </div>
       </nav>
     </header>
 
     <main class="container mt-4">
-      <router-view />
+      <router-view/>
     </main>
   </div>
 </template>
 
 <script>
 import {authService} from "@/authService";
+import router from "@/router";
 
 export default {
   name: "App",
@@ -74,9 +75,13 @@ export default {
     },
     async logout(){
       authService.logout();
+      this.loggedIn = authService.isLoggedIn()
+      await router.push('/login')
     }
   },
-  watch:
+  mounted() {
+    this.loggedIn = authService.isLoggedIn()
+  },
 };
 </script>
 

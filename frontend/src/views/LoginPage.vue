@@ -69,7 +69,7 @@ export default {
 
     const handleLogin = async () => {
       try {
-        const response = authService.login(email, password);
+        const response = await authService.login(email, password);
 
         if (response) {
           console.log(1);
@@ -77,7 +77,8 @@ export default {
           if (token) {
             const decoded = jwtDecode(token); // Decode the token for debugging
             console.log("Decoded Token:", decoded);
-            router.push("/home"); // Navigate to home page
+            await router.push("/home"); // Navigate to home page
+            location.reload()
           } else {
             error.value = "Token not found in local storage.";
           }

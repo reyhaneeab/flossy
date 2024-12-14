@@ -10,8 +10,8 @@ import SignUp from "@/views/SignUpPage.vue";
 const routes=[
     {path: '/home', name: 'Home', component: Home, meta: { requiresAuth: true }, },
     {path: '/about', name: 'AboutUs', component: About, meta: {requiresAuth: false}, },
-    {path: '/signup', name: 'Signup', component: SignUp, meta: {requiresAuth: false}, },
-    {path: '/login', name: 'Login', component: Login, meta: { requiresAuth: false }, },
+    {path: '/signup', name: 'Signup', component: SignUp, meta: {requiresAuth: false, reqLog: true}, },
+    {path: '/login', name: 'Login', component: Login, meta: { requiresAuth: false, reqLog: true }, },
     {path: '/calendar', name: 'Calendar', component: Calendar, meta: { requiresAuth: true }, },
     {
         path: '/:pathMatch(.*)*',
@@ -29,7 +29,12 @@ router.beforeEach((to, from, next) => {
     if (to.meta.requiresAuth && !authService.isLoggedIn()) {
         alert("You need to be logged in to your account to view this page!")
         next({ name: 'Login' });
-    } else {
+    }
+    else if(to.meta.reqLog && authService.isLoggedIn()){
+        alert("You are already logged in to your account!")
+        next({ name: 'Home'})
+    }
+    else {
         next();
     }
 });
