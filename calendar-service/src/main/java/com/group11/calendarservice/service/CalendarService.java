@@ -86,44 +86,77 @@ public class CalendarService {
         return timeSlots;
     }
 
-    // Initialize MQTT client and set up message handlers
     @PostConstruct
     public void init() {
         mapper.registerModule(new JavaTimeModule());
-
+    
         try {
-            if (!mqttClient.isConnected()) {
-                mqttClient.connect();
-                mqttClient.subscribe(CALENDAR_REGISTRATION_TOPIC, 1);
-                mqttClient.subscribe(CALENDAR_GET_TOPIC, 1);
+            initializeMqttClient();
+        } catch (MqttException e) {
+            log.error("Failed to initialize MQTT client", e);
+            // Consider throwing a runtime exception here if MQTT is critical for your application
+            // throw new RuntimeException("Failed to initialize MQTT client", e);
+        }
+    }
+    
+    private void initializeMqttClient() throws MqttException {
+        if (!mqttClient.isConnected()) {
+            mqttClient.connect();
+        }
+        
+        mqttClient.subscribe(new String[]{CALENDAR_REGISTRATION_TOPIC, CALENDAR_GET_TOPIC}, new int[]{1, 1});
+    
+        mqttClient.setCallback(new MqttCallback() {
+            @Override
+            public void connectionLost(Throwable cause) {
+                log.error("MQTT connection lost", cause);
+                // Implement reconnection logic here
+                reconnectMqtt();
             }
-            mqttClient.setCallback(new MqttCallback() {
-                @Override
-                public void connectionLost(Throwable cause) {
-                    log.error("MQTT connection lost", cause);
-                }
-
-                @Override
-                public void messageArrived(String topic, MqttMessage mqttMessage) {
-                    log.info("Message arrived on topic: {}", topic);
-                    try {
-                        if (topic.equals(CALENDAR_REGISTRATION_TOPIC)) {
+    
+            @Override
+            public void messageArrived(String topic, MqttMessage mqttMessage) {
+                log.info("Message arrived on topic: {}", topic);
+                try {
+                    switch (topic) {
+                        case CALENDAR_REGISTRATION_TOPIC:
                             createCalendar(mqttMessage);
-                        } else if (topic.equals(CALENDAR_GET_TOPIC)) {
+                            break;
+                        case CALENDAR_GET_TOPIC:
                             getCalendar(mqttMessage);
-                        }
-                    } catch (Exception e) {
-                        log.error("Error processing message", e);
+                            break;
+                        default:
+                            log.warn("Received message on unexpected topic: {}", topic);
+                    }
+                } catch (Exception e) {
+                    try {
+                        publishResponse(topic + "/response", "Error: " + e.getMessage());
+                    } catch (Exception publishException) {
+                        log.error("Failed to publish error response", publishException);
                     }
                 }
+            }
+            private void publishResponse(String topic, Object payload) throws Exception {
+                String message = mapper.writeValueAsString(payload);
+                mqttClient.publish(topic, message.getBytes(), 1, false);
+            }
+            @Override
+            public void deliveryComplete(IMqttDeliveryToken token) {
+                log.info("MQTT delivery complete: {}", token.isComplete());
+            }
+        });
+    }
 
-                @Override
-                public void deliveryComplete(IMqttDeliveryToken token) {
-                    log.info("MQTT delivery complete: {}", token.isComplete());
-                }
-            });
+    private void reconnectMqtt() {
+        try {
+            if (!mqttClient.isConnected()) {
+                log.info("Attempting to reconnect to MQTT broker...");
+                mqttClient.reconnect();
+                log.info("Successfully reconnected to MQTT broker");
+            }
         } catch (MqttException e) {
-            log.error("Error initializing MQTT client", e);
+            log.error("Failed to reconnect to MQTT broker", e);
+            // Implement exponential backoff or other retry mechanism here
         }
     }
 
@@ -132,19 +165,19 @@ public class CalendarService {
         CalendarRequest request = mapper.readValue(message.getPayload(), CalendarRequest.class);
         Dentist owner = dentistRepository.findById(request.ownerId())
                 .orElseThrow(() -> new RuntimeException("Dentist not found"));
-    
+
         List<TimeSlot> savedTimeSlots = request.timeSlots().stream()
                 .map(this::mapToTimeSlot)
                 .peek(timeSlot -> timeSlot.setOwner(owner))
                 .toList();
-    
+
         Calendar calendar = Calendar.builder()
                 .year(request.year())
                 .weekNumber(request.weekNumber())
                 .timeSlots(savedTimeSlots)
                 .owner(owner)
                 .build();
-    
+
         Calendar savedCalendar = calendarRepository.save(calendar);
         cacheCalendar(savedCalendar);
         publishResponse(CALENDAR_REGISTRATION_RESPONSE, mapToCalendarResponse(savedCalendar));
@@ -155,13 +188,17 @@ public class CalendarService {
     public void getCalendar(MqttMessage message) throws Exception {
         CalendarRequest request = mapper.readValue(message.getPayload(), CalendarRequest.class);
 
+        log.info("Received get calendar request for ownerId: {} and weekNumber: {}", request.ownerId(), request.weekNumber());
+
         Calendar calendar = getCalendarFromCacheOrDatabase(request.ownerId(), request.weekNumber());
 
         if (calendar != null) {
             CalendarResponse response = mapToCalendarResponse(calendar);
             publishResponse(CALENDAR_GET_RESPONSE, response);
+            log.info("Calendar found and response published for ownerId: {}", request.ownerId());
         } else {
             publishResponse(CALENDAR_GET_RESPONSE, "Calendar not found");
+            log.warn("Calendar not found for ownerId: {} and weekNumber: {}", request.ownerId(), request.weekNumber());
         }
     }
 
@@ -169,14 +206,14 @@ public class CalendarService {
     private Calendar getCalendarFromCacheOrDatabase(String ownerId, int weekNumber) {
         String cacheKey = CACHE_KEY_PREFIX + ownerId + ":" + weekNumber;
         Object cachedCalendar =  redisTemplate.opsForValue().get(cacheKey);
-    
+
         if (cachedCalendar != null) {
             if (cachedCalendar instanceof Calendar) {
                 log.info("Calendar found in cache for owner: {} and week: {}", ownerId, weekNumber);
                 return (Calendar) cachedCalendar;
             }
         }
-    
+
         Dentist owner = dentistRepository.findById(ownerId)
                 .orElseThrow(() -> new RuntimeException("Dentist not found"));
         Calendar calendar = calendarRepository.findByOwnerAndWeekNumber(owner, weekNumber);
@@ -207,7 +244,7 @@ public class CalendarService {
                 .endTime(request.endTime())
                 .booked(false)
                 .build();
-        
+
         return timeSlotRepository.save(timeSlot);
     }
 
