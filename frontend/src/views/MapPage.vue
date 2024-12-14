@@ -1,86 +1,95 @@
 <template>
-  <div class="map-container">
-    <Map
-      :center="mapCenter"
-      :zoom="zoomLevel"
-      class="map"
-      @load="onMapLoad"
-    >
-      <!-- Markers will be added programmatically -->
-    </Map>
+  <div class="map-container" ref="mapContainer">
+    <!-- Map will be initialized here -->
   </div>
 </template>
 
 <script setup>
-import {onMounted, ref, shallowRef} from 'vue'
-import { Map } from '@fawmi/vue-google-maps'
+/* global google */
+import { onMounted, ref } from 'vue'
 import api from "@/api";
 
+const mapContainer = ref(null)
+const mapCenter = { lat: 57.70887, lng: 11.97456 } // Default to Gothenburg
+const zoomLevel = 12
+const map = ref(null)
+const dentists = ref([])
+const markers = ref([])
+
 onMounted(() => {
-  fetchDentists()
+  if (window.google && window.google.maps) {
+    initMap()
+  } else {
+    window.initMap = initMap
+  }
 })
-//const dentists = ref([])
-//const markers = ref([])
-const mapCenter = ref({ lat: 57.70887, lng: 11.97456 }) // Default to Gothenburg
-const zoomLevel = ref(12)
-const map = shallowRef(null)
+
+function initMap() {
+  map.value = new google.maps.Map(mapContainer.value, {
+    center: mapCenter,
+    zoom: zoomLevel,
+  })
+  fetchDentists()
+}
 
 async function fetchDentists() {
   try {
     const response = await api.post('dentist/get')
-    console.log((await response).data)
-
-    /*
-    if (response.ok) {
-      const data = await response.json()
-      dentists.value = data.map(dentist => ({
-        ...dentist,
-        latitude: parseFloat(dentist.latitude),
-        longitude: parseFloat(dentist.longitude),
-      }))
-      addDentistMarkers()
-    } else {
-      console.error('Error fetching dentist offices:', await response.text())
-    }
-
-     */
+    const data = (await response).data
+    dentists.value = data
+    convertAddressesToCoordinates()
   } catch (error) {
     console.error('Error fetching dentist offices:', error)
   }
 }
 
-function onMapLoad(loadedMap) {
-  console.log('Map loaded:', loadedMap)
-  map.value = loadedMap
-  fetchDentists()
+async function convertAddressesToCoordinates() {
+  if (!dentists.value.length) return
+
+  const geocoder = new google.maps.Geocoder()
+
+  for (const dentist of dentists.value) {
+    try {
+      const result = await geocodeAddress(geocoder, dentist.address)
+      dentist.latitude = result.lat()
+      dentist.longitude = result.lng()
+      addDentistMarker(dentist)
+    } catch (error) {
+      console.error(`Error geocoding address for ${dentist.name}:`, error)
+    }
+  }
 }
 
-/*function addDentistMarkers() {
-  if (!map.value) return
-
-  dentists.value.forEach(dentist => {
-    console.log(`Adding marker for dentist: ${dentist.name} at (${dentist.latitude}, ${dentist.longitude})`)
-
-    // eslint-disable-next-line no-undef
-    const marker = new google.maps.Marker({
-      position: { lat: dentist.latitude, lng: dentist.longitude },
-      map: map.value,
-      title: dentist.name,
-    })
-
-    markers.value.push(marker) // Keep track of added markers
-
-    // Optionally: Add an info window or other UI components
-    // eslint-disable-next-line no-undef
-    const infoWindow = new google.maps.InfoWindow({
-      content: `<h3>${dentist.name}</h3><p>${dentist.address}</p>`,
-    })
-    marker.addListener('click', () => {
-      infoWindow.open(map.value, marker)
+function geocodeAddress(geocoder, address) {
+  return new Promise((resolve, reject) => {
+    geocoder.geocode({ address }, (results, status) => {
+      if (status === 'OK') {
+        resolve(results[0].geometry.location)
+      } else {
+        reject(`Geocode was not successful for the following reason: ${status}`)
+      }
     })
   })
 }
-*/
+
+function addDentistMarker(dentist) {
+  if (!map.value) return
+
+  const marker = new google.maps.Marker({
+    position: { lat: dentist.latitude, lng: dentist.longitude },
+    map: map.value,
+    title: dentist.name,
+  })
+
+  markers.value.push(marker)
+
+  const infoWindow = new google.maps.InfoWindow({
+    content: `<h3>${dentist.name}</h3><p>${dentist.address}</p>`,
+  })
+  marker.addListener('click', () => {
+    infoWindow.open(map.value, marker)
+  })
+}
 </script>
 
 <style scoped>
@@ -88,10 +97,5 @@ function onMapLoad(loadedMap) {
   width: 100%;
   height: 100vh;
   position: relative;
-}
-
-.map {
-  width: 100%;
-  height: 100%;
 }
 </style>
