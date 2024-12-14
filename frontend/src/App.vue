@@ -33,6 +33,9 @@
               <li class="nav-item">
                 <router-link class="nav-link" to="/calendar">Calendar</router-link>
               </li>
+              <li class="nav-item">
+                <router-link class="nav-link" to="/map">Map</router-link>
+              </li>
             </ul>
             <ul class="navbar-nav">
               <li class="nav-item dropdown" v-if="authView === 'Login'">
