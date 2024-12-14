@@ -127,7 +127,7 @@ methods:{
       return;
     }
     try {
-      const response = api.post("/user/registration", {
+      const response = await api.post("/user/registration", {
         firstName: this.firstName,
         lastName: this.lastName,
         email: this.email,
@@ -136,7 +136,7 @@ methods:{
       })
       console.log('User created successfully', response.data)
       alert("User created successfully")
-      router.push('/login')
+      await router.push('/login')
     }
     catch (error){
       console.log(error)

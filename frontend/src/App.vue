@@ -1,8 +1,3 @@
-<script setup>
-
-</script>
-
-
 <template>
   <div id="app">
     <header>
@@ -22,7 +17,7 @@
           <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto">
               <li class="nav-item">
-                <router-link class="nav-link" to="/">Home</router-link>
+                <router-link class="nav-link" to="/home">Home</router-link>
               </li>
               <li class="nav-item">
                 <router-link class="nav-link" to="/about">About</router-link>
@@ -37,34 +32,43 @@
                 <router-link class="nav-link" to="/map">Map</router-link>
               </li>
             </ul>
-            <ul class="navbar-nav">
+            <ul class="navbar-nav" v-if="!loggedIn">
               <li class="nav-item dropdown" v-if="authView === 'Login'">
                 <router-link class="nav-link auth-button" to="/signup" @click="toggleAuthView">
                   Sign Up
                 </router-link>
               </li>
-              <li v-else>
+              <li class="nav-item dropdown" v-else-if="authView === 'Sign Up'">
                 <router-link class="nav-link auth-button" to="/login" @click="toggleAuthView">
                   Log In
                 </router-link>
               </li>
             </ul>
+            <div class="navbar-nav" v-else>
+              <button class="nav-item dropdown" @click="logout">
+                Log Out
+              </button>
+            </div>
           </div>
         </div>
       </nav>
     </header>
 
     <main class="container mt-4">
-      <router-view />
+      <router-view/>
     </main>
   </div>
 </template>
 
 <script>
+import {authService} from "@/authService";
+import router from "@/router";
+
 export default {
   name: "App",
   data() {
     return {
+      loggedIn: authService.isLoggedIn(),
       authView: "Login",
     };
   },
@@ -72,6 +76,14 @@ export default {
     toggleAuthView() {
       this.authView = this.authView === "Login" ? "Sign Up" : "Login";
     },
+    async logout(){
+      authService.logout();
+      this.loggedIn = authService.isLoggedIn()
+      await router.push('/login')
+    }
+  },
+  mounted() {
+    this.loggedIn = authService.isLoggedIn()
   },
 };
 </script>
@@ -146,14 +158,6 @@ export default {
 .container {
   flex: 1;
   padding: 2rem;
-}
-
-/* Transitions */
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.5s;
-}
-.fade-enter, .fade-leave-to {
-  opacity: 0;
 }
 
 /* Mobile Responsiveness */
