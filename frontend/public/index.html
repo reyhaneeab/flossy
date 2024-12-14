@@ -9,8 +9,12 @@
     <script async defer
       src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD0d8O6v_7_CBdIobTLvfTGRjGLcd_DSbs&libraries=places,geometry&callback=initMap">
     </script>
-    <script>
-      function initMap() {
+    <script type="module">
+      import { createApp } from './src/main.js'
+      import App from './src/App.vue'
+      import router from './src/router'
+
+      window.initMap = () => {
         const app = createApp(App)
         app.use(router)
         app.mount('#app')
@@ -19,12 +23,5 @@
   </head>
   <body>
     <div id="app"></div>
-    <script type="module">
-      import { createApp } from 'vue'
-      import App from './src/App.vue'
-      import router from './src/router'
-      import 'bootstrap/dist/css/bootstrap.css'
-      import 'bootstrap/dist/js/bootstrap.js'
-    </script>
   </body>
 </html>
