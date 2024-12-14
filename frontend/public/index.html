@@ -4,10 +4,27 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width,initial-scale=1.0, shrink-to-fit=no">
-      <link rel="icon" href="./logo.png">
+    <link rel="icon" href="./logo.png">
     <title><%= htmlWebpackPlugin.options.title %></title>
+    <script async defer
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD0d8O6v_7_CBdIobTLvfTGRjGLcd_DSbs&libraries=places,geometry&callback=initMap">
+    </script>
+    <script>
+      function initMap() {
+        const app = createApp(App)
+        app.use(router)
+        app.mount('#app')
+      }
+    </script>
   </head>
   <body>
     <div id="app"></div>
+    <script type="module">
+      import { createApp } from 'vue'
+      import App from './src/App.vue'
+      import router from './src/router'
+      import 'bootstrap/dist/css/bootstrap.css'
+      import 'bootstrap/dist/js/bootstrap.js'
+    </script>
   </body>
 </html>
