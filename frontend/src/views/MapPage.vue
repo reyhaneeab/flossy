@@ -78,13 +78,13 @@ function addDentistMarker(dentist) {
   const marker = new google.maps.Marker({
     position: { lat: dentist.latitude, lng: dentist.longitude },
     map: map.value,
-    title: dentist.name,
+    title: dentist.officeName,
   })
 
   markers.value.push(marker)
 
   const infoWindow = new google.maps.InfoWindow({
-    content: `<h3>${dentist.name}</h3><p>${dentist.address}</p>`,
+    content: `<h3>${dentist.officeName}</h3><p>${dentist.address}</p>`,
   })
   marker.addListener('click', () => {
     infoWindow.open(map.value, marker)
