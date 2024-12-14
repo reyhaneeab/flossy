@@ -30,14 +30,19 @@
               </li>
             </ul>
             <ul class="navbar-nav">
-              <li class="nav-item dropdown" v-if="authView === 'Login'">
+              <li class="nav-item dropdown" v-if="authView === 'Login' && !loggedIn">
                 <router-link class="nav-link auth-button" to="/signup" @click="toggleAuthView">
                   Sign Up
                 </router-link>
               </li>
-              <li v-else>
+              <li class="nav-item dropdown" v-else-if="authView === 'Sign Up' && !loggedIn">
                 <router-link class="nav-link auth-button" to="/login" @click="toggleAuthView">
                   Log In
+                </router-link>
+              </li>
+              <li class="nav-item dropdown" v-else-if="loggedIn">
+                <router-link class="nav-link auth-button" to="/login" @click="logout">
+                  Log Out
                 </router-link>
               </li>
             </ul>
@@ -53,10 +58,13 @@
 </template>
 
 <script>
+import {authService} from "@/authService";
+
 export default {
   name: "App",
   data() {
     return {
+      loggedIn: authService.isLoggedIn(),
       authView: "Login",
     };
   },
@@ -64,7 +72,11 @@ export default {
     toggleAuthView() {
       this.authView = this.authView === "Login" ? "Sign Up" : "Login";
     },
+    async logout(){
+      authService.logout();
+    }
   },
+  watch:
 };
 </script>
 

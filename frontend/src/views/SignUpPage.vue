@@ -127,7 +127,7 @@ methods:{
       return;
     }
     try {
-      const response = api.post("/user/registration", {
+      const response = await api.post("/user/registration", {
         firstName: this.firstName,
         lastName: this.lastName,
         email: this.email,
