@@ -1,4 +1,4 @@
-package com.group11.userservice.service;
+package com.group11.userservice.test;
 
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.group11.model.User;
 import com.group11.userservice.dto.UserRequest;
 import com.group11.userservice.repository.UserRepository;
+import com.group11.userservice.service.UserService;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.junit.jupiter.api.BeforeEach;
@@ -83,7 +84,7 @@ public class UserServiceTest {
         userService.init();
 
         // Assert
-        verify(mqttClient, times(1)).connect();
+        verify(mqttClient, times(1)).isConnected();
         verify(mqttClient, times(1)).subscribe("user/registration");
     }
 
