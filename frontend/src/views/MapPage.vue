@@ -87,6 +87,7 @@ function addDentistMarker(dentist) {
     content: `<div style="color: black;">
                 <h3>${dentist.officeName}</h3>
                 <p>${dentist.address}</p>
+                <p>${dentist.phone}</p>
               </div>`,
   })
   marker.addListener('click', () => {
