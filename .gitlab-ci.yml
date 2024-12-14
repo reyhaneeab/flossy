@@ -1,0 +1,53 @@
+default:
+  image: ubuntu:22.04
+  tags:
+    - docker
+
+stages:
+  - setup
+  - backend_build
+  - backend_test
+  - deploy
+
+variables:
+  MAVEN_HOME: "/opt/maven"
+  JAVA_HOME: "/usr/lib/jvm/java-21-openjdk-amd64"
+
+before_script:
+  # Install dependencies and set up the environment
+  - echo "Setting up the environment..."
+  - apt-get update && apt-get install -y openjdk-21-jdk maven
+  - export "PATH=$MAVEN_HOME/bin:$PATH"
+  - java -version
+  - mvn -version
+
+backend_build_job:
+  stage: backend_build
+  script:
+    - echo "Building the backend with Maven..."
+    - mvn clean install
+    - echo "Backend build complete."
+
+user-service_Test_Job:
+  stage: backend_test
+  tags:
+    - docker
+  services:
+    - name: mongo:7.0.5
+      alias: mongo
+    - name: eclipse-mosquitto:latest
+      alias: mqtt
+  variables:
+    MONGODB_URI: "mongodb://mongo:27017/serverTestDB"
+  script:
+    - echo "Starting services for testing..."
+    - echo "Running integration tests..."
+    - mvn test -pl user-service -am    
+    - echo "Tests completed successfully."
+    - echo "Stopping services after testing..."
+
+deploy_job:
+  stage: deploy
+  script:
+    - echo "Deploying the application..."
+    - echo "Deployment completed successfully."

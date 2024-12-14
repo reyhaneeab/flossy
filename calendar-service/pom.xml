@@ -7,10 +7,9 @@
         <artifactId>flossy</artifactId>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
+
     <artifactId>calendar-service</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-    <name>calendar-service</name>
-    <description>calendar-service</description>
+
     <url/>
     <licenses>
         <license/>
