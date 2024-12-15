@@ -23,7 +23,7 @@
                   v-for="slot in day.slots"
                   :key="slot.time"
                   class="btn btn-outline-primary mb-2 time-slot"
-                  :class="{ 'btn-primary text-white': slot.selected, 'disabled': slot.booked }"
+                  :class="{ 'btn-primary text-black': slot.selected, 'disabled': slot.booked }"
                   @click="selectSlot(day, slot)"
                   :disabled="slot.booked"
               >
@@ -72,7 +72,7 @@ export default defineComponent({
           },
           body: JSON.stringify({
             weekNumber: "1",
-            ownerId: "675844ff73a9ad601e5a77a9"
+            ownerId: "675844ff73a9ad601e5a77a9",
           })
         })
 
@@ -129,7 +129,7 @@ export default defineComponent({
 
     const confirmBooking = async () => {
       try {
-        await fetch(bookingURL, {
+        const response=await fetch(bookingURL, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -139,13 +139,18 @@ export default defineComponent({
             userId: jwtDecode(localStorage.getItem("token")).sub,
           }),
         });
+        if (!response.ok) {
+          const errorData = await response.json();
+          alert(`Appointment is already booked: ${errorData.error}`);
+          return;
+        }
 
 
         alert(`Appointment has been booked successfully!`);
         showBooking.value = false;
       } catch (error) {
         console.error("Error booking appointment:", error);
-        alert("Failed to book the appointment. Please try again later.");
+        alert("Appointment is already booked. Please try other time slot.");
         showBooking.value = false;
       }
     };
@@ -173,6 +178,9 @@ export default defineComponent({
 </script>
 
 <style scoped>
+.text-center mb-4{
+  color: #ffffff;
+}
 .calendar-card {
   transition: all 0.3s ease;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -196,12 +204,6 @@ export default defineComponent({
 
 .time-slot {
   transition: all 0.2s ease;
-}
-
-.calendar {
-  display: flex;
-  justify-content: center;
-  gap: 20px;
 }
 
 .time-slot:hover:not(.disabled) {
@@ -272,22 +274,23 @@ button.selected {
 #bookButton{
   display: inline-block;
   padding: 15px 30px;
-  border: 1px solid #ffffff;
-  background: #0b6623;
+  border: 1px solid #000000;
+  background: #4169e1;
   cursor: pointer;
   font-size: 15px;
   font-weight: bold;
   border-radius: 8px;
   color: #ffffff;
+  font-family: Copperplate,fantasy;
 }
 
 
 #yes{
-  background-color: #0b6623;
+  background-color: #4169e1;
   color: white;
 }
 #no{
-  background-color: #dc3545;
+  background-color: #d10000;
   color: white;
 }
 

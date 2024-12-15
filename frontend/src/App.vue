@@ -28,6 +28,9 @@
               <li class="nav-item">
                 <router-link class="nav-link" to="/calendar">Calendar</router-link>
               </li>
+              <li class="nav-item">
+                <router-link class="nav-link" to="/appointments">My Appointments</router-link>
+              </li>
             </ul>
             <ul class="navbar-nav" v-if="!loggedIn">
               <li class="nav-item dropdown" v-if="authView === 'Login'">
