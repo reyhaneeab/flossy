@@ -13,6 +13,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.retry.annotation.Retryable;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.scheduling.annotation.Scheduled;
+
+import java.util.List;
 
 @Slf4j
 @Service
@@ -30,54 +35,69 @@ public class UserService {
     private static final String USER_LOGIN_TOPIC = "user/login";
     private static final String USER_LOGIN_RESPONSE = USER_LOGIN_TOPIC + "/response";
 
+    private boolean isInitialized = false;
+
     @PostConstruct
     public void init() {
-        try {
-            if (!mqttClient.isConnected()) {
-                MqttConnectOptions options = new MqttConnectOptions();
-                options.setAutomaticReconnect(true);
-                options.setCleanSession(false);
-                options.setConnectionTimeout(10);
-                options.setKeepAliveInterval(60);
-                mqttClient.connect(options);
+        scheduleConnect();
+    }
+
+    @Scheduled(fixedDelay = 5000)
+    @Retryable(value = {Exception.class}, maxAttempts = -1, backoff = @Backoff(delay = 5000))
+    public void scheduleConnect() {
+        if (!isInitialized) {
+            try {
+                connectAndSubscribe();
+                isInitialized = true;
+            } catch (Exception e) {
+                log.error("Failed to initialize MQTT connection. Retrying...", e);
+                throw new RuntimeException("MQTT initialization failed", e);
             }
-
-            mqttClient.subscribe(USER_REGISTRATION_TOPIC);
-            mqttClient.subscribe(USER_LOGIN_TOPIC);
-
-
-            mqttClient.setCallback(new MqttCallback() {
-                @Override
-                public void connectionLost(Throwable cause) {
-                    log.error("Connection lost", cause);
-                }
-
-                @Override
-                public void messageArrived(String topic, MqttMessage mqttMessage) {
-                    log.info("Message arrived on topic: {}", topic);
-                    try {
-                        if (topic.equals(USER_REGISTRATION_TOPIC)) {
-                            createUser(mqttMessage);
-                        } else if (topic.equals(USER_LOGIN_TOPIC)) {
-                            handleLogin(mqttMessage);
-                        }
-                    } catch (Exception e) {
-                        log.error("Error processing message", e);
-                    }
-                }
-
-                @Override
-                public void deliveryComplete(IMqttDeliveryToken token) {
-                    log.info("MQTT delivery complete: {}", token.isComplete());
-                }
-            });
-
-        } catch (MqttException e) {
-            log.error("Error initializing MQTT client", e);
-            throw new RuntimeException("MQTT initialization failed", e);
         }
     }
 
+    private void connectAndSubscribe() throws MqttException {
+        if (!mqttClient.isConnected()) {
+            MqttConnectOptions options = new MqttConnectOptions();
+            options.setAutomaticReconnect(true);
+            options.setCleanSession(false);
+            options.setConnectionTimeout(10);
+            options.setKeepAliveInterval(60);
+            mqttClient.connect(options);
+        }
+
+        mqttClient.subscribe(USER_REGISTRATION_TOPIC);
+        mqttClient.subscribe(USER_LOGIN_TOPIC);
+
+        mqttClient.setCallback(new MqttCallback() {
+            @Override
+            public void connectionLost(Throwable cause) {
+                log.error("Connection lost", cause);
+                isInitialized = false;
+            }
+
+            @Override
+            public void messageArrived(String topic, MqttMessage mqttMessage) {
+                log.info("Message arrived on topic: {}", topic);
+                try {
+                    if (topic.equals(USER_REGISTRATION_TOPIC)) {
+                        createUser(mqttMessage);
+                    } else if (topic.equals(USER_LOGIN_TOPIC)) {
+                        handleLogin(mqttMessage);
+                    }
+                } catch (Exception e) {
+                    log.error("Error processing message", e);
+                }
+            }
+
+            @Override
+            public void deliveryComplete(IMqttDeliveryToken token) {
+                log.info("MQTT delivery complete: {}", token.isComplete());
+            }
+        });
+    }
+
+    @Retryable(value = {Exception.class}, maxAttempts = 3, backoff = @Backoff(delay = 1000))
     public void createUser(MqttMessage message) throws Exception {
         UserRequest request = mapper.readValue(message.getPayload(), UserRequest.class);
 
@@ -103,6 +123,7 @@ public class UserService {
         }
     }
 
+    @Retryable(value = {RuntimeException.class}, maxAttempts = 3, backoff = @Backoff(delay = 1000))
     public LoginResponse loginUser(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -112,18 +133,18 @@ public class UserService {
             throw new RuntimeException("Invalid password");
         }
 
-        String token="";
+        String token = "";
 
         try {
             token = jwtTokenProvider.generateToken(user);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             log.error(e.getMessage());
         }
 
         return new LoginResponse(token);
     }
 
+    @Retryable(value = {Exception.class}, maxAttempts = 3, backoff = @Backoff(delay = 1000))
     private void handleLogin(MqttMessage mqttMessage) throws Exception {
         LoginRequest loginRequest = mapper.readValue(mqttMessage.getPayload(), LoginRequest.class);
         LoginResponse loginResponse = loginUser(loginRequest);
