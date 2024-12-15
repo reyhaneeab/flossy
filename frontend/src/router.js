@@ -7,6 +7,7 @@ import Login from "@/views/LoginPage.vue";
 import Home from "@/views/HomePage.vue";
 import GoogleMap from "@/views/MapPage.vue"; 
 import SignUp from "@/views/SignUpPage.vue";
+import CalendarPage from '@/views/CalendarPage.vue';
 
 const routes=[
     {path: '/home', name: 'Home', component: Home, meta: { requiresAuth: true }, },
@@ -15,6 +16,7 @@ const routes=[
     {path: '/login', name: 'Login', component: Login, meta: { requiresAuth: false, reqLog: true }, },
     {path: '/calendar', name: 'Calendar', component: Calendar, meta: { requiresAuth: true }, },
     {path: '/map', name: 'Map', component : GoogleMap },
+    { path: '/calendar/:dentistId', name: 'Calendar' , component: CalendarPage},
     {
         path: '/:pathMatch(.*)*',
         redirect: '/login',
