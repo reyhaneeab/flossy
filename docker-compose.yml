@@ -1,4 +1,20 @@
 services:
+  dentist-service:
+  build:
+    depends_on:
+      - mongodb1
+      - mongodb2
+      - mongodb3
+      - mqtt
+      - redis
+    networks:
+      - flossynet
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb://mongodb1:27017,mongodb2:27017,mongodb3:27017/flossyDB?replicaSet=rs0
+      - SPRING_DATA_MONGODB_DATABASE=flossyDB
+      - MQTT_BROKER_URL=tcp://mqtt:1883
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
   mqtt:
     image: eclipse-mosquitto
     volumes:
@@ -6,26 +22,90 @@ services:
       - mosquitto_data:/mosquitto/data
       - mosquitto_log:/mosquitto/log
     networks:
-      - mqttnet
+      - flossynet
     ports:
       - "9001:9001"
       - "1883:1883"
 
-  mongodb:
+  mongodb1:
+    container_name: mongodb1
     image: mongo:7.0.5
+    command: mongod --replSet rs0 --bind_ip_all
     ports:
       - "27017:27017"
     environment:
       MONGO_INITDB_DATABASE: flossyDB
     volumes:
-      - ./data:/data/db
+      - ./data/mongo1:/data/db
+    networks:
+      - flossynet
+
+  mongodb2:
+    container_name: mongodb2
+    image: mongo:7.0.5
+    command: mongod --replSet rs0 --bind_ip_all
+    ports:
+      - "27018:27017"
+    environment:
+      MONGO_INITDB_DATABASE: flossyDB
+    volumes:
+      - ./data/mongo2:/data/db
+    networks:
+      - flossynet
+
+  mongodb3:
+    container_name: mongodb3
+    image: mongo:7.0.5
+    command: mongod --replSet rs0 --bind_ip_all
+    ports:
+      - "27019:27017"
+    environment:
+      MONGO_INITDB_DATABASE: flossyDB
+    volumes:
+      - ./data/mongo3:/data/db
+    networks:
+      - flossynet
+
+  mongo-init:
+    image: mongo:7.0.5
+    depends_on:
+      - mongodb1
+      - mongodb2
+      - mongodb3
+    networks:
+      - flossynet
+    command: >
+      bash -c '
+      echo "Waiting for MongoDB to start..."
+      until mongosh --host mongodb1:27017 --eval "db.adminCommand('ping')" > /dev/null 2>&1; do
+      echo "Waiting for MongoDB to be ready..."
+      sleep 5
+      done
+      echo "Attempting to initialize replica set..."
+      mongosh --host mongodb1:27017 --eval "
+      if (rs.status().ok === 0) {
+        rs.initiate({
+          _id: \"rs0\",
+          members: [
+            {_id: 0, host: \"mongodb1:27017\"},
+            {_id: 1, host: \"mongodb2:27017\"},
+            {_id: 2, host: \"mongodb3:27017\"}
+          ]
+        });
+        print(\"Replica set initialized\");
+      } else {
+        print(\"Replica set already initialized\");
+      }
+      "
+      echo "Initialization attempt completed."
+      '
 
   redis:
     image: redis:latest
     ports:
       - "6379:6379"
     networks:
-      - mqttnet
+      - flossynet
 
 volumes:
   mosquitto_conf:
@@ -33,5 +113,5 @@ volumes:
   mosquitto_log:
 
 networks:
-  mqttnet:
+  flossynet:
     driver: bridge
