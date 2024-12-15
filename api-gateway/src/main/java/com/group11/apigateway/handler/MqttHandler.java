@@ -17,8 +17,14 @@ import java.util.concurrent.TimeUnit;
 public class MqttHandler {
 
     private static final Logger log = LoggerFactory.getLogger(MqttHandler.class);
-    private final IMqttClient mqttClient = MqttConfig.getClient();
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final IMqttClient mqttClient;
+    private final ObjectMapper objectMapper;
+
+    public MqttHandler(IMqttClient mqttClient, ObjectMapper objectMapper) {
+        this.mqttClient = mqttClient;
+        this.objectMapper = objectMapper;
+    }
+
 
     public JsonNode forwardRequest(String topic, Object requestBody) throws Exception {
         String responseTopic = topic + "/response";
