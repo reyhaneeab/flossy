@@ -6,6 +6,7 @@ import Calendar from "@/views/CalendarPage.vue";
 import Login from "@/views/LoginPage.vue";
 import Home from "@/views/HomePage.vue";
 import SignUp from "@/views/SignUpPage.vue";
+import Appointments from "@/views/AppointmentsPage.vue";
 
 const routes=[
     {path: '/home', name: 'Home', component: Home, meta: { requiresAuth: true }, },
@@ -13,6 +14,7 @@ const routes=[
     {path: '/signup', name: 'Signup', component: SignUp, meta: {requiresAuth: false, reqLog: true}, },
     {path: '/login', name: 'Login', component: Login, meta: { requiresAuth: false, reqLog: true }, },
     {path: '/calendar', name: 'Calendar', component: Calendar, meta: { requiresAuth: true }, },
+    {path: '/appointments', name: 'Appointments', component:Appointments, meta: {requiresAuth:true},},
     {
         path: '/:pathMatch(.*)*',
         redirect: '/login',
