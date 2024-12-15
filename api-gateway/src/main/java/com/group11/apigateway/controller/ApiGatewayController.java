@@ -29,18 +29,10 @@ public class ApiGatewayController {
     
         try {
             // Check cache first
-            Object cachedResponse = cacheUtil.getCachedResponse(cacheKey);
+            JsonNode cachedResponse = cacheUtil.getCachedResponse(cacheKey);
             if (cachedResponse != null) {
                 log.info("Cache hit for topic: {}", topic);
-                JsonNode jsonNode;
-                if (cachedResponse instanceof String) {
-                    jsonNode = objectMapper.readTree((String) cachedResponse);
-                } else if (cachedResponse instanceof JsonNode) {
-                    jsonNode = (JsonNode) cachedResponse;
-                } else {
-                    jsonNode = objectMapper.valueToTree(cachedResponse);
-                }
-                return ResponseEntity.ok(jsonNode);
+                return ResponseEntity.ok(cachedResponse);
             }
     
             // If not in cache, forward the request
