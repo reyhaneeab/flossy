@@ -100,27 +100,26 @@ async function fetchDentists() {
   }
 }
 
-
-// 
+// Convert addresses to coordinates using the Geocoder API
 async function convertAddressesToCoordinates() {
   const geocoder = new google.maps.Geocoder()
 
   for (const dentist of dentists.value) {
-  // Check if address is valid before calling geocode
-  if (dentist.address && typeof dentist.address === 'string') {
-    try {
-      console.log('Processing address:', dentist.address);
-      const result = await geocodeAddress(geocoder, dentist.address);
-      dentist.latitude = result.lat();
-      dentist.longitude = result.lng();
-      addDentistMarker(dentist);
-    } catch (error) {
-      console.error(`Error geocoding address for ${dentist.officeName}:`, error);
+    // Check if address is valid before calling geocode
+    if (dentist.address && typeof dentist.address === 'string') {
+      try {
+        console.log('Processing address:', dentist.address);
+        const result = await geocodeAddress(geocoder, dentist.address);
+        dentist.latitude = result.lat();
+        dentist.longitude = result.lng();
+        addDentistMarker(dentist);
+      } catch (error) {
+        console.error(`Error geocoding address for ${dentist.officeName}:`, error);
+      }
+    } else {
+      console.error('Invalid address:', dentist);
     }
-  } else {
-    console.error('Invalid address:', dentist);
   }
-}
 }
 
 // Geocode an address to get its coordinates using the Geocoder API
