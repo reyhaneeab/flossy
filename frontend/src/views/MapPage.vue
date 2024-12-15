@@ -32,10 +32,21 @@ function initMap() {
     zoom: zoomLevel,
   })
   mapInitialized = true // Set to true so the map centers on the user's location on the first update
-  getCurrentLocation() // Get the user's current location
+
+  // Check if the user's location is stored in local storage
+  const storedLocation = localStorage.getItem('userLocation')
+  if (storedLocation) {
+    const pos = JSON.parse(storedLocation)
+    setCurrentLocationMarker(pos)
+    map.value.setCenter(pos)
+    mapInitialized = false
+  } else {
+    getCurrentLocation() // Get the user's current location
+  }
   fetchDentists() // Fetch the dentist offices
 }
 
+// Get the user's current location and update the map
 function getCurrentLocation() {
   if (navigator.geolocation) {
     navigator.geolocation.watchPosition(
@@ -44,19 +55,8 @@ function getCurrentLocation() {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
         }
-        if (!currentLocationMarker.value) {
-          currentLocationMarker.value = new google.maps.Marker({
-            position: pos,
-            map: map.value,
-            title: 'Your Current Location',
-            icon: {
-              url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-              scaledSize: new google.maps.Size(50, 50) // Increase the size of the icon
-            },
-          })
-        } else {
-          currentLocationMarker.value.setPosition(pos)
-        }
+        localStorage.setItem('userLocation', JSON.stringify(pos))
+        setCurrentLocationMarker(pos)
         if (mapInitialized) {
           map.value.setCenter(pos)
           mapInitialized = false // Only center the map on the first location update
@@ -64,13 +64,32 @@ function getCurrentLocation() {
       },
       (error) => {
         console.error('Error getting current location:', error)
-      }
+      },
+      { timeout: 1000 } // Add a timeout of 1 seconds
     )
   } else {
     console.error('Geolocation is not supported by this browser.')
   }
 }
 
+// Set the current location marker on the map or update its position
+function setCurrentLocationMarker(pos) {
+  if (!currentLocationMarker.value) {
+    currentLocationMarker.value = new google.maps.Marker({
+      position: pos,
+      map: map.value,
+      title: 'Your Current Location',
+      icon: {
+        url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+        scaledSize: new google.maps.Size(50, 50) // Increase the size of the icon
+      },
+    })
+  } else {
+    currentLocationMarker.value.setPosition(pos)
+  }
+}
+
+// Fetch the dentist offices from the API and add them to the map
 async function fetchDentists() {
   try {
     const response = await api.post('dentist/get')
