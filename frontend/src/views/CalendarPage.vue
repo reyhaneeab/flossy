@@ -48,11 +48,14 @@
 
 <script>
 import { defineComponent, ref, onMounted } from "vue";
+import { useRoute } from 'vue-router';
 
 export default defineComponent({
   setup() {
     const selectedSlot = ref(null);
     const days = ref([]);
+    const route = useRoute();
+    const dentistId = route.params.dentistId; // Get dentistId from route params
     const URL = `http://localhost:8091/api/calendar/get`
 
     const fetchTimeSlots = async () => {
@@ -64,7 +67,7 @@ export default defineComponent({
           },
           body: JSON.stringify({
             weekNumber: "50",
-            ownerId: "674a2c3e3881dd327be177fd"
+            ownerId: dentistId // Ensure dentistId is used here
           })
         })
 
