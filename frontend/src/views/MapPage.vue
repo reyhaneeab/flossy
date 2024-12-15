@@ -18,10 +18,9 @@ const dentists = ref([])
 const markers = ref([])
 
 onMounted(() => {
+  window.initMap = initMap // Ensure initMap is defined in the global scope
   if (window.google && window.google.maps) {
     initMap()
-  } else {
-    window.initMap = initMap // Attach initMap to the window object
   }
 })
 
@@ -44,18 +43,17 @@ async function fetchDentists() {
 }
 
 async function convertAddressesToCoordinates() {
-  if (!dentists.value.length) return
-
   const geocoder = new google.maps.Geocoder()
 
   for (const dentist of dentists.value) {
+    const { address, name } = dentist
     try {
-      const result = await geocodeAddress(geocoder, dentist.address)
-      dentist.latitude = result.lat()
-      dentist.longitude = result.lng()
-      addDentistMarker(dentist)
+      const result = await geocodeAddress(geocoder, address)
+      const latitude = result.lat()
+      const longitude = result.lng()
+      addDentistMarker({ address, name, latitude, longitude })
     } catch (error) {
-      console.error(`Error geocoding address for ${dentist.name}:`, error)
+      console.error(`Error geocoding address for ${name}:`, error)
     }
   }
 }
