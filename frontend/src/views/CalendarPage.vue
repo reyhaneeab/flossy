@@ -23,7 +23,7 @@
                   v-for="slot in day.slots"
                   :key="slot.time"
                   class="btn btn-outline-primary mb-2 time-slot"
-                  :class="{ 'btn-primary text-white': slot.selected, 'disabled': slot.booked }"
+                  :class="{ 'btn-primary text-black': slot.selected, 'disabled': slot.booked }"
                   @click="selectSlot(day, slot)"
                   :disabled="slot.booked"
               >
@@ -36,24 +36,32 @@
     </div>
     <!-- Selected slot information, shown conditionally -->
     <div v-if="selectedSlot" class="mt-4 selected-slot-info">
-      <h2 class="text-center">Selected Slot</h2>
+      <h2 class="text-center">Selected Time Slot</h2>
       <p class="text-center">
         Date: {{ formatDate(selectedSlot.date) }} <br />
         Time: {{ selectedSlot.time }}
       </p>
+      <div @click="book" id="bookButton">BOOK APPOINTMENT</div>
+      <div v-if="showBooking" class="alert-box">
+        <p>Are you sure you want to book this appointment?</p>
+        <button @click="confirmBooking" id="yes">Yes</button>
+        <button @click="closeAlert" id="no">No</button>
+      </div>
     </div>
   </div>
 </template>
 
-
 <script>
 import { defineComponent, ref, onMounted } from "vue";
+import {jwtDecode} from "jwt-decode";
 import { useRoute } from 'vue-router';
 
 export default defineComponent({
   setup() {
     const selectedSlot = ref(null);
+    const showBooking = ref(false);
     const days = ref([]);
+    const bookingURL = `http://localhost:8091/api/timeSlot/book`;
     const route = useRoute();
     const dentistId = route.params.dentistId; // Get dentistId from route params
     const URL = `http://localhost:8091/api/calendar/get`
@@ -118,6 +126,41 @@ export default defineComponent({
       const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
       return new Date(dateString).toLocaleDateString(undefined, options);
     };
+    const book = ()=>{
+      showBooking.value = true;
+    };
+
+    const confirmBooking = async () => {
+      try {
+        const response=await fetch(bookingURL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            timeSlotId: selectedSlot.value.id,
+            userId: jwtDecode(localStorage.getItem("token")).sub,
+          }),
+        });
+        if (!response.ok) {
+          const errorData = await response.json();
+          alert(`Appointment is already booked: ${errorData.error}`);
+          return;
+        }
+
+
+        alert(`Appointment has been booked successfully!`);
+        showBooking.value = false;
+      } catch (error) {
+        console.error("Error booking appointment:", error);
+        alert("Appointment is already booked. Please try other time slot.");
+        showBooking.value = false;
+      }
+    };
+
+    const closeAlert = ()=>{
+      showBooking.value=false;
+    };
 
     onMounted(() => {
       fetchTimeSlots();
@@ -126,14 +169,21 @@ export default defineComponent({
     return {
       days,
       selectedSlot,
+      showBooking,
       formatDate,
       selectSlot,
+      book,
+      confirmBooking,
+      closeAlert,
     };
   },
 });
 </script>
 
 <style scoped>
+.text-center mb-4{
+  color: #ffffff;
+}
 .calendar-card {
   transition: all 0.3s ease;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -179,9 +229,78 @@ h1, h2 {
   color: #343a40;
 }
 
+button {
+  padding: 30px 50px;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  background: #fff;
+  cursor: pointer;
+  transition: 0.3s;
+  font-size: 15px;
+  font-weight: bold;
+}
+
+
+button.selected {
+  background: #add8e6;
+  border-color: #00f;
+  color: #000;
+}
+
+.alert-box {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border: 1px solid #ccc;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+.alert-box p {
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+}
+
+.alert-box button {
+  margin: 0 10px;
+  padding: 10px 20px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#bookButton{
+  display: inline-block;
+  padding: 15px 30px;
+  border: 1px solid #000000;
+  background: #4169e1;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: bold;
+  border-radius: 8px;
+  color: #ffffff;
+  font-family: Copperplate,fantasy;
+}
+
+
+#yes{
+  background-color: #4169e1;
+  color: white;
+}
+#no{
+  background-color: #d10000;
+  color: white;
+}
+
 @media (max-width: 768px) {
   .calendar-card {
     margin-bottom: 20px;
   }
 }
+
 </style>
