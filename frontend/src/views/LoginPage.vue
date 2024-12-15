@@ -57,8 +57,8 @@
 <script>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-
-const URL = `http://localhost:8090/api/users/login`
+import {jwtDecode} from "jwt-decode";
+import {authService} from "@/authService";
 
 export default {
   setup() {
@@ -69,36 +69,28 @@ export default {
 
     const handleLogin = async () => {
       try {
-        const response = await fetch(URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: email.value,
-            password: password.value,
-          }),
-          credentials: 'include',
-        });
+        const response = await authService.login(email, password);
 
-        if (response.ok) {
-          const data = await response.json()
-          localStorage.setItem('token', data.token)
-          router.push('/home')
-        } else {
-          const errorData = await response.text();
-          try {
-            const parsedError = JSON.parse(errorData);
-            error.value = parsedError.message || 'Login failed';
-          } catch (e) {
-            error.value = errorData || 'Login failed';
+        if (response) {
+          console.log(1);
+          const token = localStorage.getItem("token"); // Ensure token is set in storage
+          if (token) {
+            const decoded = jwtDecode(token); // Decode the token for debugging
+            console.log("Decoded Token:", decoded);
+            await router.push("/home"); // Navigate to home page
+            location.reload()
+          } else {
+            error.value = "Token not found in local storage.";
           }
         }
       } catch (err) {
-        console.error('Login error:', err)
-        error.value = 'An unexpected error occurred'
+        console.error("Error during login:", err.message || "Unexpected error");
+        error.value = err.response?.data?.message || "An unexpected error occurred.";
       }
-    }
+    };
+
+
+
 
     return {
       email,
