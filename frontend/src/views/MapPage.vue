@@ -65,7 +65,7 @@ function getCurrentLocation() {
       (error) => {
         console.error('Error getting current location:', error)
       },
-      { timeout: 1000 } // Add a timeout of 1 seconds
+      { timeout: 30000 } 
     )
   } else {
     console.error('Geolocation is not supported by this browser.')
