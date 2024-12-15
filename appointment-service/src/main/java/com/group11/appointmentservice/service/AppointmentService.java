@@ -11,6 +11,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
+import org.springframework.dao.DataAccessException;
 import static com.group11.config.JacksonConfig.createObjectMapper;
 
 
@@ -72,35 +75,33 @@ public class AppointmentService {
         }
     }
 
+    @Retryable(value = {DataAccessException.class}, maxAttempts = 3, backoff = @Backoff(delay = 1000))
     public void bookAppointment(MqttMessage message) throws Exception {
-
         BookAppointmentRequest request = mapper.readValue(message.getPayload(), BookAppointmentRequest.class);
-        // Access structured data
         String timeSlotId = request.getTimeSlotId();
         String userId = request.getUserId();
-        log.info(timeSlotId);
-        log.info(userId);
+        log.info("Attempting to book appointment for TimeSlotId: {} and UserId: {}", timeSlotId, userId);
 
-        log.info(timeSlotRepository.findAll().toString());
         TimeSlot timeSlot = timeSlotRepository.findById(timeSlotId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking failed. Time Slot not found"));
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking failed. User not found"));
 
-        if(timeSlot.getBooked()) throw new Exception("Appointment is already booked");
-        else {
+        if(timeSlot.getBooked()) {
+            throw new Exception("Appointment is already booked");
+        } else {
             timeSlot.setBooked(true);
             timeSlot.setBookedBy(user);
             timeSlotRepository.save(timeSlot);
 
             String payload = mapper.writeValueAsString(timeSlot);
-            mqttClient.publish(BOOK_APPOINTMENT_RESPONSE, payload.getBytes() , 1, false);
-            log.info("Booking successful for UserId: {} and TimeSlotId: {}", request.getUserId(), request.getTimeSlotId());
+            mqttClient.publish(BOOK_APPOINTMENT_RESPONSE, payload.getBytes(), 1, false);
+            log.info("Booking successful for UserId: {} and TimeSlotId: {}", userId, timeSlotId);
         }
-
     }
 
+    @Retryable(value = {DataAccessException.class}, maxAttempts = 3, backoff = @Backoff(delay = 1000))
     public void cancelAppointment(MqttMessage message) throws Exception {
         BookAppointmentRequest request = mapper.readValue(message.getPayload(), BookAppointmentRequest.class);
 
