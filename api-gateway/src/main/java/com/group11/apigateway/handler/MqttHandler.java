@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.group11.apigateway.config.MqttConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.paho.client.mqttv3.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -19,6 +20,7 @@ public class MqttHandler {
     private static final Logger log = LoggerFactory.getLogger(MqttHandler.class);
     private final IMqttClient mqttClient;
     private final ObjectMapper objectMapper;
+    @Autowired
 
     public MqttHandler(IMqttClient mqttClient, ObjectMapper objectMapper) {
         this.mqttClient = mqttClient;
