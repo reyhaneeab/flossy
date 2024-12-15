@@ -51,6 +51,7 @@ function getCurrentLocation() {
             title: 'Your Current Location',
             icon: {
               url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+              scaledSize: new google.maps.Size(50, 50) // Increase the size of the icon
             },
           })
         } else {
