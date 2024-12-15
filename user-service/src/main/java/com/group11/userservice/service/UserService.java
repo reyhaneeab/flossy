@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.group11.model.User;
 import com.group11.userservice.dto.UserRequest;
 import com.group11.userservice.repository.UserRepository;
+import com.group11.userservice.dto.LoginRequest;
+import com.group11.userservice.dto.LoginResponse;
+import com.group11.userservice.config.JwtTokenProvider;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,31 +23,47 @@ public class UserService {
     private final MqttClient mqttClient;
     private final PasswordEncoder passwordEncoder;
     private final ObjectMapper mapper = new ObjectMapper();
+    private final JwtTokenProvider jwtTokenProvider = new JwtTokenProvider();
 
     private static final String USER_REGISTRATION_TOPIC = "user/registration";
     private static final String USER_REGISTRATION_RESPONSE = USER_REGISTRATION_TOPIC + "/response";
+    private static final String USER_LOGIN_TOPIC = "user/login";
+    private static final String USER_LOGIN_RESPONSE = USER_LOGIN_TOPIC + "/response";
 
     @PostConstruct
     public void init() {
         try {
+            if (!mqttClient.isConnected()) {
+                MqttConnectOptions options = new MqttConnectOptions();
+                options.setAutomaticReconnect(true);
+                options.setCleanSession(false);
+                options.setConnectionTimeout(10);
+                options.setKeepAliveInterval(60);
+                mqttClient.connect(options);
+            }
+
+            mqttClient.subscribe(USER_REGISTRATION_TOPIC);
+            mqttClient.subscribe(USER_LOGIN_TOPIC);
+
+
             mqttClient.setCallback(new MqttCallback() {
                 @Override
                 public void connectionLost(Throwable cause) {
-                    try {
-                        mqttClient.disconnect();
-                        mqttClient.close();
-                    }catch(Exception e){
-                        log.info("Connection lost:" + e.getMessage());
-                    }
+                    log.error("Connection lost", cause);
                 }
 
                 @Override
                 public void messageArrived(String topic, MqttMessage mqttMessage) {
-                    log.info("Message arrived: {}", mqttMessage.toString());
-                    try{
-                        createUser(mqttMessage);
+                    log.info("Message arrived on topic: {}", topic);
+                    try {
+                        if (topic.equals(USER_REGISTRATION_TOPIC)) {
+                            createUser(mqttMessage);
+                        } else if (topic.equals(USER_LOGIN_TOPIC)) {
+                            handleLogin(mqttMessage);
+                        }
+                    } catch (Exception e) {
+                        log.error("Error processing message", e);
                     }
-                    catch (Exception e){log.info(e.getMessage());}
                 }
 
                 @Override
@@ -53,12 +72,6 @@ public class UserService {
                 }
             });
 
-            if (!mqttClient.isConnected()) {
-                mqttClient.connect();
-                log.info("MQTT client connected during initialization.");
-            }
-
-            mqttClient.subscribe(USER_REGISTRATION_TOPIC);
         } catch (MqttException e) {
             log.error("Error initializing MQTT client", e);
             throw new RuntimeException("MQTT initialization failed", e);
@@ -66,34 +79,56 @@ public class UserService {
     }
 
     public void createUser(MqttMessage message) throws Exception {
-
         UserRequest request = mapper.readValue(message.getPayload(), UserRequest.class);
 
         if (userRepository.existsByEmail(request.email())) {
             throw new RuntimeException("Email already exists");
         }
-    
+
         User user = User.builder()
                 .email(request.email())
                 .firstName(request.firstName())
                 .lastName(request.lastName())
                 .phone(request.phone())
-                .password(passwordEncoder.encode(request.password())) // Encode the password
+                .password(passwordEncoder.encode(request.password()))
                 .build();
-    
-        // Save user to db
+
         userRepository.save(user);
-    
-        // Prepare and publish payload
+
         try {
             String payload = mapper.writeValueAsString(user);
             mqttClient.publish(USER_REGISTRATION_RESPONSE, payload.getBytes(), 1, false);
         } catch (Exception e) {
             log.error("Error publishing user registration message to MQTT", e);
         }
-    
-        log.info("User {} has been registered successfully", user.getFirstName());
     }
 
-}
+    public LoginResponse loginUser(LoginRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        log.info(user.toString());
+    
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new RuntimeException("Invalid password");
+        }
 
+        String token="";
+
+        try {
+            token = jwtTokenProvider.generateToken(user);
+        }
+        catch (Exception e) {
+            log.error(e.getMessage());
+        }
+
+        return new LoginResponse(token);
+    }
+
+    private void handleLogin(MqttMessage mqttMessage) throws Exception {
+        LoginRequest loginRequest = mapper.readValue(mqttMessage.getPayload(), LoginRequest.class);
+        LoginResponse loginResponse = loginUser(loginRequest);
+
+        String payload = mapper.writeValueAsString(loginResponse);
+        mqttClient.publish(USER_LOGIN_RESPONSE, payload.getBytes(), 1, false);
+    }
+}

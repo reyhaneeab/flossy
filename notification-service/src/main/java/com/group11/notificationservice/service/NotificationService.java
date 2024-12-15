@@ -1,5 +1,6 @@
 package com.group11.notificationservice.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.group11.notificationservice.engine.EmailEngine;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,7 @@ import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.stereotype.Service;
 import com.group11.notificationservice.handler.*;
 import java.util.HashMap;
+import static com.group11.config.JacksonConfig.createObjectMapper;
 
 
 @Service
@@ -18,42 +20,44 @@ public class NotificationService {
 
     private final MqttClient mqttClient;
     private final JavaMailSenderImpl mailSender;
+    private final ObjectMapper mapper = createObjectMapper();
     private final HashMap<String, NotificationHandler> handlers = new HashMap<>();
 
     // Define topics
     private static final String[] topics = {
-            "dentist/registration/email",
-            "timeSlot/book/email"
+            "dentist/registration/response",
+            "timeSlot/book/response",
+            "timeSlot/cancel/response",
     };
 
     // PostConstruct to set up subscriptions
     @PostConstruct
     public void init() {
         try {
-            // Connect and subscribe to the relevant topic
             if (!mqttClient.isConnected()) {
-                mqttClient.connect();
+                MqttConnectOptions options = new MqttConnectOptions();
+                options.setAutomaticReconnect(true);
+                options.setCleanSession(false);
+                options.setConnectionTimeout(10);
+                options.setKeepAliveInterval(60);
+                mqttClient.connect(options);
             }
 
             for (String topic : topics) {
-                mqttClient.subscribe(topic,1);
+                mqttClient.subscribe(topic, 1);
                 log.info("Subscribed to topic: {}", topic);
             }
 
-            handlers.put(topics[0], new DentistRegistrationHandler(new EmailEngine(mailSender)));
-            handlers.put(topics[1], new DentistBookingHandler(new EmailEngine(mailSender)));
+            handlers.put(topics[0], new DentistRegistrationHandler(new EmailEngine(mailSender), mapper));
+            handlers.put(topics[1], new DentistBookingHandler(new EmailEngine(mailSender), mapper));
+            handlers.put(topics[2], new DentistCancellationHandler(new EmailEngine(mailSender), mapper));
 
             mqttClient.setCallback(new MqttCallback() {
                 @Override
                 public void connectionLost(Throwable cause) {
-                    try {
-                        mqttClient.disconnect();
-                        mqttClient.close();
-                    }
-                    catch (MqttException e) {
-                        log.error(e.getMessage());
-                    }
+                    log.error("Connection lost", cause);
                 }
+
 
                 @Override
                 public void messageArrived(String topic, MqttMessage message) {
@@ -68,9 +72,10 @@ public class NotificationService {
             });
 
         } catch (MqttException e) {
-            log.error(e.getMessage());
+            log.error("Error initializing MQTT client: {}", e.getMessage());
         }
     }
+
 
     private void handleMessage(String topic, String payload) {
         NotificationHandler handler = handlers.get(topic);
