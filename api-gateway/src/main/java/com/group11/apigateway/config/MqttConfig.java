@@ -1,11 +1,8 @@
 package com.group11.apigateway.config;
 
-import com.group11.config.JacksonConfig;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.paho.client.mqttv3.IMqttClient;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
-import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,8 +13,7 @@ import jakarta.annotation.PreDestroy;
 @Configuration
 public class MqttConfig {
 
-    private static final Logger logger = LoggerFactory.getLogger(MqttConfig.class);
-    private final IMqttClient mqttClient;
+    private static final Logger log = LoggerFactory.getLogger(MqttConfig.class);
 
     @Value("${mqtt.broker.url}")
     private String brokerUrl;
@@ -25,36 +21,29 @@ public class MqttConfig {
     @Value("${mqtt.client.id}")
     private String clientId;
 
-    public MqttConfig() throws MqttException {
-        this.mqttClient = new MqttClient(brokerUrl, clientId);
-        MqttConnectOptions options = new MqttConnectOptions();
-        options.setAutomaticReconnect(true);
-        options.setCleanSession(true);
-        options.setConnectionTimeout(10);
-        mqttClient.connect(options);
-        logger.info("MQTT client connected successfully to {}", brokerUrl);
-    }
+    private IMqttClient mqttClient;
 
     @Bean
-    public IMqttClient mqttClient() {
+    public IMqttClient mqttClient() throws MqttException {
+        log.info("Initializing MQTT client with broker URL: {} and client ID: {}", brokerUrl, clientId);
+        if (brokerUrl == null || clientId == null) {
+            throw new IllegalStateException("MQTT broker URL or client ID is null");
+        }
+        mqttClient = new MqttClient(brokerUrl, clientId);
+        mqttClient.connect();
         return mqttClient;
     }
 
-    @Bean
-    public ObjectMapper objectMapper() {
-        return JacksonConfig.createObjectMapper();
-    }
 
     @PreDestroy
-    public void cleanup() {
+    public void closeMqttClient() {
         try {
-            if (mqttClient.isConnected()) {
+            if (mqttClient != null && mqttClient.isConnected()) {
                 mqttClient.disconnect();
                 mqttClient.close();
-                logger.info("MQTT client disconnected and closed");
             }
         } catch (MqttException e) {
-            logger.error("Error closing MQTT client", e);
+            log.error("Error closing MQTT client", e);
         }
     }
 }
