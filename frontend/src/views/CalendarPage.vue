@@ -54,14 +54,17 @@
 <script>
 import { defineComponent, ref, onMounted } from "vue";
 import {jwtDecode} from "jwt-decode";
+import { useRoute } from 'vue-router';
 
 export default defineComponent({
   setup() {
     const selectedSlot = ref(null);
     const showBooking = ref(false);
     const days = ref([]);
-    const URL = `http://localhost:8091/api/calendar/get`;
     const bookingURL = `http://localhost:8091/api/timeSlot/book`;
+    const route = useRoute();
+    const dentistId = route.params.dentistId; // Get dentistId from route params
+    const URL = `http://localhost:8091/api/calendar/get`
 
     const fetchTimeSlots = async () => {
       try {
@@ -71,8 +74,8 @@ export default defineComponent({
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            weekNumber: "1",
-            ownerId: "675844ff73a9ad601e5a77a9",
+            weekNumber: "50",
+            ownerId: dentistId // Ensure dentistId is used here
           })
         })
 

@@ -5,6 +5,7 @@ import About from "@/views/AboutPage.vue";
 import Calendar from "@/views/CalendarPage.vue";
 import Login from "@/views/LoginPage.vue";
 import Home from "@/views/HomePage.vue";
+import GoogleMap from "@/views/MapPage.vue"; 
 import SignUp from "@/views/SignUpPage.vue";
 import Appointments from "@/views/AppointmentsPage.vue";
 
@@ -13,12 +14,9 @@ const routes=[
     {path: '/about', name: 'AboutUs', component: About, meta: {requiresAuth: false}, },
     {path: '/signup', name: 'Signup', component: SignUp, meta: {requiresAuth: false, reqLog: true}, },
     {path: '/login', name: 'Login', component: Login, meta: { requiresAuth: false, reqLog: true }, },
-    {path: '/calendar', name: 'Calendar', component: Calendar, meta: { requiresAuth: true }, },
+    {path: '/calendar/:pathMatch(.*)*', name: 'Calendar', component: Calendar },
+    {path: '/map', name: 'Map', component : GoogleMap },
     {path: '/appointments', name: 'Appointments', component:Appointments, meta: {requiresAuth:true},},
-    {
-        path: '/:pathMatch(.*)*',
-        redirect: '/login',
-    },
 ]
 
 const router = createRouter({
