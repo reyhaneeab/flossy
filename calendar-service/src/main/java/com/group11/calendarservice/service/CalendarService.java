@@ -23,8 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static com.group11.config.JacksonConfig.createObjectMapper;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -49,6 +47,7 @@ public class CalendarService {
 
     // Scheduled task to create weekly calendars for all dentists
     @Scheduled(cron = "0 0 1 * * MON") // Run every Monday at 1:00 AM
+    @Retryable(retryFor =  Exception.class , maxAttempts = 3, backoff = @Backoff(delay = 1000))
     public void scheduleWeeklyCalendarRegistration() {
         List<Dentist> dentists = dentistRepository.findAll();
         LocalDate now = LocalDate.now();
@@ -65,6 +64,7 @@ public class CalendarService {
                 log.info("Published weekly calendar registration for dentist: {}", dentist.getId());
             } catch (Exception e) {
                 log.error("Error publishing weekly calendar registration for dentist: {}", dentist.getId(), e);
+                throw new RuntimeException("Failed to publish weekly calendar registration", e);
             }
         }
     }
@@ -94,11 +94,11 @@ public class CalendarService {
             initializeMqttClient();
         } catch (MqttException e) {
             log.error("Failed to initialize MQTT client", e);
-            // Consider throwing a runtime exception here if MQTT is critical for your application
-            // throw new RuntimeException("Failed to initialize MQTT client", e);
+            throw new RuntimeException("Failed to initialize MQTT client", e);
         }
     }
     
+    @Retryable(retryFor = MqttException.class , maxAttempts = 3, backoff = @Backoff(delay = 1000))
     private void initializeMqttClient() throws MqttException {
         if (!mqttClient.isConnected()) {
             mqttClient.connect();
@@ -110,7 +110,6 @@ public class CalendarService {
             @Override
             public void connectionLost(Throwable cause) {
                 log.error("MQTT connection lost", cause);
-                // Implement reconnection logic here
                 reconnectMqtt();
             }
     
@@ -136,10 +135,7 @@ public class CalendarService {
                     }
                 }
             }
-            private void publishResponse(String topic, Object payload) throws Exception {
-                String message = mapper.writeValueAsString(payload);
-                mqttClient.publish(topic, message.getBytes(), 1, false);
-            }
+
             @Override
             public void deliveryComplete(IMqttDeliveryToken token) {
                 log.info("MQTT delivery complete: {}", token.isComplete());
@@ -147,6 +143,7 @@ public class CalendarService {
         });
     }
 
+    @Retryable(retryFor =  MqttException.class , maxAttempts = 3, backoff = @Backoff(delay = 1000))
     private void reconnectMqtt() {
         try {
             if (!mqttClient.isConnected()) {
@@ -156,11 +153,12 @@ public class CalendarService {
             }
         } catch (MqttException e) {
             log.error("Failed to reconnect to MQTT broker", e);
-            // Implement exponential backoff or other retry mechanism here
+            throw new RuntimeException("Failed to reconnect to MQTT broker", e);
         }
     }
 
     // Create a new calendar
+    @Retryable(retryFor =   Exception.class , maxAttempts = 3, backoff = @Backoff(delay = 1000))
     public void createCalendar(MqttMessage message) throws Exception {
         CalendarRequest request = mapper.readValue(message.getPayload(), CalendarRequest.class);
         Dentist owner = dentistRepository.findById(request.ownerId())
@@ -183,8 +181,8 @@ public class CalendarService {
         publishResponse(CALENDAR_REGISTRATION_RESPONSE, mapToCalendarResponse(savedCalendar));
     }
 
-
     // Retrieve a calendar
+    @Retryable(retryFor =  Exception.class , maxAttempts = 3, backoff = @Backoff(delay = 1000))
     public void getCalendar(MqttMessage message) throws Exception {
         CalendarRequest request = mapper.readValue(message.getPayload(), CalendarRequest.class);
 
@@ -203,6 +201,7 @@ public class CalendarService {
     }
 
     // Retrieve calendar from cache or database
+    @Retryable(retryFor = { Exception.class }, maxAttempts = 3, backoff = @Backoff(delay = 1000))
     private Calendar getCalendarFromCacheOrDatabase(String ownerId, int weekNumber) {
         String cacheKey = CACHE_KEY_PREFIX + ownerId + ":" + weekNumber;
         Object cachedCalendar =  redisTemplate.opsForValue().get(cacheKey);
@@ -224,7 +223,7 @@ public class CalendarService {
     }
 
     // Cache a calendar with retry mechanism
-    @Retryable(value = RedisConnectionFailureException.class, maxAttempts = 3, backoff = @Backoff(delay = 1000))
+    @Retryable(retryFor = RedisConnectionFailureException.class, maxAttempts = 3, backoff = @Backoff(delay = 1000))
     private void cacheCalendar(Calendar calendar) {
         try {
             String cacheKey = CACHE_KEY_PREFIX + calendar.getOwner().getId() + ":" + calendar.getWeekNumber();
@@ -258,7 +257,6 @@ public class CalendarService {
         );
     }
 
-
     private TimeSlotResponse mapToTimeSlotResponse(TimeSlot timeSlot) {
         return new TimeSlotResponse(
                 timeSlot.getId(),
@@ -270,6 +268,7 @@ public class CalendarService {
     }
 
     // Publish MQTT response
+    @Retryable(retryFor =  Exception.class, maxAttempts = 3, backoff = @Backoff(delay = 1000))
     private void publishResponse(String topic, Object payload) throws Exception {
         String message = mapper.writeValueAsString(payload);
         mqttClient.publish(topic, message.getBytes(), 1, false);
