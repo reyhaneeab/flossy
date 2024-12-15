@@ -17,13 +17,13 @@ const map = ref(null)
 const dentists = ref([])
 const markers = ref([])
 const currentLocationMarker = ref(null)
+let mapInitialized = false // Track if the map is initialized
 
 onMounted(() => {
   window.initMap = initMap // Ensure initMap is defined in the global scope
   if (window.google && window.google.maps) {
     initMap()
   }
-  getCurrentLocation()
 })
 
 function initMap() {
@@ -31,7 +31,9 @@ function initMap() {
     center: mapCenter,
     zoom: zoomLevel,
   })
-  fetchDentists()
+  mapInitialized = true // Set to true so the map centers on the user's location on the first update
+  getCurrentLocation() // Get the user's current location
+  fetchDentists() // Fetch the dentist offices
 }
 
 function getCurrentLocation() {
@@ -54,10 +56,13 @@ function getCurrentLocation() {
         } else {
           currentLocationMarker.value.setPosition(pos)
         }
-        map.value.setCenter(pos)
+        if (mapInitialized) {
+          map.value.setCenter(pos)
+          mapInitialized = false // Only center the map on the first location update
+        }
       },
-      () => {
-        console.error('Error getting current location')
+      (error) => {
+        console.error('Error getting current location:', error)
       }
     )
   } else {
