@@ -5,11 +5,8 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
 import com.group11.model.User;
 
-import java.util.Base64;
 import java.util.Date;
 
 @Slf4j
@@ -18,7 +15,7 @@ public class JwtTokenProvider {
     private final long jwtExpiration;
 
     public JwtTokenProvider() {
-        this.jwtExpiration = 86400000;
+        this.jwtExpiration = 3600000;
     }
 
     public String generateToken(User user) throws Exception {

@@ -2,7 +2,6 @@ package com.group11.userservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.group11.model.User;
-import com.group11.userservice.config.MqttConfig;
 import com.group11.userservice.dto.UserRequest;
 import com.group11.userservice.repository.UserRepository;
 import com.group11.userservice.dto.LoginRequest;
@@ -23,7 +22,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final MqttClient mqttClient;
     private final PasswordEncoder passwordEncoder;
-    private final ObjectMapper mapper;
+    private final ObjectMapper mapper = new ObjectMapper();
     private final JwtTokenProvider jwtTokenProvider = new JwtTokenProvider();
 
     private static final String USER_REGISTRATION_TOPIC = "user/registration";
