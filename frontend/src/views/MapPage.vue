@@ -42,18 +42,18 @@ async function fetchDentists() {
   }
 }
 
+
 async function convertAddressesToCoordinates() {
   const geocoder = new google.maps.Geocoder()
 
   for (const dentist of dentists.value) {
-    const { address, name } = dentist
     try {
-      const result = await geocodeAddress(geocoder, address)
-      const latitude = result.lat()
-      const longitude = result.lng()
-      addDentistMarker({ address, name, latitude, longitude })
+      const result = await geocodeAddress(geocoder, dentist.address)
+      dentist.latitude = result.lat()
+      dentist.longitude = result.lng()
+      addDentistMarker(dentist)
     } catch (error) {
-      console.error(`Error geocoding address for ${name}:`, error)
+      console.error(`Error geocoding address for ${dentist.name}:`, error)
     }
   }
 }
@@ -92,6 +92,7 @@ function addDentistMarker(dentist) {
     infoWindow.open(map.value, marker)
   })
 }
+
 </script>
 
 <style scoped>
