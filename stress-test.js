@@ -1,30 +1,41 @@
 import http from 'k6/http';
-import { sleep } from 'k6';
+import { sleep, check } from 'k6';
 
 export const options = {
-    // Key configurations for Stress in this section
     stages: [
-        { duration: '10s', target: 1000 }, // traffic ramp-up from 1 to a higher 200 users over 10 minutes.
-        { duration: '1s', target: 1000 }, // stay at higher 200 users for 30 minutes
-        { duration: '10s', target: 1000 }, // ramp-down to 0 users
+        { duration: '10s', target: 1000 }, // Ramp-up to 1000 users in 10 seconds
+        { duration: '5s', target: 1000 }, // Stay at 1000 users for 5 seconds
+        { duration: '3s', target: 700 },    // Ramp-down to 700 users in 3 seconds
     ],
 };
 
 export default function () {
-    const uniqueEmail = `user_${__ITER}@test.com`; // Unique email using the iteration number
+    // Payload for the request
     const payload = JSON.stringify({
-        officeName: "hello",
-        address: "12",
-        email: uniqueEmail,
-        password: "1234",
-        phone: "1234"
+        weekNumber: "1",
+        ownerId: "675844ff73a9ad601e5a77a9", // Replace with your own dentist id
     });
+
+    // Request headers
     const params = {
         headers: {
             "Content-Type": "application/json",
         },
     };
 
-    http.post('http://localhost:8091/api/dentist/registration', payload, params);
+    // Perform POST request
+    let response = http.post('http://localhost:8091/api/calendar/get', payload, params);
+
+
+
+    // Add checks to verify the response
+    check(response, {
+        'is status 200': (r) => r.status === 200,
+        'is status 500': (r)=>r.status===500,
+        'response is not empty': (r) => r.body && r.body.length > 0,
+        'no timeouts': (r) => !r.error,
+    });
+
+    // Sleep to simulate user think time
     sleep(1);
 }
