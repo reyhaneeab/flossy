@@ -1,7 +1,6 @@
 package com.group11.notificationservice.config;
 
 import jakarta.annotation.PreDestroy;
-import org.eclipse.paho.client.mqttv3.IMqttClient;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.slf4j.Logger;
