@@ -1,58 +1,54 @@
 package com.group11.apigateway.config;
 
+import com.group11.config.JacksonConfig;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.eclipse.paho.client.mqttv3.IMqttClient;
+import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.*;
-import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import jakarta.annotation.PreDestroy;
 
-@Component
-public class MqttConfig implements MqttCallback {
+@Configuration
+public class MqttConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(MqttConfig.class);
-    private static IMqttClient mqttClient;
+    private final IMqttClient mqttClient;
 
-    public MqttConfig() {
-        try {
-            String brokerUrl = "tcp://127.0.0.1:1883";
-            String clientId = "api-gateway";
-            mqttClient = new MqttClient(brokerUrl, clientId);
+    @Value("${mqtt.broker.url}")
+    private String brokerUrl;
 
-            MqttConnectOptions options = new MqttConnectOptions();
-            options.setAutomaticReconnect(true);
-            options.setCleanSession(true);
-            mqttClient.connect(options);
-            mqttClient.setCallback(this);
-            logger.info("MQTT client connected successfully");
-        } catch (MqttException e) {
-            logger.error("Error initializing MQTT client", e);
-            throw new RuntimeException("Failed to initialize MQTT client", e);
-        }
+    @Value("${mqtt.client.id}")
+    private String clientId;
+
+    public MqttConfig() throws MqttException {
+        this.mqttClient = new MqttClient(brokerUrl, clientId);
+        MqttConnectOptions options = new MqttConnectOptions();
+        options.setAutomaticReconnect(true);
+        options.setCleanSession(true);
+        options.setConnectionTimeout(10);
+        mqttClient.connect(options);
+        logger.info("MQTT client connected successfully to {}", brokerUrl);
     }
 
-    @Override
-    public void connectionLost(Throwable cause) {
-        logger.error("Connection to MQTT broker lost", cause);
-    }
-
-    @Override
-    public void messageArrived(String topic, MqttMessage message) {
-        logger.info("Message received on topic {}: {}", topic, new String(message.getPayload()));
-    }
-
-    @Override
-    public void deliveryComplete(IMqttDeliveryToken token) {
-        logger.debug("Message delivery completed: {}", token);
-    }
-
-    public static IMqttClient getClient() {
+    @Bean
+    public IMqttClient mqttClient() {
         return mqttClient;
+    }
+
+    @Bean
+    public ObjectMapper objectMapper() {
+        return JacksonConfig.createObjectMapper();
     }
 
     @PreDestroy
     public void cleanup() {
         try {
-            if (mqttClient != null && mqttClient.isConnected()) {
+            if (mqttClient.isConnected()) {
                 mqttClient.disconnect();
                 mqttClient.close();
                 logger.info("MQTT client disconnected and closed");
