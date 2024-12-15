@@ -38,25 +38,31 @@ public class DentistService {
     @PostConstruct
     public void init() {
         try {
-            setupMqttConnection();
+            initializeMqttClient();
         } catch (MqttException e) {
             log.error("Error initializing MQTT client", e);
         }
     }
 
-    // Setup MQTT connection and subscribe to topics
-    private void setupMqttConnection() throws MqttException {
+    private void initializeMqttClient() throws MqttException {
         if (!mqttClient.isConnected()) {
-            mqttClient.connect();
-            mqttClient.subscribe(DENTIST_REGISTRATION_TOPIC, 1);
-            mqttClient.subscribe(DENTIST_GET_ALL_TOPIC, 1);
-            mqttClient.subscribe(DENTIST_UPDATE_TOPIC, 1);
-            mqttClient.subscribe(DENTIST_DELETE_TOPIC, 1);
+            MqttConnectOptions options = new MqttConnectOptions();
+            options.setAutomaticReconnect(true);
+            options.setCleanSession(true);
+            mqttClient.connect(options);
         }
+
+        mqttClient.subscribe(new String[]{
+            DENTIST_REGISTRATION_TOPIC,
+            DENTIST_GET_ALL_TOPIC,
+            DENTIST_UPDATE_TOPIC,
+            DENTIST_DELETE_TOPIC
+        }, new int[]{1, 1, 1, 1});
+
         mqttClient.setCallback(new MqttCallback() {
             @Override
             public void connectionLost(Throwable cause) {
-                log.info("Connection lost: {}", cause.getMessage());
+                log.error("Connection to MQTT broker lost", cause);
             }
 
             @Override
@@ -66,9 +72,11 @@ public class DentistService {
 
             @Override
             public void deliveryComplete(IMqttDeliveryToken token) {
-                log.info("MQTT delivery complete: {}", token.isComplete());
+                // Not used in this implementation
             }
         });
+
+        log.info("MQTT client initialized and subscribed to topics");
     }
 
     // Handle incoming MQTT messages based on the topic
