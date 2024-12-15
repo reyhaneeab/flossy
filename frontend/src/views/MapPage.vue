@@ -5,6 +5,7 @@
 </template>
 
 <script setup>
+
 /* global google */
 import { onMounted, ref } from 'vue'
 import api from "@/api";
@@ -20,7 +21,7 @@ onMounted(() => {
   if (window.google && window.google.maps) {
     initMap()
   } else {
-    window.initMap = initMap
+    window.initMap = initMap // Attach initMap to the window object
   }
 })
 
@@ -35,8 +36,7 @@ function initMap() {
 async function fetchDentists() {
   try {
     const response = await api.post('dentist/get')
-    const data = (await response).data
-    dentists.value = data
+    dentists.value = response.data
     convertAddressesToCoordinates()
   } catch (error) {
     console.error('Error fetching dentist offices:', error)
@@ -49,7 +49,6 @@ async function convertAddressesToCoordinates() {
   const geocoder = new google.maps.Geocoder()
 
   for (const dentist of dentists.value) {
-    if (dentist.latitude && dentist.longitude) continue // Skip if coordinates already exist
     try {
       const result = await geocodeAddress(geocoder, dentist.address)
       dentist.latitude = result.lat()

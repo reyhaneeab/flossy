@@ -7,18 +7,7 @@
     <link rel="icon" href="./logo.png">
     <title><%= htmlWebpackPlugin.options.title %></title>
     <script async defer
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD0d8O6v_7_CBdIobTLvfTGRjGLcd_DSbs&libraries=places,geometry&callback=initMap">
-    </script>
-    <script type="module">
-      import { createApp } from './src/main.js'
-      import App from './src/App.vue'
-      import router from './src/router'
-
-      window.initMap = () => {
-        const app = createApp(App)
-        app.use(router)
-        app.mount('#app')
-      }
+    src="https://maps.googleapis.com/maps/api/js?key=<%= process.env.VUE_APP_GOOGLE_MAPS_API_KEY %>&libraries=places,geometry&callback=initMap">
     </script>
   </head>
   <body>
