@@ -86,6 +86,7 @@ function addDentistMarker(dentist) {
                 <h3>${dentist.officeName}</h3>
                 <p>${dentist.address}</p>
                 <p>${dentist.phone}</p>
+                <a href="/calendar/${dentist.id}" class="btn btn-primary">Appointments</a> <!-- Ensure dentist.id is used here -->
               </div>`,
   })
   marker.addListener('click', () => {
