@@ -72,7 +72,7 @@ export default defineComponent({
           },
           body: JSON.stringify({
             weekNumber: "1",
-            ownerId: "675844ff73a9ad601e5a77a9"
+            ownerId: "675844ff73a9ad601e5a77a9",
           })
         })
 
