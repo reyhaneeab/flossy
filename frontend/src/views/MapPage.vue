@@ -16,12 +16,14 @@ const zoomLevel = 12
 const map = ref(null)
 const dentists = ref([])
 const markers = ref([])
+const currentLocationMarker = ref(null)
 
 onMounted(() => {
   window.initMap = initMap // Ensure initMap is defined in the global scope
   if (window.google && window.google.maps) {
     initMap()
   }
+  getCurrentLocation()
 })
 
 function initMap() {
@@ -30,6 +32,37 @@ function initMap() {
     zoom: zoomLevel,
   })
   fetchDentists()
+}
+
+function getCurrentLocation() {
+  if (navigator.geolocation) {
+    navigator.geolocation.watchPosition(
+      (position) => {
+        const pos = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        }
+        if (!currentLocationMarker.value) {
+          currentLocationMarker.value = new google.maps.Marker({
+            position: pos,
+            map: map.value,
+            title: 'Your Current Location',
+            icon: {
+              url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+            },
+          })
+        } else {
+          currentLocationMarker.value.setPosition(pos)
+        }
+        map.value.setCenter(pos)
+      },
+      () => {
+        console.error('Error getting current location')
+      }
+    )
+  } else {
+    console.error('Geolocation is not supported by this browser.')
+  }
 }
 
 async function fetchDentists() {
