@@ -10,6 +10,7 @@ import SignUp from "@/views/SignUpPage.vue";
 import Appointments from "@/views/AppointmentsPage.vue";
 
 const routes=[
+    { path: '/', redirect: '/login' },
     {path: '/home', name: 'Home', component: Home, meta: { requiresAuth: true }, },
     {path: '/about', name: 'AboutUs', component: About, meta: {requiresAuth: false}, },
     {path: '/signup', name: 'Signup', component: SignUp, meta: {requiresAuth: false, reqLog: true}, },
