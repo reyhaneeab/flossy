@@ -68,18 +68,20 @@ export default defineComponent({
 
     const fetchTimeSlots = async () => {
       try {
+        console.log(dentistId)
         const response = await fetch(URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            weekNumber: "50",
+            weekNumber: "51",
             ownerId: dentistId // Ensure dentistId is used here
           })
         })
 
         const data = await response.json();
+        console.log(data)
 
         // Group the time slots by day and create a proper structure for `days`
         const dayMap = {};

@@ -2,6 +2,7 @@ package com.group11.model;
 
 import lombok.*;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.TypeAlias;
 import org.springframework.data.mongodb.core.mapping.Document;
 import java.util.List;
 
@@ -10,6 +11,7 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 @Data
+@TypeAlias("dentist_office")
 public class Dentist {
     @Id
     private String id;
