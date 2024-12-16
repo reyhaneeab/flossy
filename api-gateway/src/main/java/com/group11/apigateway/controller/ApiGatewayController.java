@@ -26,7 +26,7 @@ public class ApiGatewayController {
             @RequestBody String requestBody) {
         String topic = String.format("%s/%s", entity, action);
         String cacheKey = generateCacheKey(topic, requestBody);
-    
+
         try {
             // Check cache first
             JsonNode cachedResponse = cacheUtil.getCachedResponse(cacheKey);
@@ -34,19 +34,20 @@ public class ApiGatewayController {
                 log.info("Cache hit for topic: {}", topic);
                 return ResponseEntity.ok(cachedResponse);
             }
-    
+
             // If not in cache, forward the request
             log.info("Cache miss for topic: {}. Forwarding request.", topic);
             JsonNode requestJson = objectMapper.readTree(requestBody);
             JsonNode response = mqttHandler.forwardRequest(topic, requestJson);
-    
+
             // Cache the response
             cacheUtil.cacheResponse(cacheKey, response);
-    
+
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error processing request for topic: {}. Error: {}", topic, e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(objectMapper.createObjectNode().put("error", e.getMessage()));
+            return ResponseEntity.internalServerError()
+                    .body(objectMapper.createObjectNode().put("error", e.getMessage()));
         }
     }
 

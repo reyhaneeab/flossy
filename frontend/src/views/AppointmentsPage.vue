@@ -27,6 +27,8 @@
 
 <script>
 import { defineComponent, ref, onMounted } from "vue";
+import {jwtDecode} from "jwt-decode";
+//import {authService} from "@/authService";
 //import {useRouter} from "vue-router";
 
 export default defineComponent({
@@ -48,8 +50,7 @@ export default defineComponent({
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            weekNumber: "1",
-            ownerId: "675478941fc975f2914c2650",
+            userId: jwtDecode(localStorage.getItem("token")).sub,
           }),
         });
 
@@ -102,7 +103,8 @@ export default defineComponent({
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              slotId: selectedSlot.value.id, // Pass the selected slot ID to the backend
+              timeSlotId: selectedSlot.value.id, // Pass the selected slot ID to the backend
+              userId: jwtDecode(localStorage.getItem("token")).sub,
             }),
           });
 

@@ -27,6 +27,9 @@ public class DentistService {
     private final RedisTemplate<String, Object> redisTemplate;
 
     private static final String DENTIST_REGISTRATION_TOPIC = "dentist/registration";
+    private static final String DENTIST_REGISTRATION_RESPONSE = DENTIST_REGISTRATION_TOPIC + "/response";
+    private static final String DENTIST_GET_TOPIC = "dentist/get";
+    private static final String DENTIST_GET_RESPONSE = DENTIST_GET_TOPIC + "/response";
     private static final String DENTIST_GET_ALL_TOPIC = "dentist/getAll";
     private static final String DENTIST_UPDATE_TOPIC = "dentist/update";
     private static final String DENTIST_DELETE_TOPIC = "dentist/delete";
@@ -46,23 +49,23 @@ public class DentistService {
 
     private void initializeMqttClient() throws MqttException {
         if (!mqttClient.isConnected()) {
-            MqttConnectOptions options = new MqttConnectOptions();
-            options.setAutomaticReconnect(true);
-            options.setCleanSession(true);
-            mqttClient.connect(options);
+
+                MqttConnectOptions options = new MqttConnectOptions();
+                options.setAutomaticReconnect(true);
+                options.setCleanSession(false);
+                options.setConnectionTimeout(10);
+                options.setKeepAliveInterval(60);
+                mqttClient.connect(options);
+
+            mqttClient.subscribe(DENTIST_REGISTRATION_TOPIC, 1);
+            mqttClient.subscribe(DENTIST_GET_TOPIC, 1);
+            mqttClient.subscribe(DENTIST_UPDATE_TOPIC, 1);
+            mqttClient.subscribe(DENTIST_DELETE_TOPIC, 1);
         }
-
-        mqttClient.subscribe(new String[]{
-            DENTIST_REGISTRATION_TOPIC,
-            DENTIST_GET_ALL_TOPIC,
-            DENTIST_UPDATE_TOPIC,
-            DENTIST_DELETE_TOPIC
-        }, new int[]{1, 1, 1, 1});
-
         mqttClient.setCallback(new MqttCallback() {
             @Override
             public void connectionLost(Throwable cause) {
-                log.error("Connection to MQTT broker lost", cause);
+                log.info("Connection lost: {}", cause.getMessage());
             }
 
             @Override
@@ -72,7 +75,7 @@ public class DentistService {
 
             @Override
             public void deliveryComplete(IMqttDeliveryToken token) {
-                // Not used in this implementation
+                log.info("MQTT delivery complete: {}", token.isComplete());
             }
         });
 
@@ -84,7 +87,7 @@ public class DentistService {
         try {
             switch (topic) {
                 case DENTIST_REGISTRATION_TOPIC -> createDentist(message);
-                case DENTIST_GET_ALL_TOPIC -> handleGetAllDentists();
+                case DENTIST_GET_TOPIC -> handleGetAllDentists();
                 case DENTIST_UPDATE_TOPIC -> handleUpdateDentist(message);
                 case DENTIST_DELETE_TOPIC -> handleDeleteDentist(message);
                 default -> log.warn("Unhandled topic: {}", topic);
@@ -113,7 +116,7 @@ public class DentistService {
     // Handle get all dentists request
     private void handleGetAllDentists() throws Exception {
         List<Dentist> allDentists = dentistRepository.findAll();
-        publishResponse(DENTIST_GET_ALL_TOPIC + "/response", allDentists);
+        publishResponse(DENTIST_GET_RESPONSE, allDentists);
     }
 
     // Handle update dentist request
