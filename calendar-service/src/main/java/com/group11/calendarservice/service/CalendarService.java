@@ -205,21 +205,35 @@ public class CalendarService {
     // Retrieve calendar from cache or database
     private Calendar getCalendarFromCacheOrDatabase(String ownerId, int weekNumber) {
         String cacheKey = CACHE_KEY_PREFIX + ownerId + ":" + weekNumber;
-        Object cachedCalendar =  redisTemplate.opsForValue().get(cacheKey);
-
+        log.info("Attempting to retrieve calendar for ownerId: {}, weekNumber: {}, cacheKey: {}", ownerId, weekNumber, cacheKey);
+    
+        Object cachedCalendar = redisTemplate.opsForValue().get(cacheKey);
+    
         if (cachedCalendar != null) {
             if (cachedCalendar instanceof Calendar) {
-                log.info("Calendar found in cache for owner: {} and week: {}", ownerId, weekNumber);
-                return (Calendar) cachedCalendar;
+                Calendar calendar = (Calendar) cachedCalendar;
+                if (calendar.getOwner().getId().equals(ownerId)) {
+                    log.info("Calendar found in cache for owner: {} and week: {}", ownerId, weekNumber);
+                    return calendar;
+                } else {
+                    log.warn("Cached calendar owner mismatch. Expected: {}, Found: {}", ownerId, calendar.getOwner().getId());
+                }
+            } else {
+                log.warn("Cached object is not of type Calendar");
             }
         }
-
+    
+        log.info("Calendar not found in cache or mismatch. Fetching from database for ownerId: {}, weekNumber: {}", ownerId, weekNumber);
         Dentist owner = dentistRepository.findById(ownerId)
                 .orElseThrow(() -> new RuntimeException("Dentist not found"));
         Calendar calendar = calendarRepository.findByOwnerAndWeekNumber(owner, weekNumber);
+        
         if (calendar != null) {
             cacheCalendar(calendar);
+        } else {
+            log.warn("Calendar not found in database for ownerId: {} and weekNumber: {}", ownerId, weekNumber);
         }
+        
         return calendar;
     }
 
