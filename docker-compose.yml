@@ -1,16 +1,21 @@
 services:
   dentist-service:
-  build:
+    image: openjdk:21-jdk-slim  # Use a base Java image
+    working_dir: /app
+    volumes:
+      - ./dentist-service:/app
+    command: java -jar dentist-service-0.0.1-SNAPSHOT.jar
     depends_on:
-      - mongodb1
-      - mongodb2
-      - mongodb3
-      - mqtt
-      - redis
+      mongo-init:
+        condition: service_completed_successfully
+      mqtt:
+        condition: service_started
+      redis:
+        condition: service_started
     networks:
       - flossynet
     environment:
-      - SPRING_DATA_MONGODB_URI=mongodb://mongodb1:27017,mongodb2:27017,mongodb3:27017/flossyDB?replicaSet=rs0
+      - SPRING_DATA_MONGODB_URI=mongodb://mongodb1:27017,mongodb2:27018,mongodb3:27019/flossyDB?replicaSet=rs0
       - SPRING_DATA_MONGODB_DATABASE=flossyDB
       - MQTT_BROKER_URL=tcp://mqtt:1883
       - SPRING_REDIS_HOST=redis
@@ -32,13 +37,18 @@ services:
     image: mongo:7.0.5
     command: mongod --replSet rs0 --bind_ip_all
     ports:
-      - "27017:27017"
+      - "27016:27017"
     environment:
       MONGO_INITDB_DATABASE: flossyDB
     volumes:
       - ./data/mongo1:/data/db
     networks:
       - flossynet
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   mongodb2:
     container_name: mongodb2
@@ -52,6 +62,11 @@ services:
       - ./data/mongo2:/data/db
     networks:
       - flossynet
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   mongodb3:
     container_name: mongodb3
@@ -65,41 +80,42 @@ services:
       - ./data/mongo3:/data/db
     networks:
       - flossynet
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   mongo-init:
     image: mongo:7.0.5
+    command: >
+      bash -c '
+        echo "Waiting for MongoDB instances to start..."
+        for host in mongodb1 mongodb2 mongodb3; do
+          until mongosh --host $$host:27017 --eval "print(\"waited for connection\")"
+          do
+            sleep 2
+          done
+        done
+        echo "MongoDB instances are up"
+
+        mongosh --host mongodb1:27017 --eval "
+          rs.initiate({
+            _id: \"rs0\",
+            members: [
+              {_id: 0, host: \"mongodb1:27017\"},
+              {_id: 1, host: \"mongodb2:27017\"},
+              {_id: 2, host: \"mongodb3:27017\"}
+            ]
+          })
+        "
+      '
     depends_on:
       - mongodb1
       - mongodb2
       - mongodb3
     networks:
       - flossynet
-    command: >
-      bash -c '
-      echo "Waiting for MongoDB to start..."
-      until mongosh --host mongodb1:27017 --eval "db.adminCommand('ping')" > /dev/null 2>&1; do
-      echo "Waiting for MongoDB to be ready..."
-      sleep 5
-      done
-      echo "Attempting to initialize replica set..."
-      mongosh --host mongodb1:27017 --eval "
-      if (rs.status().ok === 0) {
-        rs.initiate({
-          _id: \"rs0\",
-          members: [
-            {_id: 0, host: \"mongodb1:27017\"},
-            {_id: 1, host: \"mongodb2:27017\"},
-            {_id: 2, host: \"mongodb3:27017\"}
-          ]
-        });
-        print(\"Replica set initialized\");
-      } else {
-        print(\"Replica set already initialized\");
-      }
-      "
-      echo "Initialization attempt completed."
-      '
-
   redis:
     image: redis:latest
     ports:
@@ -114,4 +130,5 @@ volumes:
 
 networks:
   flossynet:
+    name: flossynet
     driver: bridge
