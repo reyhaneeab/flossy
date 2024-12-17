@@ -286,7 +286,7 @@ public class CalendarService {
     private CalendarResponse mapToCalendarResponse(Calendar calendar) {
         return new CalendarResponse(
                 calendar.getId(),
-                calendar.getOwner().getId(),
+                calendar.getOwner(),
                 calendar.getWeekNumber(),
                 calendar.getYear(),
                 calendar.getTimeSlots().stream().map(this::mapToTimeSlotResponse).toList()
@@ -297,7 +297,7 @@ public class CalendarService {
     private TimeSlotResponse mapToTimeSlotResponse(TimeSlot timeSlot) {
         return new TimeSlotResponse(
                 timeSlot.getId(),
-                timeSlot.getStartTime().toLocalDate(),
+                timeSlot.getDate(),
                 timeSlot.getStartTime(),
                 timeSlot.getEndTime(),
                 timeSlot.getOwner()
