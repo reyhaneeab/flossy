@@ -27,7 +27,7 @@
                   @click="selectSlot(day, slot)"
                   :disabled="slot.booked"
               >
-                {{ slot.time }} - Dr. {{ slot.ownerName }}
+                {{ slot.time }}
               </button>
             </div>
           </div>
