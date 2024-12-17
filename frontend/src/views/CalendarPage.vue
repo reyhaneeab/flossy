@@ -76,7 +76,7 @@ export default defineComponent({
           },
           body: JSON.stringify({
             weekNumber: "51",
-            ownerId: dentistId // Ensure dentistId is used here
+            ownerId: "67615b1c90e4ee286c63bd6b" // Ensure dentistId is used here
           })
         })
 

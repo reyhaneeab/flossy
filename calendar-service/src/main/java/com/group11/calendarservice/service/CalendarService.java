@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -163,24 +164,44 @@ public class CalendarService {
     // Create a new calendar
     public void createCalendar(MqttMessage message) throws Exception {
         CalendarRequest request = mapper.readValue(message.getPayload(), CalendarRequest.class);
-        Dentist owner = dentistRepository.findById(request.ownerId())
-                .orElseThrow(() -> new RuntimeException("Dentist not found"));
 
-        List<TimeSlot> savedTimeSlots = request.timeSlots().stream()
-                .map(this::mapToTimeSlot)
-                .peek(timeSlot -> timeSlot.setOwner(owner))
-                .toList();
+        Dentist dentist = dentistRepository.findById(request.ownerId())
+                .orElseThrow(() -> new ResourceNotFoundException("Dentist office not found"));
 
-        Calendar calendar = Calendar.builder()
-                .year(request.year())
-                .weekNumber(request.weekNumber())
-                .timeSlots(savedTimeSlots)
+        if(request.timeSlots() == null) throw new ResourceNotFoundException("TimeSlots not found");
+        List<TimeSlot> timeSlots = request.timeSlots().stream().map(slotRequest -> {
+            TimeSlot slot = new TimeSlot();
+            slot.setDate(slotRequest.date());
+            slot.setStartTime(slotRequest.startTime());
+            slot.setEndTime(slotRequest.endTime());
+            slot.setOwner(dentist);
+            return slot;
+        }).toList();
+
+        timeSlots = timeSlotRepository.saveAll(timeSlots);
+
+        Calendar calendar = new Calendar();
+        calendar.setOwner(dentist);
+        calendar.setTimeSlots(timeSlots);
+        calendar.setWeekNumber(request.weekNumber());
+        calendar.setYear(request.year());
+
+        calendarRepository.save(calendar);
+        cacheCalendar(calendar);
+        publishResponse(CALENDAR_REGISTRATION_RESPONSE, mapToCalendarResponse(calendar));
+    }
+    
+    private TimeSlot createTimeSlot(TimeSlotRequest request, Dentist owner, Calendar calendar) {
+        TimeSlot timeSlot = TimeSlot.builder()
+                .date(request.date())
+                .startTime(request.startTime())
+                .endTime(request.endTime())
+                .booked(false)
                 .owner(owner)
+                .calendar(calendar)
                 .build();
-
-        Calendar savedCalendar = calendarRepository.save(calendar);
-        cacheCalendar(savedCalendar);
-        publishResponse(CALENDAR_REGISTRATION_RESPONSE, mapToCalendarResponse(savedCalendar));
+    
+        return timeSlotRepository.save(timeSlot);
     }
 
 
