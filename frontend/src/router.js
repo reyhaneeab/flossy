@@ -8,6 +8,7 @@ import Home from "@/views/HomePage.vue";
 import GoogleMap from "@/views/MapPage.vue"; 
 import SignUp from "@/views/SignUpPage.vue";
 import Appointments from "@/views/AppointmentsPage.vue";
+import InterestList from "@/views/InterestList.vue";
 
 const routes=[
     { path: '/', redirect: '/login' },
@@ -18,6 +19,7 @@ const routes=[
     {path: '/calendar/:pathMatch(.*)*', name: 'Calendar', component: Calendar },
     {path: '/map', name: 'Map', component : GoogleMap },
     {path: '/appointments', name: 'Appointments', component:Appointments, meta: {requiresAuth:true},},
+    { path: '/interest-list', name: 'InterestList', component: InterestList, meta: { requiresAuth: true } },
 ]
 
 const router = createRouter({

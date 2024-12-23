@@ -32,13 +32,12 @@
                 <router-link class="nav-link" to="/appointments">My Appointments</router-link>
               </li>
               <li class="nav-item">
-  <router-link class="nav-link" to="/interest-list">
-    <i class="fa fa-tooth" style="font-size:30px; color:#007BFF; position: relative;">
-      <i class="fa fa-heart" style="font-size:12px; color:red; position: absolute; top:-5px; right:-10px;"></i>
-    </i>
-  </router-link>
-</li>
-
+                <router-link class="nav-link" to="/interest-list">
+                   <i class="fa fa-tooth" style="font-size:30px; color:#007BFF; position: relative;">
+                  <i class="fa fa-heart" style="font-size:12px; color:red; position: absolute; top:-5px; right:-10px;"></i>
+              </i>
+              </router-link>
+              </li>
             </ul>
             <ul class="navbar-nav" v-if="!loggedIn">
               <li class="nav-item dropdown" v-if="authView === 'Login'">
