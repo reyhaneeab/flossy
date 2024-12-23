@@ -35,6 +35,7 @@ public class DentistService {
     private static final String DENTIST_UPDATE_TOPIC = "dentist/update";
     private static final String DENTIST_DELETE_TOPIC = "dentist/delete";
     private static final String DENTIST_INTEREST_LIST_TOPIC = "dentist/interestList";
+    private static final String DENTIST_INTEREST_LIST_RESPONSE = DENTIST_INTEREST_LIST_TOPIC + "/response";
 
     // Redis cache settings
     private static final String CACHE_KEY_PREFIX = "dentist:";
@@ -161,12 +162,19 @@ public class DentistService {
     private void handleAddToInterestList(MqttMessage message) throws Exception {
         String payload = new String(message.getPayload());
         String[] ids = payload.split(",");
+        if (ids.length < 2) {
+            log.warn("Invalid interest list payload: {}", payload);
+            return;
+        }
         // Get the patient ID from the payload (first element)
         String patientId = ids[0];
         // Get the doctor IDs from the payload (excluding the patient ID)
         List<String> doctorIds = Arrays.asList(ids).subList(1, ids.length);
         // Add the doctor IDs to the patient's interest list in the database
+        // Assuming there's a method in the repository to handle this
+        dentistRepository.addDoctorsToPatientInterestList(patientId, doctorIds);
         log.info("Added doctors with IDs {} to patient with ID {}'s interest list", doctorIds, patientId);
+        publishResponse(DENTIST_INTEREST_LIST_RESPONSE, "Added doctors to interest list");
     }
 
     // Get dentist by ID (with caching)
