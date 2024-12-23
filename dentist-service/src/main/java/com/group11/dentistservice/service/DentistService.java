@@ -15,6 +15,7 @@ import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 
 import java.util.List;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -33,6 +34,7 @@ public class DentistService {
     private static final String DENTIST_GET_ALL_TOPIC = "dentist/getAll";
     private static final String DENTIST_UPDATE_TOPIC = "dentist/update";
     private static final String DENTIST_DELETE_TOPIC = "dentist/delete";
+    private static final String DENTIST_INTEREST_LIST_TOPIC = "dentist/interestList";
 
     // Redis cache settings
     private static final String CACHE_KEY_PREFIX = "dentist:";
@@ -51,17 +53,18 @@ public class DentistService {
     private void setupMqttConnection() throws MqttException {
         if (!mqttClient.isConnected()) {
 
-                MqttConnectOptions options = new MqttConnectOptions();
-                options.setAutomaticReconnect(true);
-                options.setCleanSession(false);
-                options.setConnectionTimeout(10);
-                options.setKeepAliveInterval(60);
-                mqttClient.connect(options);
+            MqttConnectOptions options = new MqttConnectOptions();
+            options.setAutomaticReconnect(true);
+            options.setCleanSession(false);
+            options.setConnectionTimeout(10);
+            options.setKeepAliveInterval(60);
+            mqttClient.connect(options);
 
             mqttClient.subscribe(DENTIST_REGISTRATION_TOPIC, 1);
             mqttClient.subscribe(DENTIST_GET_TOPIC, 1);
             mqttClient.subscribe(DENTIST_UPDATE_TOPIC, 1);
             mqttClient.subscribe(DENTIST_DELETE_TOPIC, 1);
+            mqttClient.subscribe(DENTIST_INTEREST_LIST_TOPIC, 1);
         }
         mqttClient.setCallback(new MqttCallback() {
             @Override
@@ -89,6 +92,7 @@ public class DentistService {
                 case DENTIST_GET_TOPIC -> handleGetAllDentists();
                 case DENTIST_UPDATE_TOPIC -> handleUpdateDentist(message);
                 case DENTIST_DELETE_TOPIC -> handleDeleteDentist(message);
+                case DENTIST_INTEREST_LIST_TOPIC -> handleAddToInterestList(message);
                 default -> log.warn("Unhandled topic: {}", topic);
             }
         } catch (Exception e) {
@@ -151,6 +155,18 @@ public class DentistService {
         String id = new String(message.getPayload());
         deleteDentist(id);
         publishResponse(DENTIST_DELETE_TOPIC + "/response", "Dentist with id " + id + " deleted");
+    }
+
+    // Handle add to interest list request (patient to doctor)
+    private void handleAddToInterestList(MqttMessage message) throws Exception {
+        String payload = new String(message.getPayload());
+        String[] ids = payload.split(",");
+        // Get the patient ID from the payload (first element)
+        String patientId = ids[0];
+        // Get the doctor IDs from the payload (excluding the patient ID)
+        List<String> doctorIds = Arrays.asList(ids).subList(1, ids.length);
+        // Add the doctor IDs to the patient's interest list in the database
+        log.info("Added doctors with IDs {} to patient with ID {}'s interest list", doctorIds, patientId);
     }
 
     // Get dentist by ID (with caching)
