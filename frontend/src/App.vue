@@ -31,6 +31,14 @@
               <li class="nav-item">
                 <router-link class="nav-link" to="/appointments">My Appointments</router-link>
               </li>
+              <li class="nav-item">
+  <router-link class="nav-link" to="/interest-list">
+    <i class="fa fa-tooth" style="font-size:30px; color:#007BFF; position: relative;">
+      <i class="fa fa-heart" style="font-size:12px; color:red; position: absolute; top:-5px; right:-10px;"></i>
+    </i>
+  </router-link>
+</li>
+
             </ul>
             <ul class="navbar-nav" v-if="!loggedIn">
               <li class="nav-item dropdown" v-if="authView === 'Login'">
@@ -63,6 +71,7 @@
 <script>
 import {authService} from "@/authService";
 import router from "@/router";
+import '@fortawesome/fontawesome-free/css/all.css'; // Import Font Awesome CSS
 
 export default {
   name: "App",
@@ -131,6 +140,10 @@ export default {
 .nav-link:hover {
   color: #f4a261;
   transform: scale(1.1);
+}
+
+.nav-link i {
+  margin-right: 5px;
 }
 
 .auth-button {
