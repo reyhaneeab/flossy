@@ -17,6 +17,7 @@
 
 <script>
 import apiClient from "@/api";
+import { authService } from "@/authService"; // Ensure correct import
 
 export default {
   name: "InterestList",
@@ -27,7 +28,8 @@ export default {
   },
   async created() {
     try {
-      const response = await apiClient.get("/dentist/interestList");
+      const patientId = authService.getUserId(); // Ensure getUserId function is called correctly
+      const response = await apiClient.get(`/api/dentist/interestList/${patientId}`);
       this.doctors = response.data;
     } catch (error) {
       console.error("Error fetching interest list:", error);

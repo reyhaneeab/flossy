@@ -17,6 +17,7 @@ import org.springframework.retry.annotation.Retryable;
 import java.util.List;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -192,6 +193,14 @@ public class DentistService {
 
         cacheDentist(dentist);
         return dentist;
+    }
+
+    // Get interest list for a patient
+    public List<Dentist> getInterestList(String patientId) {
+        List<String> doctorIds = dentistRepository.getInterestListByPatientId(patientId);
+        return doctorIds.stream()
+                .map(this::getDentistById)
+                .collect(Collectors.toList());
     }
 
     // Delete a dentist

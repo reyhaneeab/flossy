@@ -14,4 +14,7 @@ public interface DentistRepository extends MongoRepository<Dentist, String> {
     @Transactional
     @Query("{ '_id': ?0 }, { $addToSet: { 'interestList': { $each: ?1 } } }")
     void addDoctorsToPatientInterestList(String patientId, List<String> doctorIds);
+
+    @Query(value = "{ '_id': ?0 }", fields = "{ 'interestList': 1 }")
+    List<String> getInterestListByPatientId(String patientId);
 }
