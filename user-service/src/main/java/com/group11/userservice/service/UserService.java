@@ -4,21 +4,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.group11.model.User;
 import com.group11.userservice.dto.UserRequest;
 import com.group11.userservice.repository.UserRepository;
-
-import java.util.Arrays;
-
 import com.group11.userservice.dto.LoginRequest;
 import com.group11.userservice.dto.LoginResponse;
 import com.group11.userservice.config.JwtTokenProvider;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.List;
-
 import org.eclipse.paho.client.mqttv3.*;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import java.util.Arrays;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -30,6 +31,9 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final ObjectMapper mapper = new ObjectMapper();
     private final JwtTokenProvider jwtTokenProvider = new JwtTokenProvider();
+
+    @Autowired
+    private MongoTemplate mongoTemplate;
 
     private static final String USER_REGISTRATION_TOPIC = "user/registration";
     private static final String USER_REGISTRATION_RESPONSE = USER_REGISTRATION_TOPIC + "/response";
@@ -153,13 +157,18 @@ public class UserService {
         // Get the time slot IDs from the payload (excluding the user ID)
         List<String> timeSlotIds = Arrays.asList(ids).subList(1, ids.length);
         // Add the time slot IDs to the user's interest list in the database
-        userRepository.addTimeSlotsToUserInterestList(userId, timeSlotIds);
+        addTimeSlotsToInterestList(userId, timeSlotIds);
         log.info("Added time slots with IDs {} to user with ID {}'s interest list", timeSlotIds, userId);
         publishResponse(USER_INTEREST_LIST_RESPONSE, "Added time slots to interest list");
     }
 
-    public void addTimeSlotToInterestList(String userId, String slotId) {
-        userRepository.addTimeSlotsToUserInterestList(userId, List.of(slotId));
+    private void addTimeSlotsToInterestList(String userId, List<String> timeSlotIds) {
+        Query query = new Query(Criteria.where("id").is(userId));
+        Update update = new Update().addToSet("interestList").each(timeSlotIds.toArray());
+
+        mongoTemplate.updateFirst(query, update, User.class);
+
+        log.info("Added time slots {} to interest list for user {}", timeSlotIds, userId);
     }
 
     private void publishResponse(String topic, String message) {
