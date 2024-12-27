@@ -158,6 +158,10 @@ public class UserService {
         publishResponse(USER_INTEREST_LIST_RESPONSE, "Added time slots to interest list");
     }
 
+    public void addTimeSlotToInterestList(String userId, String slotId) {
+        userRepository.addTimeSlotsToUserInterestList(userId, List.of(slotId));
+    }
+
     private void publishResponse(String topic, String message) {
         try {
             mqttClient.publish(topic, message.getBytes(), 1, false);
