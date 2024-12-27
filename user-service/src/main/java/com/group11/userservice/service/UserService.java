@@ -1,29 +1,24 @@
 package com.group11.userservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.group11.model.Dentist;
-import com.group11.model.TimeSlot;
 import com.group11.model.User;
 import com.group11.userservice.dto.UserRequest;
+import com.group11.userservice.repository.UserRepository;
+
+import java.util.Arrays;
+
 import com.group11.userservice.dto.LoginRequest;
 import com.group11.userservice.dto.LoginResponse;
-import com.group11.userservice.repository.UserRepository;
 import com.group11.userservice.config.JwtTokenProvider;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.List;
+
 import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.data.redis.RedisConnectionFailureException;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
-import org.springframework.data.redis.core.RedisTemplate;
-
-import java.util.List;
-import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -33,9 +28,8 @@ public class UserService {
     private final UserRepository userRepository;
     private final MqttClient mqttClient;
     private final PasswordEncoder passwordEncoder;
-    private final ObjectMapper mapper;
-    private final JwtTokenProvider jwtTokenProvider;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final ObjectMapper mapper = new ObjectMapper();
+    private final JwtTokenProvider jwtTokenProvider = new JwtTokenProvider();
 
     private static final String USER_REGISTRATION_TOPIC = "user/registration";
     private static final String USER_REGISTRATION_RESPONSE = USER_REGISTRATION_TOPIC + "/response";
@@ -43,10 +37,6 @@ public class UserService {
     private static final String USER_LOGIN_RESPONSE = USER_LOGIN_TOPIC + "/response";
     private static final String USER_INTEREST_LIST_TOPIC = "user/interestList";
     private static final String USER_INTEREST_LIST_RESPONSE = USER_INTEREST_LIST_TOPIC + "/response";
-
-    // Redis cache settings
-    private static final String CACHE_KEY_PREFIX = "user:";
-    private static final long CACHE_TTL = 1; // 1 hour
 
     @PostConstruct
     public void init() {
@@ -151,7 +141,6 @@ public class UserService {
         mqttClient.publish(USER_LOGIN_RESPONSE, payload.getBytes(), 1, false);
     }
 
-    // Handle add to interest list request (user to time slot)
     private void handleAddToInterestList(MqttMessage message) throws Exception {
         String payload = new String(message.getPayload());
         String[] ids = payload.split(",");
@@ -169,47 +158,12 @@ public class UserService {
         publishResponse(USER_INTEREST_LIST_RESPONSE, "Added time slots to interest list");
     }
 
-    // Add a single time slot to the user's interest list
-    public void addTimeSlotToInterestList(String userId, String slotId) {
-        userRepository.addTimeSlotsToUserInterestList(userId, List.of(slotId));
-    }
-
-    // Get interest list for a user
-    public List<TimeSlot> getInterestList(String userId) {
-        List<String> timeSlotIds = userRepository.getInterestListByUserId(userId);
-        return timeSlotIds.stream()
-                .map(this::getTimeSlotById)
-                .collect(Collectors.toList());
-    }
-
-    // Get time slot by ID (with caching)
-    public TimeSlot getTimeSlotById(String id) {
-        String cacheKey = CACHE_KEY_PREFIX + id;
-        TimeSlot cachedTimeSlot = (TimeSlot) redisTemplate.opsForValue().get(cacheKey);
-
-        if (cachedTimeSlot != null) {
-            log.info("Time slot found in cache: {}", cachedTimeSlot.toString());
-            return cachedTimeSlot;
+    private void publishResponse(String topic, String message) {
+        try {
+            mqttClient.publish(topic, message.getBytes(), 1, false);
+        } catch (MqttException e) {
+            log.error("Error publishing message to MQTT", e);
         }
-
-        TimeSlot timeSlot = userRepository.findTimeSlotById(id)
-                .orElseThrow(() -> new RuntimeException("Time slot not found with id: " + id));
-
-        cacheTimeSlot(timeSlot);
-        return timeSlot;
     }
 
-    // Cache a time slot
-    @Retryable(value = RedisConnectionFailureException.class, maxAttempts = 3, backoff = @Backoff(delay = 1000))
-    private void cacheTimeSlot(TimeSlot timeSlot) {
-        String cacheKey = CACHE_KEY_PREFIX + timeSlot.getId();
-        redisTemplate.opsForValue().set(cacheKey, timeSlot, CACHE_TTL, TimeUnit.HOURS);
-        log.info("Time slot {} has been cached", timeSlot.toString());
-    }
-
-    // Publish MQTT response
-    private void publishResponse(String topic, Object payload) throws Exception {
-        String message = mapper.writeValueAsString(payload);
-        mqttClient.publish(topic, message.getBytes(), 1, false);
-    }
 }
