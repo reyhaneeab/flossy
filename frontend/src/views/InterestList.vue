@@ -1,45 +1,51 @@
 <template>
   <div class="container mt-5">
     <h1 class="mb-4">My Interest List</h1>
-    <div v-if="doctors.length">
+    <div v-if="timeSlots.length">
       <ul class="list-group">
-        <li v-for="doctor in doctors" :key="doctor.id" class="list-group-item">
-          <h5>{{ doctor.name }}</h5>
-          <p>{{ doctor.specialty }}</p>
+        <li v-for="slot in timeSlots" :key="slot.id" class="list-group-item">
+          <h5>{{ slot.time }}</h5>
+          <p>{{ formatDate(slot.date) }}</p>
         </li>
       </ul>
     </div>
     <div v-else>
-      <p>You have no doctors in your interest list.</p>
+      <p>You have no time slots in your interest list.</p>
     </div>
   </div>
 </template>
 
 <script>
-import { jwtDecode } from "jwt-decode"; // Ensure correct import
+import jwt_decode from "jwt-decode"; // Correct import statement
+import api from "@/api";
 
 export default {
-  name: "InterestList",
   data() {
     return {
-      doctors: [],
+      timeSlots: []
     };
   },
-  async created() {
-    try {
-      const userId = jwtDecode(localStorage.getItem("token")).sub; // Ensure getUserId function is called correctly
-      const response = await fetch(`/api/user/interestList/${userId}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      const data = await response.json();
-      this.doctors = data;
-    } catch (error) {
-      console.error("Error fetching interest list:", error);
+  methods: {
+    async fetchInterestList() {
+      try {
+        const token = localStorage.getItem('token');
+        const userId = jwt_decode(token).sub; // Decode the token to get the user ID
+        const response = await api.post('user/interestList', {
+          userId: userId
+        });
+        this.timeSlots = response.data;
+      } catch (error) {
+        console.error('Error fetching interest list:', error);
+      }
+    },
+    formatDate(dateString) {
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      return new Date(dateString).toLocaleDateString(undefined, options);
     }
   },
+  async mounted() {
+    await this.fetchInterestList();
+  }
 };
 </script>
 
