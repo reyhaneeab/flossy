@@ -16,8 +16,7 @@
 </template>
 
 <script>
-import apiClient from "@/api";
-import { authService } from "@/authService"; // Ensure correct import
+import { jwtDecode } from "jwt-decode"; // Ensure correct import
 
 export default {
   name: "InterestList",
@@ -28,9 +27,15 @@ export default {
   },
   async created() {
     try {
-      const userId = authService.getUserId(); // Ensure getUserId function is called correctly
-      const response = await apiClient.get(`/api/user/interestList/${userId}`);
-      this.doctors = response.data;
+      const userId = jwtDecode(localStorage.getItem("token")).sub; // Ensure getUserId function is called correctly
+      const response = await fetch(`/api/user/interestList/${userId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await response.json();
+      this.doctors = data;
     } catch (error) {
       console.error("Error fetching interest list:", error);
     }

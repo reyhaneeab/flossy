@@ -2,6 +2,7 @@ package com.group11.userservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.group11.model.Dentist;
+import com.group11.model.TimeSlot;
 import com.group11.model.User;
 import com.group11.userservice.dto.UserRequest;
 import com.group11.userservice.dto.LoginRequest;
@@ -150,7 +151,7 @@ public class UserService {
         mqttClient.publish(USER_LOGIN_RESPONSE, payload.getBytes(), 1, false);
     }
 
-    // Handle add to interest list request (user to doctor)
+    // Handle add to interest list request (user to time slot)
     private void handleAddToInterestList(MqttMessage message) throws Exception {
         String payload = new String(message.getPayload());
         String[] ids = payload.split(",");
@@ -160,46 +161,50 @@ public class UserService {
         }
         // Get the user ID from the payload (first element)
         String userId = ids[0];
-        // Get the doctor IDs from the payload (excluding the user ID)
-        List<String> doctorIds = Arrays.asList(ids).subList(1, ids.length);
-        // Add the doctor IDs to the user's interest list in the database
-        // Assuming there's a method in the repository to handle this
-        userRepository.addDoctorsToUserInterestList(userId, doctorIds);
-        log.info("Added doctors with IDs {} to user with ID {}'s interest list", doctorIds, userId);
-        publishResponse(USER_INTEREST_LIST_RESPONSE, "Added doctors to interest list");
+        // Get the time slot IDs from the payload (excluding the user ID)
+        List<String> timeSlotIds = Arrays.asList(ids).subList(1, ids.length);
+        // Add the time slot IDs to the user's interest list in the database
+        userRepository.addTimeSlotsToUserInterestList(userId, timeSlotIds);
+        log.info("Added time slots with IDs {} to user with ID {}'s interest list", timeSlotIds, userId);
+        publishResponse(USER_INTEREST_LIST_RESPONSE, "Added time slots to interest list");
+    }
+
+    // Add a single time slot to the user's interest list
+    public void addTimeSlotToInterestList(String userId, String slotId) {
+        userRepository.addTimeSlotsToUserInterestList(userId, List.of(slotId));
     }
 
     // Get interest list for a user
-    public List<Dentist> getInterestList(String userId) {
-        List<String> doctorIds = userRepository.getInterestListByPatientId(userId);
-        return doctorIds.stream()
-                .map(this::getDentistById)
+    public List<TimeSlot> getInterestList(String userId) {
+        List<String> timeSlotIds = userRepository.getInterestListByUserId(userId);
+        return timeSlotIds.stream()
+                .map(this::getTimeSlotById)
                 .collect(Collectors.toList());
     }
 
-    // Get dentist by ID (with caching)
-    public Dentist getDentistById(String id) {
+    // Get time slot by ID (with caching)
+    public TimeSlot getTimeSlotById(String id) {
         String cacheKey = CACHE_KEY_PREFIX + id;
-        Dentist cachedDentist = (Dentist) redisTemplate.opsForValue().get(cacheKey);
+        TimeSlot cachedTimeSlot = (TimeSlot) redisTemplate.opsForValue().get(cacheKey);
 
-        if (cachedDentist != null) {
-            log.info("Dentist found in cache: {}", cachedDentist.getOfficeName());
-            return cachedDentist;
+        if (cachedTimeSlot != null) {
+            log.info("Time slot found in cache: {}", cachedTimeSlot.toString());
+            return cachedTimeSlot;
         }
 
-        Dentist dentist = userRepository.findDentistById(id)
-                .orElseThrow(() -> new RuntimeException("Dentist not found with id: " + id));
+        TimeSlot timeSlot = userRepository.findTimeSlotById(id)
+                .orElseThrow(() -> new RuntimeException("Time slot not found with id: " + id));
 
-        cacheDentist(dentist);
-        return dentist;
+        cacheTimeSlot(timeSlot);
+        return timeSlot;
     }
 
-    // Cache a dentist
+    // Cache a time slot
     @Retryable(value = RedisConnectionFailureException.class, maxAttempts = 3, backoff = @Backoff(delay = 1000))
-    private void cacheDentist(Dentist dentist) {
-        String cacheKey = CACHE_KEY_PREFIX + dentist.getId();
-        redisTemplate.opsForValue().set(cacheKey, dentist, CACHE_TTL, TimeUnit.HOURS);
-        log.info("Dentist office {} has been cached", dentist.getOfficeName());
+    private void cacheTimeSlot(TimeSlot timeSlot) {
+        String cacheKey = CACHE_KEY_PREFIX + timeSlot.getId();
+        redisTemplate.opsForValue().set(cacheKey, timeSlot, CACHE_TTL, TimeUnit.HOURS);
+        log.info("Time slot {} has been cached", timeSlot.toString());
     }
 
     // Publish MQTT response

@@ -19,16 +19,17 @@
             <!-- Flexbox container for vertical alignment of buttons -->
             <div class="d-flex flex-column">
               <!-- Time slot buttons -->
-              <button
-                  v-for="slot in day.slots"
-                  :key="slot.time"
-                  class="btn btn-outline-primary mb-2 time-slot"
-                  :class="{ 'btn-primary text-black': slot.selected, 'disabled': slot.booked }"
-                  @click="selectSlot(day, slot)"
-                  :disabled="slot.booked"
-              >
-                {{ slot.time }}
-              </button>
+              <div v-for="slot in day.slots" :key="slot.time" class="time-slot">
+                <button
+                    class="btn btn-outline-primary mb-2 time-slot"
+                    :class="{ 'btn-primary text-black': slot.selected, 'disabled': slot.booked }"
+                    @click="selectSlot(day, slot)"
+                    :disabled="slot.booked"
+                >
+                  {{ slot.time }}
+                </button>
+                <button @click="addToInterestList(slot)">Add to Interest List</button>
+              </div>
             </div>
           </div>
         </div>
@@ -162,6 +163,22 @@ export default defineComponent({
       showBooking.value=false;
     };
 
+    const addToInterestList = async (slot) => {
+      try {
+        const userId = jwtDecode(localStorage.getItem("token")).sub;
+        await fetch(`/api/user/interestList/${userId}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ slotId: slot.id }),
+        });
+        alert("Time slot added to interest list.");
+      } catch (error) {
+        console.error("Error adding time slot to interest list:", error);
+      }
+    };
+
     onMounted(() => {
       fetchTimeSlots();
     });
@@ -175,6 +192,7 @@ export default defineComponent({
       book,
       confirmBooking,
       closeAlert,
+      addToInterestList,
     };
   },
 });
@@ -203,6 +221,25 @@ export default defineComponent({
   color: #007bff;
   font-size: 1.2rem;
   margin-bottom: 0;
+}
+
+.time-slot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.time-slot button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.time-slot button:hover {
+  background-color: #0056b3;
 }
 
 .time-slot {
