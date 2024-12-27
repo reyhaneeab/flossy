@@ -32,4 +32,17 @@ export const authService = {
         const token = this.getToken();
         return token && !this.isTokenExpired();
     },
+
+    getUserId() {
+        const token = this.getToken();
+        if (!token) return null;
+    
+        try {
+            const decodedToken = jwtDecode(token);
+            return decodedToken.userId; // Ensure the token contains a userId field
+        } catch (error) {
+            console.error('Error decoding token:', error.message);
+            return null;
+        }
+    },
 };
