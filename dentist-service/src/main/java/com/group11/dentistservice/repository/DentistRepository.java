@@ -11,10 +11,4 @@ import java.util.Optional;
 public interface DentistRepository extends MongoRepository<Dentist, String> {
     Optional<Dentist> findByEmail(String email);
 
-    @Transactional
-    @Query("{ '_id': ?0 }, { $addToSet: { 'interestList': { $each: ?1 } } }")
-    void addDoctorsToPatientInterestList(String patientId, List<String> doctorIds);
-
-    @Query(value = "{ '_id': ?0 }", fields = "{ 'interestList': 1 }")
-    List<String> getInterestListByPatientId(String patientId);
 }

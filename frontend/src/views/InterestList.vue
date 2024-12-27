@@ -28,8 +28,8 @@ export default {
   },
   async created() {
     try {
-      const patientId = authService.getUserId(); // Ensure getUserId function is called correctly
-      const response = await apiClient.get(`/api/dentist/interestList/${patientId}`);
+      const userId = authService.getUserId(); // Ensure getUserId function is called correctly
+      const response = await apiClient.get(`/api/user/interestList/${userId}`);
       this.doctors = response.data;
     } catch (error) {
       console.error("Error fetching interest list:", error);
