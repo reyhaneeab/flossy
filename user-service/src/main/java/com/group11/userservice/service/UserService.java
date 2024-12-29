@@ -154,11 +154,11 @@ public class UserService {
             InterestListRequest request = parseRequest(message);
             validateRequest(request);
 
-            User user = fetchUser(request.getUserId());
-            List<TimeSlot> validTimeSlots = fetchValidTimeSlots(request.getTimeSlotIds());
+            User user = fetchUser(request.userId());
+            List<TimeSlot> validTimeSlots = fetchValidTimeSlots(request.timeSlotIds());
 
             if (validTimeSlots.isEmpty()) {
-                log.error("No valid time slots found for provided IDs: {}", request.getTimeSlotIds());
+                log.error("No valid time slots found for provided IDs: {}", request.timeSlotIds());
                 return;
             }
 
@@ -176,7 +176,7 @@ public class UserService {
     }
 
     private void validateRequest(InterestListRequest request) {
-        if (request.getUserId() == null || request.getUserId().isEmpty() || request.getTimeSlotIds().isEmpty()) {
+        if (request.userId() == null || request.userId().isEmpty() || request.timeSlotIds().isEmpty()) {
             throw new IllegalArgumentException("Invalid userId or timeSlotIds in the request");
         }
     }
