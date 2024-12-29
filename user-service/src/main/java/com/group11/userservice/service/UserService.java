@@ -1,6 +1,8 @@
 package com.group11.userservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.group11.dto.InterestListRequest;
+import com.group11.model.TimeSlot;
 import com.group11.model.User;
 import com.group11.userservice.dto.UserRequest;
 import com.group11.userservice.repository.UserRepository;
@@ -18,8 +20,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
-import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -146,37 +148,52 @@ public class UserService {
     }
 
     private void handleAddToInterestList(MqttMessage message) throws Exception {
-        String payload = new String(message.getPayload());
-        String[] ids = payload.split(",");
-        if (ids.length < 2) {
-            log.warn("Invalid interest list payload: {}", payload);
-            return;
-        }
-        // Get the user ID from the payload (first element)
-        String userId = ids[0];
-        // Get the time slot IDs from the payload (excluding the user ID)
-        List<String> timeSlotIds = Arrays.asList(ids).subList(1, ids.length);
-        // Add the time slot IDs to the user's interest list in the database
-        addTimeSlotsToInterestList(userId, timeSlotIds);
-        log.info("Added time slots with IDs {} to user with ID {}'s interest list", timeSlotIds, userId);
-        publishResponse(USER_INTEREST_LIST_RESPONSE, "Added time slots to interest list");
-    }
+        log.info("Received message on topic '{}': {}", USER_INTEREST_LIST_TOPIC, new String(message.getPayload()));
 
-    private void addTimeSlotsToInterestList(String userId, List<String> timeSlotIds) {
-        Query query = new Query(Criteria.where("id").is(userId));
-        Update update = new Update().addToSet("interestList").each(timeSlotIds.toArray());
-
-        mongoTemplate.updateFirst(query, update, User.class);
-
-        log.info("Added time slots {} to interest list for user {}", timeSlotIds, userId);
-    }
-
-    private void publishResponse(String topic, String message) {
         try {
-            mqttClient.publish(topic, message.getBytes(), 1, false);
-        } catch (MqttException e) {
-            log.error("Error publishing message to MQTT", e);
+            InterestListRequest request = parseRequest(message);
+            validateRequest(request);
+
+            User user = fetchUser(request.getUserId());
+            List<TimeSlot> validTimeSlots = fetchValidTimeSlots(request.getTimeSlotIds());
+
+            if (validTimeSlots.isEmpty()) {
+                log.error("No valid time slots found for provided IDs: {}", request.getTimeSlotIds());
+                return;
+            }
+
+            updateUserInterestList(user, validTimeSlots);
+            log.info("Interest list updated successfully for user ID: {} with time slot IDs: {}", user.getId(),
+                    validTimeSlots.stream().map(TimeSlot::getId).collect(Collectors.toList()));
+        } catch (Exception e) {
+            log.error("Error processing interest list request", e);
         }
+        mqttClient.publish(USER_INTEREST_LIST_RESPONSE, message.getPayload(), 1, false);
+    }
+
+    private InterestListRequest parseRequest(MqttMessage message) throws Exception {
+        return mapper.readValue(message.getPayload(), InterestListRequest.class);
+    }
+
+    private void validateRequest(InterestListRequest request) {
+        if (request.getUserId() == null || request.getUserId().isEmpty() || request.getTimeSlotIds().isEmpty()) {
+            throw new IllegalArgumentException("Invalid userId or timeSlotIds in the request");
+        }
+    }
+
+    private User fetchUser(String userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    private List<TimeSlot> fetchValidTimeSlots(List<String> timeSlotIds) {
+        return mongoTemplate.find(new Query(Criteria.where("id").in(timeSlotIds)), TimeSlot.class);
+    }
+
+    private void updateUserInterestList(User user, List<TimeSlot> validTimeSlots) {
+        List<String> timeSlotIds = validTimeSlots.stream().map(TimeSlot::getId).collect(Collectors.toList());
+        mongoTemplate.updateFirst(new Query(Criteria.where("id").is(user.getId())),
+                new Update().addToSet("interestList").each(timeSlotIds.toArray()), User.class);
     }
 
 }
