@@ -10,6 +10,25 @@ export const options = {
 };
 
 export default function () {
+    let response = http.post('http://localhost:8080/timeSlot/book');
+    check(response, {
+        'successful requests': (r) => r.status === 204,
+        'no bookings made': (r) => r.status !== 201,
+        'no timeouts': (r) => !r.error,
+    });
+    sleep(1);
+
+
+    response = http.get('http://localhost:1883/calendar/get');
+    check(response, {
+        'is status 200': (r) => r.status === 200,
+        'is status 500': (r)=>r.status===500,
+        'response is not empty': (r) => r.body && r.body.length > 0,
+        'no timeouts': (r) => !r.error,
+    });
+    sleep(0.3);
+}
+/*export default function () {
     // Payload for the request
     const payload = JSON.stringify({
         weekNumber: "1",
@@ -38,4 +57,4 @@ export default function () {
 
     // Sleep to simulate user think time
     sleep(1);
-}
+}*/
