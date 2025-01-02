@@ -1,26 +1,32 @@
 package com.group11.userservice.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.group11.dto.InterestListRequest;
+import com.group11.userservice.dto.InterestListResponse;
+import com.group11.userservice.repository.UserRepository;
+import com.group11.userservice.dto.InterestListRequest;
 import com.group11.model.TimeSlot;
 import com.group11.model.User;
 import com.group11.userservice.dto.UserRequest;
-import com.group11.userservice.repository.UserRepository;
 import com.group11.userservice.dto.LoginRequest;
 import com.group11.userservice.dto.LoginResponse;
 import com.group11.userservice.config.JwtTokenProvider;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.bson.types.ObjectId;
 import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -41,8 +47,10 @@ public class UserService {
     private static final String USER_REGISTRATION_RESPONSE = USER_REGISTRATION_TOPIC + "/response";
     private static final String USER_LOGIN_TOPIC = "user/login";
     private static final String USER_LOGIN_RESPONSE = USER_LOGIN_TOPIC + "/response";
-    private static final String USER_INTEREST_LIST_TOPIC = "user/interestList";
-    private static final String USER_INTEREST_LIST_RESPONSE = USER_INTEREST_LIST_TOPIC + "/response";
+    private static final String USER_ADD_TOPIC = "user/add";
+    private static final String USER_ADD_RESPONSE = USER_ADD_TOPIC + "/response";
+    private static final String USER_FETCH_TOPIC = "user/fetch";
+    private static final String USER_FETCH_RESPONSE = USER_FETCH_TOPIC + "/response";
 
     @PostConstruct
     public void init() {
@@ -58,7 +66,8 @@ public class UserService {
 
             mqttClient.subscribe(USER_REGISTRATION_TOPIC);
             mqttClient.subscribe(USER_LOGIN_TOPIC);
-            mqttClient.subscribe(USER_INTEREST_LIST_TOPIC);
+            mqttClient.subscribe(USER_ADD_TOPIC);
+            mqttClient.subscribe(USER_FETCH_TOPIC);
 
             mqttClient.setCallback(new MqttCallback() {
                 @Override
@@ -68,14 +77,22 @@ public class UserService {
 
                 @Override
                 public void messageArrived(String topic, MqttMessage mqttMessage) {
-                    log.info("Message arrived on topic: {}", topic);
                     try {
-                        if (topic.equals(USER_REGISTRATION_TOPIC)) {
-                            createUser(mqttMessage);
-                        } else if (topic.equals(USER_LOGIN_TOPIC)) {
-                            handleLogin(mqttMessage);
-                        } else if (topic.equals(USER_INTEREST_LIST_TOPIC)) {
-                            handleAddToInterestList(mqttMessage);
+                        switch (topic) {
+                            case USER_REGISTRATION_TOPIC:
+                                createUser(mqttMessage);
+                                break;
+                            case USER_LOGIN_TOPIC:
+                                handleLogin(mqttMessage);
+                                break;
+                            case USER_ADD_TOPIC:
+                                handleAddToInterestList(mqttMessage);
+                                break;
+                            case USER_FETCH_TOPIC:
+                                handleFetchInterestList(mqttMessage);
+                                break;
+                            default:
+                                log.warn("Unhandled topic: {}", topic);
                         }
                     } catch (Exception e) {
                         log.error("Error processing message", e);
@@ -147,53 +164,79 @@ public class UserService {
         mqttClient.publish(USER_LOGIN_RESPONSE, payload.getBytes(), 1, false);
     }
 
-    private void handleAddToInterestList(MqttMessage message) throws Exception {
-        log.info("Received message on topic '{}': {}", USER_INTEREST_LIST_TOPIC, new String(message.getPayload()));
+    private void handleAddToInterestList(MqttMessage mqttMessage) throws Exception {
+        InterestListRequest request = mapper.readValue(mqttMessage.getPayload(), InterestListRequest.class);
+        InterestListResponse response = addToInterestList(request);
 
+        String responsePayload = mapper.writeValueAsString(response);
+        mqttClient.publish(USER_ADD_RESPONSE, responsePayload.getBytes(), 1, false);
+    }
+
+    private void handleFetchInterestList(MqttMessage mqttMessage) throws Exception {
+        JsonNode payload = mapper.readTree(mqttMessage.getPayload());
+        String userId = payload.get("userId").asText();
+
+        InterestListResponse response = getInterestList(userId);
+
+        String responsePayload = mapper.writeValueAsString(response);
+        mqttClient.publish(USER_FETCH_RESPONSE, responsePayload.getBytes(), 1, false);
+    }
+
+    public InterestListResponse addToInterestList(InterestListRequest request) {
         try {
-            InterestListRequest request = parseRequest(message);
-            validateRequest(request);
+            User user = userRepository.findById(request.userId())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
 
-            User user = fetchUser(request.userId());
-            List<TimeSlot> validTimeSlots = fetchValidTimeSlots(request.timeSlotIds());
+            List<TimeSlot> timeSlots = request.timeSlotIds().stream()
+                    .map(ObjectId::new)
+                    .map(id -> mongoTemplate.findOne(Query.query(Criteria.where("id").is(id)), TimeSlot.class))
+                    .filter(timeSlot -> timeSlot != null) // Ensure timeSlot exists
+                    .collect(Collectors.toList());
 
-            if (validTimeSlots.isEmpty()) {
-                log.error("No valid time slots found for provided IDs: {}", request.timeSlotIds());
-                return;
-            }
+            // Avoid duplicate time slots by using a Set
+            Set<String> existingSlotIds = new HashSet<>(user.getInterestList());
+            timeSlots.stream()
+                    .map(TimeSlot::toString)
+                    .filter(slotId -> existingSlotIds.add(slotId)) // `add` will return false if the item already exists
+                    .forEach(user.getInterestList()::add);
 
-            updateUserInterestList(user, validTimeSlots);
-            log.info("Interest list updated successfully for user ID: {} with time slot IDs: {}", user.getId(),
-                    validTimeSlots.stream().map(TimeSlot::getId).collect(Collectors.toList()));
+            userRepository.save(user);
+
+            // Return the updated interest list
+            List<TimeSlot> updatedTimeSlots = user.getInterestList().stream()
+                    .map(ObjectId::new)
+                    .map(id -> mongoTemplate.findOne(Query.query(Criteria.where("id").is(id)), TimeSlot.class))
+                    .filter(timeSlot -> timeSlot != null)
+                    .collect(Collectors.toList());
+
+            return new InterestListResponse(user.getId(), updatedTimeSlots);
         } catch (Exception e) {
-            log.error("Error processing interest list request", e);
-        }
-        mqttClient.publish(USER_INTEREST_LIST_RESPONSE, message.getPayload(), 1, false);
-    }
-
-    private InterestListRequest parseRequest(MqttMessage message) throws Exception {
-        return mapper.readValue(message.getPayload(), InterestListRequest.class);
-    }
-
-    private void validateRequest(InterestListRequest request) {
-        if (request.userId() == null || request.userId().isEmpty() || request.timeSlotIds().isEmpty()) {
-            throw new IllegalArgumentException("Invalid userId or timeSlotIds in the request");
+            log.error("Error adding to interest list", e);
+            throw new RuntimeException("Failed to add to interest list", e);
         }
     }
 
-    private User fetchUser(String userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-    }
+    public InterestListResponse getInterestList(String userId) {
+        try {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
 
-    private List<TimeSlot> fetchValidTimeSlots(List<String> timeSlotIds) {
-        return mongoTemplate.find(new Query(Criteria.where("id").in(timeSlotIds)), TimeSlot.class);
-    }
+            List<String> interestList = user.getInterestList() != null ? user.getInterestList() : new ArrayList<>();
 
-    private void updateUserInterestList(User user, List<TimeSlot> validTimeSlots) {
-        List<String> timeSlotIds = validTimeSlots.stream().map(TimeSlot::getId).collect(Collectors.toList());
-        mongoTemplate.updateFirst(new Query(Criteria.where("id").is(user.getId())),
-                new Update().addToSet("interestList").each(timeSlotIds.toArray()), User.class);
+            // Fetch all time slots in one query
+            List<ObjectId> timeSlotIds = interestList.stream()
+                    .map(ObjectId::new)
+                    .collect(Collectors.toList());
+
+            List<TimeSlot> timeSlots = mongoTemplate.find(Query.query(Criteria.where("id").in(timeSlotIds)),
+                    TimeSlot.class);
+
+            // Return the full time slots instead of just IDs
+            return new InterestListResponse(user.getId(), timeSlots);
+        } catch (Exception e) {
+            log.error("Error fetching interest list", e);
+            throw new RuntimeException("Failed to fetch interest list", e);
+        }
     }
 
 }
