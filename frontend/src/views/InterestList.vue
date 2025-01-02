@@ -1,7 +1,7 @@
 <template>
   <div class="container mt-5">
     <h1 class="mb-4">My Interest List</h1>
-    <div v-if="timeSlots.length">
+    <div v-if="timeSlots && timeSlots.length">
       <ul class="list-group">
         <li v-for="slot in timeSlots" :key="slot.id" class="list-group-item">
           <h5>{{ slot.time }}</h5>
@@ -10,7 +10,6 @@
       </ul>
     </div>
     <div v-else>
-      <p>You have no time slots in your interest list.</p>
     </div>
   </div>
 </template>
@@ -32,8 +31,8 @@ export default {
         if (!token) throw new Error("User is not logged in.");
 
         const { sub: userId } = jwtDecode(token);
-        const response = await api.post('user/interestList', { userId });
-        this.timeSlots = response.data.timeSlots;
+        const response = await api.post(`/users/fetch/${userId}`);
+        this.timeSlots = Array.isArray(response.data.timeSlots) ? response.data.timeSlots : [];
       } catch (error) {
         console.error('Error fetching interest list:', error.message, error.response?.data || error);
         if (error.response?.status === 408) {
@@ -59,7 +58,8 @@ export default {
 }
 
 h1 {
-  color: #333;
+  color: white;
+  font-weight: bold;
 }
 
 .list-group-item {
