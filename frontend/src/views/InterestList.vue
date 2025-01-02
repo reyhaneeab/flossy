@@ -31,21 +31,24 @@ export default {
         const token = localStorage.getItem('token');
         if (!token) throw new Error("User is not logged in.");
 
-        const { sub: userId } = jwtDecode(token); // Correct usage of jwt_decode
-        const response = await api.get(`user/interestList/${userId}`); 
-        this.timeSlots = response.data;
+        const { sub: userId } = jwtDecode(token);
+        const response = await api.post('user/interestList', { userId });
+        this.timeSlots = response.data.timeSlots;
       } catch (error) {
         console.error('Error fetching interest list:', error.message, error.response?.data || error);
+        if (error.response?.status === 408) {
+          alert("The server is taking too long to respond. Please try again later.");
+        }
       }
     },
     formatDate(dateString) {
       const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
       return new Date(dateString).toLocaleDateString(undefined, options);
-    }
+    },
   },
   async mounted() {
     await this.fetchInterestList();
-  }
+  },
 };
 </script>
 
