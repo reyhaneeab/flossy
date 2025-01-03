@@ -14,20 +14,18 @@ variables:
   JAVA_HOME: "/usr/lib/jvm/java-21-openjdk-amd64"
 
 before_script:
-  stage: setup
-  script:
   - echo "Setting up the environment..."
   - apt-get update && apt-get install -y openjdk-21-jdk maven
   - export "PATH=$MAVEN_HOME/bin:$PATH"
   - java -version
   - mvn -version
 
-backend_build_job:
+user-service_Build_Job:
   stage: backend_build
   script:
-    - echo "Building the backend with Maven..."
-    - mvn clean install
-    - echo "Backend build complete."
+    - echo "Building user service..."
+    - mvn install -pl user-service -am
+    - echo "User service build complete."
 
 user-service_Test_Job:
   stage: backend_test
