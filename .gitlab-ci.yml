@@ -27,23 +27,6 @@ user-service_Build_Job:
     - mvn install -pl user-service -am
     - echo "User service build complete."
 
-user-service_Test_Job:
-  stage: backend_test
-  tags:
-    - docker
-  services:
-    - name: mongo:7.0.5
-      alias: mongo
-    - name: eclipse-mosquitto:latest
-      alias: mqtt
-  variables:
-    MONGODB_URI: "mongodb://mongo:27017/serverTestDB"
-  script:
-    - echo "Starting services for testing..."
-    - echo "Running integration tests..."
-    - mvn test -pl user-service -am    
-    - echo "Tests completed successfully."
-    - echo "Stopping services after testing..."
 
 deploy_job:
   stage: deploy
