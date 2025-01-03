@@ -14,7 +14,8 @@ variables:
   JAVA_HOME: "/usr/lib/jvm/java-21-openjdk-amd64"
 
 before_script:
-  # Install dependencies and set up the environment
+  stage: setup
+  script:
   - echo "Setting up the environment..."
   - apt-get update && apt-get install -y openjdk-21-jdk maven
   - export "PATH=$MAVEN_HOME/bin:$PATH"
