@@ -163,12 +163,26 @@ public class UserService {
         return new InterestListResponse(user.getId(), new ArrayList<>(user.getInterestList()));
     }
 
-    public InterestListResponse getInterestList(String userId) {
-        User user = userRepository.findById(userId)
+    private InterestListResponse getInterestList(String userId) {
+        // Assuming you have a repository or database to fetch the interest list.
+        User interestList = userRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
 
-        List<String> interestList = user.getInterestList() != null ? user.getInterestList() : new ArrayList<>();
-        return new InterestListResponse(user.getId(), interestList);
+        // Log the fetched interest list for debugging
+        log.info("Fetched Interest List for userId {}: {}", userId, interestList);
+
+        if (interestList == null) {
+            throw new IllegalArgumentException("Interest list not found for userId: " + userId);
+        }
+
+        // Fetch the list of doctors from the InterestList object
+        List<String> doctors = interestList.getInterestList(); // Fetching the interest list from the user
+
+        // Log the doctors list for debugging
+        log.info("Doctors list for userId {}: {}", userId, doctors);
+
+        // Create and return the response object
+        return new InterestListResponse(userId, doctors);
     }
 
     private void handleAddToInterestList(MqttMessage mqttMessage) throws Exception {
