@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.group11.userservice.dto.InterestListResponse;
 import com.group11.userservice.repository.UserRepository;
 import com.group11.userservice.dto.InterestListRequest;
-import com.group11.model.TimeSlot;
 import com.group11.model.User;
 import com.group11.userservice.dto.UserRequest;
 import com.group11.userservice.dto.LoginRequest;
@@ -14,20 +13,14 @@ import com.group11.userservice.config.JwtTokenProvider;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.bson.types.ObjectId;
 import org.eclipse.paho.client.mqttv3.*;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
-
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @Slf4j
 @Service
@@ -40,9 +33,6 @@ public class UserService {
     private final ObjectMapper mapper = new ObjectMapper();
     private final JwtTokenProvider jwtTokenProvider = new JwtTokenProvider();
 
-    @Autowired
-    private MongoTemplate mongoTemplate;
-
     private static final String USER_REGISTRATION_TOPIC = "user/registration";
     private static final String USER_REGISTRATION_RESPONSE = USER_REGISTRATION_TOPIC + "/response";
     private static final String USER_LOGIN_TOPIC = "user/login";
@@ -51,6 +41,7 @@ public class UserService {
     private static final String USER_ADD_RESPONSE = USER_ADD_TOPIC + "/response";
     private static final String USER_FETCH_TOPIC = "user/fetch";
     private static final String USER_FETCH_RESPONSE = USER_FETCH_TOPIC + "/response";
+    private static final long MQTT_RESPONSE_TIMEOUT = 10; // Timeout in seconds
 
     @PostConstruct
     public void init() {
@@ -66,8 +57,8 @@ public class UserService {
 
             mqttClient.subscribe(USER_REGISTRATION_TOPIC);
             mqttClient.subscribe(USER_LOGIN_TOPIC);
-            mqttClient.subscribe(USER_ADD_TOPIC);
-            mqttClient.subscribe(USER_FETCH_TOPIC);
+            mqttClient.subscribe(USER_ADD_TOPIC, 1);
+            mqttClient.subscribe(USER_FETCH_TOPIC, 1);
 
             mqttClient.setCallback(new MqttCallback() {
                 @Override
@@ -77,23 +68,16 @@ public class UserService {
 
                 @Override
                 public void messageArrived(String topic, MqttMessage mqttMessage) {
+                    log.info("Message arrived on topic: {}", topic);
                     try {
                         switch (topic) {
-                            case USER_REGISTRATION_TOPIC:
-                                createUser(mqttMessage);
-                                break;
-                            case USER_LOGIN_TOPIC:
-                                handleLogin(mqttMessage);
-                                break;
-                            case USER_ADD_TOPIC:
-                                handleAddToInterestList(mqttMessage);
-                                break;
-                            case USER_FETCH_TOPIC:
-                                handleFetchInterestList(mqttMessage);
-                                break;
-                            default:
-                                log.warn("Unhandled topic: {}", topic);
+                            case USER_REGISTRATION_TOPIC -> createUser(mqttMessage);
+                            case USER_LOGIN_TOPIC -> handleLogin(mqttMessage);
+                            case USER_ADD_TOPIC -> handleAddToInterestList(mqttMessage);
+                            case USER_FETCH_TOPIC -> handleFetchInterestList(mqttMessage);
+                            default -> log.warn("Unhandled topic: {}", topic);
                         }
+
                     } catch (Exception e) {
                         log.error("Error processing message", e);
                     }
@@ -164,61 +148,69 @@ public class UserService {
         mqttClient.publish(USER_LOGIN_RESPONSE, payload.getBytes(), 1, false);
     }
 
+    public InterestListResponse addToInterestList(InterestListRequest request) {
+        User user = userRepository.findById(request.userId())
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + request.userId()));
+
+        if (user.getInterestList() == null) {
+            user.setInterestList(new ArrayList<>());
+        }
+
+        if (request.doctors() != null) {
+            user.getInterestList().addAll(request.doctors());
+        }
+        userRepository.save(user);
+        return new InterestListResponse(user.getId(), new ArrayList<>(user.getInterestList()));
+    }
+
+    public InterestListResponse getInterestList(String userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+
+        List<String> interestList = user.getInterestList() != null ? user.getInterestList() : new ArrayList<>();
+        return new InterestListResponse(user.getId(), interestList);
+    }
+
     private void handleAddToInterestList(MqttMessage mqttMessage) throws Exception {
         InterestListRequest request = mapper.readValue(mqttMessage.getPayload(), InterestListRequest.class);
-        InterestListResponse response = addToInterestList(request);
 
-        String responsePayload = mapper.writeValueAsString(response);
-        mqttClient.publish(USER_ADD_RESPONSE, responsePayload.getBytes(), 1, false);
+        if (request == null || request.userId() == null || request.userId().isEmpty()) {
+            throw new IllegalArgumentException("Invalid payload: userId is required");
+        }
+
+        CompletableFuture<InterestListResponse> future = CompletableFuture
+                .supplyAsync(() -> addToInterestList(request));
+        try {
+            InterestListResponse response = future.get(MQTT_RESPONSE_TIMEOUT, TimeUnit.SECONDS);
+            publishResponse(USER_ADD_RESPONSE, response);
+        } catch (TimeoutException e) {
+            log.error("MQTT response timed out for topic: {}", USER_ADD_TOPIC);
+            throw new RuntimeException("MQTT response timed out");
+        }
     }
 
     private void handleFetchInterestList(MqttMessage mqttMessage) throws Exception {
         JsonNode payload = mapper.readTree(mqttMessage.getPayload());
+        log.info("Received message for fetching interest list: {}", payload);
+
         String userId = payload.get("userId").asText();
 
-        InterestListResponse response = getInterestList(userId);
-
-        String responsePayload = mapper.writeValueAsString(response);
-        mqttClient.publish(USER_FETCH_RESPONSE, responsePayload.getBytes(), 1, false);
-    }
-
-    public InterestListResponse addToInterestList(InterestListRequest request) {
+        CompletableFuture<InterestListResponse> future = CompletableFuture.supplyAsync(() -> getInterestList(userId));
         try {
-            User user = userRepository.findById(request.userId())
-                    .orElseThrow(() -> new RuntimeException("User not found"));
-
-            List<String> doctorIds = request.doctorIds();
-
-            // Avoid duplicate doctors by using a Set
-            Set<String> existingDoctorIds = new HashSet<>(user.getInterestList());
-            doctorIds.stream()
-                    .filter(doctorId -> existingDoctorIds.add(doctorId)) // `add` will return false if the item already
-                                                                         // exists
-                    .forEach(user.getInterestList()::add);
-
-            userRepository.save(user);
-
-            // Return the updated interest list
-            return new InterestListResponse(user.getId(), new ArrayList<>(user.getInterestList()));
-        } catch (Exception e) {
-            log.error("Error adding to interest list", e);
-            throw new RuntimeException("Failed to add to interest list", e);
+            InterestListResponse response = future.get(MQTT_RESPONSE_TIMEOUT, TimeUnit.SECONDS);
+            publishResponse(USER_FETCH_RESPONSE, response);
+        } catch (TimeoutException e) {
+            log.error("MQTT response timed out for topic: {}", USER_FETCH_TOPIC);
+            throw new RuntimeException("MQTT response timed out");
         }
     }
 
-    public InterestListResponse getInterestList(String userId) {
+    private void publishResponse(String topic, Object response) {
         try {
-            User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new RuntimeException("User not found"));
-
-            List<String> interestList = user.getInterestList() != null ? user.getInterestList() : new ArrayList<>();
-
-            // Return the full doctor IDs instead of just IDs
-            return new InterestListResponse(user.getId(), interestList);
+            String payload = mapper.writeValueAsString(response);
+            mqttClient.publish(topic, payload.getBytes(), 1, false);
         } catch (Exception e) {
-            log.error("Error fetching interest list", e);
-            throw new RuntimeException("Failed to fetch interest list", e);
+            log.error("Error publishing message to MQTT topic {}", topic, e);
         }
     }
-
 }

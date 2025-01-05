@@ -17,6 +17,7 @@
 
 <script>
 import { jwtDecode } from 'jwt-decode'; 
+import api from "@/api";
 
 export default {
   data() {
@@ -27,29 +28,25 @@ export default {
   computed: {
     userId() {
       const token = localStorage.getItem("token");
-      return token ? jwtDecode(token).sub : null; // Decode token to get userId
+      return token ? jwtDecode(token).sub : null;
     }
   },
   methods: {
     async fetchInterestList() {
-      const userId = this.userId; // Make sure this is correctly set
-      console.log("Fetching interest list for userId:", userId); // Check userId here
+      const userId = this.userId; 
+      console.log("Fetching interest list for userId:", userId); 
 
       if (!userId) {
         console.error("User ID is not defined.");
-        return; // Return early if the userId is not set
+        return;
       }
 
       try {
-        const response = await fetch("http://localhost:8091/api/users/fetch", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ userId })
+        const response = await api.post("user/fetch", {
+          userId: userId
         });
-        const data = await response.json();
-        console.log(data);
+        this.doctors = response.data;
+        console.log(this.doctors);
       } catch (error) {
         console.error("Error fetching interest list:", error);
       }

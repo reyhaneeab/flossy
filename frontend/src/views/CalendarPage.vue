@@ -162,16 +162,19 @@ export default defineComponent({
       showBooking.value = false;
     };
 
-    const addToInterestList = async () => {
+    const addToInterestList = async (slot) => {
       try {
         const userId = jwtDecode(localStorage.getItem("token")).sub;
-        await fetch(`/api/user/interestList/${userId}`, {
+        const response = await fetch(`/api/user/add`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ doctorId: dentistId }),
+          body: JSON.stringify({ userId, doctorId: slot.id }),
         });
+        if (!response.ok) {
+          throw new Error("Failed to add doctor to interest list");
+        }
         alert("Doctor added to interest list.");
       } catch (error) {
         console.error("Error adding doctor to interest list:", error);
