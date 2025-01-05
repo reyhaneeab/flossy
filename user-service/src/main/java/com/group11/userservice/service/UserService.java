@@ -157,7 +157,11 @@ public class UserService {
         }
 
         if (request.doctors() != null) {
-            user.getInterestList().addAll(request.doctors());
+            for (String doctor : request.doctors()) {
+                if (!user.getInterestList().contains(doctor)) {
+                    user.getInterestList().add(doctor);
+                }
+            }
         }
         userRepository.save(user);
         return new InterestListResponse(user.getId(), new ArrayList<>(user.getInterestList()));
@@ -165,7 +169,7 @@ public class UserService {
 
     private InterestListResponse getInterestList(String userId) {
         // Assuming you have a repository or database to fetch the interest list.
-        User interestList = userRepository.findByUserId(userId)
+        User interestList = userRepository.findById(userId) // Changed from findByUserId to findById
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
 
         // Log the fetched interest list for debugging

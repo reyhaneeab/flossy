@@ -3,9 +3,8 @@
     <h1 class="mb-4">My Interest List</h1>
     <div v-if="doctors && doctors.length">
       <ul class="list-group">
-        <li v-for="doctor in doctors" :key="doctor.id" class="list-group-item">
-          <h5>{{ doctor.name }}</h5>
-          <p>{{ doctor.specialty }}</p>
+        <li v-for="doctor in doctors" :key="doctor" class="list-group-item">
+          <h5>{{ doctor }}</h5>
         </li>
       </ul>
     </div>
@@ -16,7 +15,7 @@
 </template>
 
 <script>
-import { jwtDecode } from 'jwt-decode'; 
+import {jwtDecode} from 'jwt-decode'; 
 import api from "@/api";
 
 export default {
@@ -45,8 +44,9 @@ export default {
         const response = await api.post("user/fetch", {
           userId: userId
         });
-        this.doctors = response.data;
-        console.log(this.doctors);
+        console.log("Fetched data:", response.data); // Log the fetched data
+        this.doctors = response.data.doctors; // Ensure the correct data structure is used
+        console.log("Doctors list:", this.doctors); // Log the doctors list
       } catch (error) {
         console.error("Error fetching interest list:", error);
       }
@@ -70,17 +70,16 @@ h1 {
 }
 
 .list-group-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  background-color: #f8f9fa;
+  border: 1px solid #ddd;
+  margin-bottom: 10px;
+  padding: 15px;
+  border-radius: 5px;
 }
 
 .list-group-item h5 {
   margin: 0;
-}
-
-.list-group-item p {
-  margin: 0;
-  color: #666;
+  font-size: 18px;
+  color: black; /* Updated text color to black */
 }
 </style>
