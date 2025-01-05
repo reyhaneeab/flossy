@@ -54,7 +54,7 @@
 
 <script>
 import { defineComponent, ref, onMounted } from "vue";
-import {jwtDecode} from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 import { useRoute } from 'vue-router';
 
 export default defineComponent({
@@ -127,13 +127,13 @@ export default defineComponent({
       const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
       return new Date(dateString).toLocaleDateString(undefined, options);
     };
-    const book = ()=>{
+    const book = () => {
       showBooking.value = true;
     };
 
     const confirmBooking = async () => {
       try {
-        const response=await fetch(bookingURL, {
+        const response = await fetch(bookingURL, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -149,7 +149,6 @@ export default defineComponent({
           return;
         }
 
-
         alert(`Appointment has been booked successfully!`);
         showBooking.value = false;
       } catch (error) {
@@ -159,11 +158,11 @@ export default defineComponent({
       }
     };
 
-    const closeAlert = ()=>{
-      showBooking.value=false;
+    const closeAlert = () => {
+      showBooking.value = false;
     };
 
-    const addToInterestList = async (slot) => {
+    const addToInterestList = async () => {
       try {
         const userId = jwtDecode(localStorage.getItem("token")).sub;
         await fetch(`/api/user/interestList/${userId}`, {
@@ -171,11 +170,11 @@ export default defineComponent({
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ slotId: slot.id }),
+          body: JSON.stringify({ doctorId: dentistId }),
         });
-        alert("Time slot added to interest list.");
+        alert("Doctor added to interest list.");
       } catch (error) {
-        console.error("Error adding time slot to interest list:", error);
+        console.error("Error adding doctor to interest list:", error);
       }
     };
 
@@ -199,7 +198,7 @@ export default defineComponent({
 </script>
 
 <style scoped>
-.text-center mb-4{
+.text-center mb-4 {
   color: #ffffff;
 }
 .calendar-card {
@@ -277,7 +276,6 @@ button {
   font-weight: bold;
 }
 
-
 button.selected {
   background: #add8e6;
   border-color: #00f;
@@ -311,7 +309,7 @@ button.selected {
   cursor: pointer;
 }
 
-#bookButton{
+#bookButton {
   display: inline-block;
   padding: 15px 30px;
   border: 1px solid #000000;
@@ -321,15 +319,14 @@ button.selected {
   font-weight: bold;
   border-radius: 8px;
   color: #ffffff;
-  font-family: Copperplate,fantasy;
+  font-family: Copperplate, fantasy;
 }
 
-
-#yes{
+#yes {
   background-color: #4169e1;
   color: white;
 }
-#no{
+#no {
   background-color: #d10000;
   color: white;
 }

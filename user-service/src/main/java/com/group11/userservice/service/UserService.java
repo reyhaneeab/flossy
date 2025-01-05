@@ -187,29 +187,19 @@ public class UserService {
             User user = userRepository.findById(request.userId())
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
-            List<TimeSlot> timeSlots = request.timeSlotIds().stream()
-                    .map(ObjectId::new)
-                    .map(id -> mongoTemplate.findOne(Query.query(Criteria.where("id").is(id)), TimeSlot.class))
-                    .filter(timeSlot -> timeSlot != null) // Ensure timeSlot exists
-                    .collect(Collectors.toList());
+            List<String> doctorIds = request.doctorIds();
 
-            // Avoid duplicate time slots by using a Set
-            Set<String> existingSlotIds = new HashSet<>(user.getInterestList());
-            timeSlots.stream()
-                    .map(TimeSlot::toString)
-                    .filter(slotId -> existingSlotIds.add(slotId)) // `add` will return false if the item already exists
+            // Avoid duplicate doctors by using a Set
+            Set<String> existingDoctorIds = new HashSet<>(user.getInterestList());
+            doctorIds.stream()
+                    .filter(doctorId -> existingDoctorIds.add(doctorId)) // `add` will return false if the item already
+                                                                         // exists
                     .forEach(user.getInterestList()::add);
 
             userRepository.save(user);
 
             // Return the updated interest list
-            List<TimeSlot> updatedTimeSlots = user.getInterestList().stream()
-                    .map(ObjectId::new)
-                    .map(id -> mongoTemplate.findOne(Query.query(Criteria.where("id").is(id)), TimeSlot.class))
-                    .filter(timeSlot -> timeSlot != null)
-                    .collect(Collectors.toList());
-
-            return new InterestListResponse(user.getId(), updatedTimeSlots);
+            return new InterestListResponse(user.getId(), new ArrayList<>(user.getInterestList()));
         } catch (Exception e) {
             log.error("Error adding to interest list", e);
             throw new RuntimeException("Failed to add to interest list", e);
@@ -223,16 +213,8 @@ public class UserService {
 
             List<String> interestList = user.getInterestList() != null ? user.getInterestList() : new ArrayList<>();
 
-            // Fetch all time slots in one query
-            List<ObjectId> timeSlotIds = interestList.stream()
-                    .map(ObjectId::new)
-                    .collect(Collectors.toList());
-
-            List<TimeSlot> timeSlots = mongoTemplate.find(Query.query(Criteria.where("id").in(timeSlotIds)),
-                    TimeSlot.class);
-
-            // Return the full time slots instead of just IDs
-            return new InterestListResponse(user.getId(), timeSlots);
+            // Return the full doctor IDs instead of just IDs
+            return new InterestListResponse(user.getId(), interestList);
         } catch (Exception e) {
             log.error("Error fetching interest list", e);
             throw new RuntimeException("Failed to fetch interest list", e);
