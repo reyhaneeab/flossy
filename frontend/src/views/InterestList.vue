@@ -16,8 +16,7 @@
 </template>
 
 <script>
-import { jwtDecode } from "jwt-decode";
-import api from "@/api";
+import { jwtDecode } from 'jwt-decode'; 
 
 export default {
   data() {
@@ -25,25 +24,39 @@ export default {
       doctors: []
     };
   },
+  computed: {
+    userId() {
+      const token = localStorage.getItem("token");
+      return token ? jwtDecode(token).sub : null; // Decode token to get userId
+    }
+  },
   methods: {
     async fetchInterestList() {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) throw new Error("User is not logged in.");
+      const userId = this.userId; // Make sure this is correctly set
+      console.log("Fetching interest list for userId:", userId); // Check userId here
 
-        const { sub: userId } = jwtDecode(token);
-        const response = await api.post(`/users/fetch/${userId}`);
-        this.doctors = Array.isArray(response.data.doctorIds) ? response.data.doctorIds : [];
+      if (!userId) {
+        console.error("User ID is not defined.");
+        return; // Return early if the userId is not set
+      }
+
+      try {
+        const response = await fetch("http://localhost:8091/api/users/fetch", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ userId })
+        });
+        const data = await response.json();
+        console.log(data);
       } catch (error) {
-        console.error('Error fetching interest list:', error.message, error.response?.data || error);
-        if (error.response?.status === 408) {
-          alert("The server is taking too long to respond. Please try again later.");
-        }
+        console.error("Error fetching interest list:", error);
       }
     }
   },
   async mounted() {
-    await this.fetchInterestList();
+    this.fetchInterestList();
   },
 };
 </script>
