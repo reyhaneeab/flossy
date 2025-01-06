@@ -49,13 +49,6 @@ api-gateway_build_job:
     - mvn clean install -pl api-gateway -am -DskipTests
     - echo "API Gateway build complete."
 
-notification-service_build_job:
-  stage: backend_build
-  script:
-    - echo "Building Notification Service and dependencies..."
-    - mvn clean install -pl notification-service -am -DskipTests
-    - echo "Notification Service build complete."
-
 dentist-service_build_job:
   stage: backend_build
   script:
@@ -63,6 +56,12 @@ dentist-service_build_job:
     - mvn clean install -pl dentist-service -am -DskipTests
     - echo "Dentist Service build complete."
 
+notification-service_build_job:
+  stage: backend_build
+  script:
+    - echo "Building Notification Service and dependencies..."
+    - mvn clean install -pl notification-service -am -DskipTests
+    - echo "Notification Service build complete."
 
 
 user-service_Test_Job:
