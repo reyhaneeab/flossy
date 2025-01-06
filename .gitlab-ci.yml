@@ -20,13 +20,24 @@ before_script:
   - java -version
   - mvn -version
 
-user-service_Build_Job:
+user_service_build:
   stage: backend_build
   script:
-    - echo "Building user service..."
-    - mvn install -pl user-service -am
-    - echo "User service build complete."
+    - echo "Building User Service..."
+    - mvn clean install -pl user-service -DskipTests
+    - echo "User Service build complete."
 
+user_service_test:
+  stage: backend_test
+  services:
+    - name: mongo:7.0.5
+      alias: mongo
+  variables:
+    MONGODB_URI: "mongodb://mongo:27017/serverTestDB"
+  script:
+    - echo "Running tests for User Service..."
+    - mvn test -pl user-service
+    - echo "User Service tests completed."    
 
 deploy_job:
   stage: deploy
