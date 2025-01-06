@@ -21,20 +21,26 @@ before_script:
   - java -version
   - mvn -version
 
-User-Service_build_job:
+user-service_build_job:
   stage: backend_build
   script:
     - echo "Building User Service and dependencies..."
     - mvn clean install -pl user-service -am -DskipTests
     - echo "Backend build complete."
 
-Appointment-Service_build_job:
+appointment-service_build_job:
   stage: backend_build
   script:
     - echo "Building Appointment Service and dependencies..."
     - mvn clean install -pl appointment-service -am -DskipTests
     - echo "Backend build complete."
 
+calendar-service_build_job:
+  stage: backend_build
+  script:
+    - echo "Building  Calendar Service and dependencies..."
+    - mvn clean install -pl calendar-service -am -DskipTests
+    - echo "Backend build complete."
 user-service_Test_Job:
   stage: backend_test
   tags:
