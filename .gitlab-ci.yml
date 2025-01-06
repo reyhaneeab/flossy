@@ -49,6 +49,15 @@ api-gateway_build_job:
     - mvn clean install -pl api-gateway -am -DskipTests
     - echo "API Gateway build complete."
 
+dentist-service_build_job:
+  stage: backend_build
+  script:
+    - echo "Building Dentist Service and dependencies..."
+    - mvn clean install -pl dentist-service -am -DskipTests
+    - echo "Dentist Service build complete."
+
+
+
 user-service_Test_Job:
   stage: backend_test
   tags:
