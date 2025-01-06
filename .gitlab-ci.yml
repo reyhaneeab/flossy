@@ -24,8 +24,8 @@ before_script:
 backend_build_job:
   stage: backend_build
   script:
-    - echo "Building the backend with Maven..."
-    - mvn clean install -pl user-service -DskipTests
+    - echo "Building User Service and dependencies..."
+    - mvn clean install -pl user-service -am -DskipTests
     - echo "Backend build complete."
 
 user-service_Test_Job:
