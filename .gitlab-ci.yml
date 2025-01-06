@@ -36,7 +36,7 @@ user_service_test:
     MONGODB_URI: "mongodb://mongo:27017/serverTestDB"
   script:
     - echo "Running tests for User Service..."
-    - mvn test -pl user-service
+    - mvn test -pl user-service -am
     - echo "User Service tests completed."    
 
 deploy_job:
