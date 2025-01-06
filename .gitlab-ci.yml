@@ -41,6 +41,14 @@ calendar-service_build_job:
     - echo "Building  Calendar Service and dependencies..."
     - mvn clean install -pl calendar-service -am -DskipTests
     - echo "Backend build complete."
+
+api-gateway_build_job:
+  stage: backend_build
+  script:
+    - echo "Building API Gateway and dependencies..."
+    - mvn clean install -pl api-gateway -am -DskipTests
+    - echo "API Gateway build complete."
+
 user-service_Test_Job:
   stage: backend_test
   tags:
