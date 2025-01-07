@@ -17,6 +17,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -41,7 +42,7 @@ class CalendarServiceTest {
                 null,
                 new ObjectMapper()
         );
-
+        calendarService.init();
     }
 
     @Test //test generateDefaultTimeSlots()
@@ -56,17 +57,22 @@ class CalendarServiceTest {
         assertEquals(LocalDateTime.of(2024, 1, 1, 9, 30), timeSlots.get(0).endTime());
     }
 
-    @Test
-    void testScheduleWeeklyCalendarRegistration() throws Exception{
+    @Test //test
+    void testScheduleWeeklyCalendarRegistration() throws Exception {
         Dentist dentist = Dentist.builder()
-                .id("dentist123")
-                .officeName("Dental Care")
+                .id("BestDentist")
+                .officeName("Flossy Clinic")
                 .build();
-        
-        dentistRepository.findAll().add(dentist);
 
-        calendarService.scheduleWeeklyCalendarRegistration();
+        List<Dentist> dentistList = new ArrayList<>();
+        dentistList.add(dentist);
 
+        Mockito.when(dentistRepository.findAll()).thenReturn(dentistList);
+
+        //simulate MQTT client connection
+        Mockito.when(mqttClient.isConnected()).thenReturn(true);
+
+        //simulate successful MQTT publish
         Mockito.doNothing().when(mqttClient).publish(
                 Mockito.anyString(),
                 Mockito.any(byte[].class),
@@ -74,5 +80,14 @@ class CalendarServiceTest {
                 Mockito.anyBoolean()
         );
 
+        calendarService.scheduleWeeklyCalendarRegistration();
+
+        //make sure that publish () is called once
+        Mockito.verify(mqttClient, Mockito.times(1)).publish(
+                Mockito.anyString(),
+                Mockito.any(byte[].class),
+                Mockito.anyInt(),
+                Mockito.eq(false)
+        );
     }
 }
