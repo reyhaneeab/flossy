@@ -10,7 +10,7 @@ export const options = {
 };
 
 export default function () {
-    let response = http.post('http://localhost:8080/timeSlot/book');
+    let response = http.post('http://localhost:8088/timeSlot/book');
     check(response, {
         'successful requests': (r) => r.status === 204,
         'no bookings made': (r) => r.status !== 201,
@@ -19,7 +19,7 @@ export default function () {
     sleep(1);
 
 
-    response = http.get('http://localhost:1883/calendar/get');
+    response = http.get('http://localhost:8091/calendar/get');
     check(response, {
         'is status 200': (r) => r.status === 200,
         'is status 500': (r)=>r.status===500,
