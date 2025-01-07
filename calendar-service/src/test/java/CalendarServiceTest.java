@@ -14,6 +14,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.mockito.Captor;
+import org.mockito.ArgumentCaptor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -30,10 +32,13 @@ class CalendarServiceTest {
     private DentistRepository dentistRepository;
     @Mock
     private MqttClient mqttClient;
+    @Captor
+    private ArgumentCaptor<String> topicCaptor;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        topicCaptor = ArgumentCaptor.forClass(String.class);
         calendarService = new CalendarService(
                 dentistRepository,
                 null,
@@ -84,10 +89,14 @@ class CalendarServiceTest {
 
         //make sure that publish () is called once
         Mockito.verify(mqttClient, Mockito.times(1)).publish(
-                Mockito.anyString(),
+                topicCaptor.capture(),
                 Mockito.any(byte[].class),
                 Mockito.anyInt(),
-                Mockito.eq(false)
+                Mockito.anyBoolean()
         );
+
+        //check if it contains a specific topic
+        assertTrue(topicCaptor.getValue().contains("calendar/registration"));
     }
+
 }
