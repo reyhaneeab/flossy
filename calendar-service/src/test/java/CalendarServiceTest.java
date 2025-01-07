@@ -34,11 +34,15 @@ class CalendarServiceTest {
     private MqttClient mqttClient;
     @Captor
     private ArgumentCaptor<String> topicCaptor;
+    @Captor
+    private ArgumentCaptor<byte[]> payloadCaptor;
+
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
         topicCaptor = ArgumentCaptor.forClass(String.class);
+        payloadCaptor = ArgumentCaptor.forClass(byte[].class);  // Initialize payload captor
         calendarService = new CalendarService(
                 dentistRepository,
                 null,
@@ -90,13 +94,15 @@ class CalendarServiceTest {
         //make sure that publish () is called once
         Mockito.verify(mqttClient, Mockito.times(1)).publish(
                 topicCaptor.capture(),
-                Mockito.any(byte[].class),
+                payloadCaptor.capture(),
                 Mockito.anyInt(),
                 Mockito.anyBoolean()
         );
 
         //check if it contains a specific topic
-        assertTrue(topicCaptor.getValue().contains("calendar/registration"));
+        String payload = new String(payloadCaptor.getValue());
+        assertTrue(payload.contains("BestDentist"));
+
     }
 
 }
