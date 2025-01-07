@@ -99,9 +99,10 @@ class CalendarServiceTest {
                 Mockito.anyBoolean()
         );
 
-        //check if it contains a specific topic
-        String payload = new String(payloadCaptor.getValue());
-        assertTrue(payload.contains("BestDentist"));
+        //check if topic is "calendar/registration"
+        String capturedTopic = topicCaptor.getValue();
+        assertTrue(capturedTopic.contains("calendar/registration"),
+                "Expected topic to contain 'calendar/registration', but got: " + capturedTopic);
 
     }
 
