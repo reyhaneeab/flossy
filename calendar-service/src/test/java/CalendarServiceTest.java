@@ -1,9 +1,12 @@
 package com.group11.calendarservice.service;
 
 import com.group11.calendarservice.dto.TimeSlotRequest;
+import com.group11.calendarservice.repository.DentistRepository;
+import com.group11.model.Dentist;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.time.LocalDate;
@@ -16,6 +19,8 @@ class CalendarServiceTest {
 
     @InjectMocks
     private CalendarService calendarService;
+    @Mock
+    private DentistRepository dentistRepository;
 
     @BeforeEach
     void setUp() {
@@ -32,5 +37,17 @@ class CalendarServiceTest {
         assertEquals(expectedSlots, timeSlots.size());
         assertEquals(LocalDateTime.of(2024, 1, 1, 9, 0), timeSlots.get(0).startTime());
         assertEquals(LocalDateTime.of(2024, 1, 1, 9, 30), timeSlots.get(0).endTime());
+    }
+
+    @Test
+    void testScheduleWeeklyCalendarRegistration() throws Exception{
+        Dentist dentist = Dentist.builder()
+                .id("dentist123")
+                .officeName("Dental Care")
+                .build();
+
+        dentistRepository.findAll().add(dentist);  
+
+        calendarService.scheduleWeeklyCalendarRegistration();
     }
 }
