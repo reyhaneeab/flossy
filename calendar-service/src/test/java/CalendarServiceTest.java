@@ -105,5 +105,20 @@ class CalendarServiceTest {
                 "Expected topic to contain 'calendar/registration', but got: " + capturedTopic);
 
     }
+    @Test
+    void testScheduleWeeklyCalendarRegistration_NoDentists() throws Exception {
+        Mockito.when(dentistRepository.findAll()).thenReturn(new ArrayList<>());
+
+        calendarService.scheduleWeeklyCalendarRegistration();
+
+        //check that publish was never called
+        Mockito.verify(mqttClient, Mockito.never()).publish(
+                Mockito.anyString(),
+                Mockito.any(byte[].class),
+                Mockito.anyInt(),
+                Mockito.anyBoolean()
+        );
+    }
+
 
 }
