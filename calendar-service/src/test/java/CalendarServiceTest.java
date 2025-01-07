@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 import java.time.LocalDate;
@@ -61,9 +62,17 @@ class CalendarServiceTest {
                 .id("dentist123")
                 .officeName("Dental Care")
                 .build();
-
+        
         dentistRepository.findAll().add(dentist);
 
         calendarService.scheduleWeeklyCalendarRegistration();
+
+        Mockito.doNothing().when(mqttClient).publish(
+                Mockito.anyString(),
+                Mockito.any(byte[].class),
+                Mockito.anyInt(),
+                Mockito.anyBoolean()
+        );
+
     }
 }
