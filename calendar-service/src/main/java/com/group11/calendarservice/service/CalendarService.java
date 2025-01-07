@@ -85,7 +85,9 @@ public class CalendarService {
         }
         return timeSlots;
     }
-
+    public List<TimeSlotRequest> getDefaultTimeSlotsForWeek(LocalDate startOfWeek) {
+        return generateDefaultTimeSlots(startOfWeek);
+    }
     @PostConstruct
     public void init() {
         mapper.registerModule(new JavaTimeModule());
