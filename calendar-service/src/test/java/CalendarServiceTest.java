@@ -1,10 +1,15 @@
 package com.group11.calendarservice.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.group11.calendarservice.dto.TimeSlotRequest;
 import com.group11.calendarservice.repository.DentistRepository;
 import com.group11.model.Dentist;
+
+import org.eclipse.paho.client.mqttv3.MqttClient;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -21,10 +26,21 @@ class CalendarServiceTest {
     private CalendarService calendarService;
     @Mock
     private DentistRepository dentistRepository;
+    @Mock
+    private MqttClient mqttClient;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        calendarService = new CalendarService(
+                dentistRepository,
+                null,
+                null,
+                mqttClient,
+                null,
+                new ObjectMapper()
+        );
+
     }
 
     @Test //test generateDefaultTimeSlots()
@@ -46,7 +62,7 @@ class CalendarServiceTest {
                 .officeName("Dental Care")
                 .build();
 
-        dentistRepository.findAll().add(dentist);  
+        dentistRepository.findAll().add(dentist);
 
         calendarService.scheduleWeeklyCalendarRegistration();
     }
