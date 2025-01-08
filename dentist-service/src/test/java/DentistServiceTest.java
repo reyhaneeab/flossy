@@ -5,6 +5,7 @@ import com.group11.dto.DentistRequest;
 import com.group11.model.Dentist;
 import com.group11.dentistservice.repository.DentistRepository;
 import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -33,8 +34,8 @@ class DentistServiceTest {
     }
 
     @Test
-    void testDentistRequestSerialization() throws Exception {
-        DentistRequest request = new DentistRequest("Bright Smiles", "dentist@example.com", "securePass", "123 Main St", "1234567890", null);
+    void testDentistRequest() throws Exception {
+        DentistRequest request = new DentistRequest("Flossy", "flossy@gmail.com", "Supersecurepassword", "backerStreer", "1234567890", null);
         System.out.println("DentistRequest: " + request);
 
         Dentist dentist = Dentist.builder()
@@ -51,5 +52,24 @@ class DentistServiceTest {
 
         assertNotNull(payload, "Payload should not be null");
     }
+    @Test
+    void testCreateDentistMessage() throws Exception {
+        DentistRequest request = new DentistRequest("Bright Smiles", "dentist@example.com", "securePass", "123 Main St", "1234567890", null);
+        System.out.println("DentistRequest: " + request);
+
+        MqttMessage message = new MqttMessage();
+        byte[] payload = objectMapper.writeValueAsBytes(request);
+        System.out.println("Serialized Payload: " + (payload != null ? new String(payload) : "null"));
+
+        if (payload != null) {
+            message.setPayload(payload);
+        } else {
+            throw new IllegalArgumentException("Failed to serialize DentistRequest to byte array");
+        }
+
+        assertNotNull(message.getPayload(), "MQTT message payload should not be null");
+    }
+
+
 }
 
