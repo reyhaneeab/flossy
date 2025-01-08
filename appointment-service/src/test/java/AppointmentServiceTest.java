@@ -39,6 +39,17 @@ public class AppointmentServiceTest {
     }
 
     @Test
+    void testMqttInitialization() throws Exception {
+        Mockito.when(mqttClient.isConnected()).thenReturn(false);
+
+        appointmentService.init();
+
+        Mockito.verify(mqttClient).connect();
+        Mockito.verify(mqttClient).subscribe(Mockito.eq("timeSlot/book"), Mockito.eq(1));
+        Mockito.verify(mqttClient).subscribe(Mockito.eq("timeSlot/cancel"), Mockito.eq(1));
+    }
+
+    @Test
     void testBookAppointment_Success() throws Exception {
         //fake/mock request payload
         String payload = "{ \"timeSlotId\": \"123\", \"userId\": \"456\" }";
