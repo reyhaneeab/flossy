@@ -82,6 +82,25 @@ user-service_Test_Job:
     - echo "Tests completed successfully."
     - echo "Stopping services after testing..."
 
+calendar-service_Test_Job:
+  stage: backend_test
+  tags:
+    - docker
+  services:
+    - name: mongo:7.0.5
+      alias: mongo
+    - name: eclipse-mosquitto:latest
+      alias: mqtt
+  variables:
+    MONGODB_URI: "mongodb://mongo:27017/calendarTestDB"
+  script:
+    - echo "Starting services for Calendar Service testing..."
+    - echo "Running Calendar Service integration tests..."
+    - mvn test -pl calendar-service -am
+    - echo "Calendar Service tests completed successfully."
+    - echo "Stopping services after Calendar Service testing..."
+
+
 deploy_job:
   stage: deploy
   script:
