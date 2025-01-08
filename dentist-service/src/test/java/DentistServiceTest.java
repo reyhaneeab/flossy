@@ -70,6 +70,12 @@ class DentistServiceTest {
         assertNotNull(message.getPayload(), "MQTT message payload should not be null");
     }
 
+    private DentistRequest createDentistRequest() {
+        return new DentistRequest("Bright Smiles", "dentist@example.com", "securePass", "123 Main St", "1234567890", null);
+    }
+
+
+
 
 }
 
