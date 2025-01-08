@@ -54,18 +54,10 @@ class DentistServiceTest {
     }
     @Test
     void testCreateDentistMessage() throws Exception {
-        DentistRequest request = new DentistRequest("Bright Smiles", "dentist@example.com", "securePass", "123 Main St", "1234567890", null);
+        DentistRequest request = createDentistRequest();
         System.out.println("DentistRequest: " + request);
 
-        MqttMessage message = new MqttMessage();
-        byte[] payload = objectMapper.writeValueAsBytes(request);
-        System.out.println("Serialized Payload: " + (payload != null ? new String(payload) : "null"));
-
-        if (payload != null) {
-            message.setPayload(payload);
-        } else {
-            throw new IllegalArgumentException("Failed to serialize DentistRequest to byte array");
-        }
+        MqttMessage message = createMqttMessage(request);
 
         assertNotNull(message.getPayload(), "MQTT message payload should not be null");
     }
@@ -74,8 +66,17 @@ class DentistServiceTest {
         return new DentistRequest("Bright Smiles", "dentist@example.com", "securePass", "123 Main St", "1234567890", null);
     }
 
+    private MqttMessage createMqttMessage(DentistRequest request) throws Exception {
+        MqttMessage message = new MqttMessage();
+        byte[] payload = objectMapper.writeValueAsBytes(request);
+        System.out.println("Serialized Payload: " + (payload != null ? new String(payload) : "null"));
 
-
-
+        if (payload != null) {
+            message.setPayload(payload);
+        } else {
+            throw new IllegalArgumentException("Failed to serialize DentistRequest to array");
+        }
+        return message;
+    }
 }
 
