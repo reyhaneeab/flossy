@@ -118,6 +118,24 @@ appointment-service_Test_Job:
     - echo "Appointment Service tests completed successfully."
     - echo "Stopping services after Appointment Service testing..."
 
+dentist-service_Test_Job:
+  stage: backend_test
+  tags:
+    - docker
+  services:
+    - name: mongo:7.0.5
+      alias: mongo
+    - name: eclipse-mosquitto:latest
+      alias: mqtt
+  variables:
+    MONGODB_URI: "mongodb://mongo:27017/dentistTestDB"
+  script:
+    - echo "Starting services for Dentist Service testing..."
+    - echo "Running Dentist Service integration tests..."
+    - mvn test -pl dentist-service -am
+    - echo "Dentist Service tests completed successfully."
+    - echo "Stopping services after Dentist Service testing..."
+
 deploy_job:
   stage: deploy
   script:
