@@ -24,7 +24,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class CalendarServiceTest {
+public class CalendarServiceTest {
 
     @InjectMocks
     private CalendarService calendarService;

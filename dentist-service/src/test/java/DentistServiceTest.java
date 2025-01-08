@@ -20,7 +20,7 @@ import org.springframework.data.redis.core.ValueOperations;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class DentistServiceTest {
+public class DentistServiceTest {
 
     @Mock
     private DentistRepository dentistRepository;
