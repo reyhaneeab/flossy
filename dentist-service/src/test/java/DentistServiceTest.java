@@ -78,10 +78,10 @@ class DentistServiceTest {
 
     @Test
     void testCreateDentistMessage() throws Exception {
-        DentistRequest request = createDentistRequest();
+        DentistRequest request = testCreateDentistRequest();
         System.out.println("DentistRequest: " + request);
 
-        MqttMessage message = createMqttMessage(request);
+        MqttMessage message = testCreateMqttMessage(request);
 
         Dentist dentist = Dentist.builder()
                 .officeName(request.officeName())
@@ -105,11 +105,11 @@ class DentistServiceTest {
         assertEquals("flossy@gmail.com", capturedDentist.getEmail());
     }
 
-    private DentistRequest createDentistRequest() {
+    private DentistRequest testCreateDentistRequest() {
         return new DentistRequest("Flossy", "flossy@gmail.com", "Supersecurepassword", "backerStreer", "1234567890", null);
     }
 
-    private MqttMessage createMqttMessage(DentistRequest request) throws Exception {
+    private MqttMessage testCreateMqttMessage(DentistRequest request) throws Exception {
         MqttMessage message = new MqttMessage();
         byte[] payload = objectMapper.writeValueAsBytes(request);
         System.out.println("Serialized Payload: " + (payload != null ? new String(payload) : "null"));
