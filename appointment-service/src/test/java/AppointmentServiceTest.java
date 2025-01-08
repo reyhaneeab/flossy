@@ -16,6 +16,8 @@ import org.mockito.MockitoAnnotations;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 
 
 
@@ -60,5 +62,30 @@ public class AppointmentServiceTest {
         assertEquals(user, timeSlot.getBookedBy());
         Mockito.verify(mqttClient).publish(Mockito.eq("timeSlot/book/response"), Mockito.any(), Mockito.eq(1), Mockito.eq(false));
     }
+
+    @Test
+    void testBookAppointment_AlreadyBooked() throws Exception { //simulates the appoitment already being booked
+        String payload = "{ \"timeSlotId\": \"123\", \"userId\": \"456\" }";
+        MqttMessage message = new MqttMessage(payload.getBytes());
+
+        TimeSlot timeSlot = new TimeSlot();
+        timeSlot.setId("123");
+        timeSlot.setBooked(true);
+
+        User user = new User();
+        user.setId("456");
+
+        Mockito.when(timeSlotRepository.findById("123")).thenReturn(java.util.Optional.of(timeSlot));
+        Mockito.when(userRepository.findById("456")).thenReturn(java.util.Optional.of(user));
+
+        Exception exception = assertThrows(Exception.class, () -> {
+            appointmentService.bookAppointment(message);
+        });
+
+        assertEquals("Appointment is already booked", exception.getMessage());
+    }
+
+
+
 
 }
