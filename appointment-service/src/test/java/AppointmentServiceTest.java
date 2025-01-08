@@ -14,6 +14,8 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
+import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 
@@ -94,16 +96,39 @@ public class AppointmentServiceTest {
         timeSlot.setBooked(true);
         timeSlot.setBookedBy(user);
 
-        Mockito.when(timeSlotRepository.findById("123")).thenReturn(java.util.Optional.of(timeSlot));
-        Mockito.when(userRepository.findById("456")).thenReturn(java.util.Optional.of(user));
+        Mockito.when(timeSlotRepository.findById("123")).thenReturn(Optional.of(timeSlot));
+        Mockito.when(userRepository.findById("456")).thenReturn(Optional.of(user));
 
         appointmentService.cancelAppointment(message);
 
-        assertTrue(timeSlot.getBooked());
+        assertFalse(timeSlot.getBooked());
         assertNull(timeSlot.getBookedBy());
         Mockito.verify(timeSlotRepository).save(timeSlot);
         Mockito.verify(mqttClient).publish(Mockito.eq("timeSlot/cancel/response"), Mockito.any(), Mockito.eq(1), Mockito.eq(false));
     }
+
+
+    @Test
+    void testCancelAppointment_NotBooked() throws Exception {
+        String payload = "{ \"timeSlotId\": \"123\", \"userId\": \"456\" }";
+        MqttMessage message = new MqttMessage(payload.getBytes());
+
+        TimeSlot timeSlot = new TimeSlot();
+        timeSlot.setId("123");
+        timeSlot.setBooked(false);
+
+        User user = new User();
+        user.setId("456");
+
+        Mockito.when(timeSlotRepository.findById("123")).thenReturn(Optional.of(timeSlot));
+        Mockito.when(userRepository.findById("456")).thenReturn(Optional.of(user));
+
+        Exception exception = assertThrows(Exception.class, () -> {
+            appointmentService.cancelAppointment(message);
+        });
+        assertEquals("Cancellation failed. The time slot is not currently booked.", exception.getMessage());
+    }
+
 
 
 }
