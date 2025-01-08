@@ -140,6 +140,25 @@ public class AppointmentServiceTest {
         assertEquals("Cancellation failed. The time slot is not currently booked.", exception.getMessage());
     }
 
+    @Test
+    void testBookAppointment_UserNotFound() throws Exception {
+        String payload = "{ \"timeSlotId\": \"123\", \"userId\": \"456\" }";
+        MqttMessage message = new MqttMessage(payload.getBytes());
+
+        TimeSlot timeSlot = new TimeSlot();
+        timeSlot.setId("123");
+        timeSlot.setBooked(false);
+
+        Mockito.when(timeSlotRepository.findById("123")).thenReturn(Optional.of(timeSlot));
+        Mockito.when(userRepository.findById("456")).thenReturn(Optional.empty());
+
+        Exception exception = assertThrows(Exception.class, () -> {
+            appointmentService.bookAppointment(message);
+        });
+
+        assertEquals("Booking failed. User not found", exception.getMessage());
+    }
+
 
 
 }
