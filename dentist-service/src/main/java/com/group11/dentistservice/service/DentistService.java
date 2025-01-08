@@ -111,6 +111,10 @@ public class DentistService {
         cacheDentist(savedDentist);
         publishResponse(DENTIST_REGISTRATION_TOPIC + "/response", savedDentist);
     }
+    public void getCreateDentistMessage(MqttMessage message) throws Exception {
+        createDentist(message);
+    }
+
 
     // Handle get all dentists request
     private void handleGetAllDentists() throws Exception {
