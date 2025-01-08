@@ -51,7 +51,7 @@ class DentistServiceTest {
         Mockito.doNothing().when(ops).set(Mockito.anyString(), Mockito.any(), Mockito.anyLong(), Mockito.any());
 
 
-        DentistRequest request = new DentistRequest("Bright Smiles", "dentist@example.com", "securePass", "123 Main St", "1234567890", null);
+        DentistRequest request = new DentistRequest("Flossy", "flossy@gmail.com", "Supersecurepassword", "backerStreer", "1234567890", null);
         System.out.println("DentistRequest: " + request);
     }
 
@@ -101,12 +101,12 @@ class DentistServiceTest {
 
         Dentist capturedDentist = dentistCaptor.getValue();
         assertNotNull(capturedDentist);
-        assertEquals("Bright Smiles", capturedDentist.getOfficeName());
-        assertEquals("dentist@example.com", capturedDentist.getEmail());
+        assertEquals("Flossy", capturedDentist.getOfficeName());
+        assertEquals("flossy@gmail.com", capturedDentist.getEmail());
     }
 
     private DentistRequest createDentistRequest() {
-        return new DentistRequest("Bright Smiles", "dentist@example.com", "securePass", "123 Main St", "1234567890", null);
+        return new DentistRequest("Flossy", "flossy@gmail.com", "Supersecurepassword", "backerStreer", "1234567890", null);
     }
 
     private MqttMessage createMqttMessage(DentistRequest request) throws Exception {
@@ -121,4 +121,22 @@ class DentistServiceTest {
         }
         return message;
     }
+    @Test
+    void testUpdateDentist() {
+        Dentist existingDentist = new Dentist("1", "Flossy", "flossy@gmail.com", "Supersecurepassword", "backerStreer", "1234567890", null);
+        DentistRequest updatedRequest = new DentistRequest("Flossy2", "flossy2@gmail.com", "Supersecurepassword2", "backerStreer2", "2234567890", null);
+
+        Mockito.when(dentistRepository.findById("1")).thenReturn(java.util.Optional.of(existingDentist));
+        Mockito.when(dentistRepository.save(Mockito.any(Dentist.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Dentist updatedDentist = dentistService.updateDentist("1", updatedRequest);
+
+        assertNotNull(updatedDentist);
+        assertEquals("Flossy2", updatedDentist.getOfficeName());
+        assertEquals("flossy2@gmail.com", updatedDentist.getEmail());
+        assertEquals("Supersecurepassword2", updatedDentist.getPassword());
+        assertEquals("backerStreer2", updatedDentist.getAddress());
+        assertEquals("2234567890", updatedDentist.getPhone());
+    }
+
 }
