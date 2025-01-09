@@ -1,15 +1,19 @@
 <template>
   <div class="container mt-5">
     <h1 class="mb-4">My Interest List</h1>
-    <div v-if="doctors && doctors.length">
-      <ul class="list-group">
-        <li v-for="doctor in doctors" :key="doctor" class="list-group-item">
-          <h5>{{ doctor }}</h5>
-        </li>
-      </ul>
-    </div>
+    <div v-if="loading" class="loading">Loading...</div>
     <div v-else>
-      <p>No doctors in your interest list.</p>
+      <div v-if="doctors && doctors.length">
+        <ul class="list-group">
+          <li v-for="doctor in doctors" :key="doctor" class="list-group-item d-flex justify-content-between align-items-center">
+            <h5>{{ doctor }}</h5>
+            <button @click="removeDoctor(doctor)" class="btn btn-danger btn-sm">Remove</button>
+          </li>
+        </ul>
+      </div>
+      <div v-else>
+        <p>No doctors in your interest list.</p>
+      </div>
     </div>
   </div>
 </template>
@@ -21,7 +25,8 @@ import api from "@/api";
 export default {
   data() {
     return {
-      doctors: []
+      doctors: [],
+      loading: false
     };
   },
   computed: {
@@ -32,11 +37,13 @@ export default {
   },
   methods: {
     async fetchInterestList() {
+      this.loading = true;
       const userId = this.userId; 
       console.log("Fetching interest list for userId:", userId); 
 
       if (!userId) {
         console.error("User ID is not defined.");
+        this.loading = false;
         return;
       }
 
@@ -49,6 +56,29 @@ export default {
         console.log("Doctors list:", this.doctors); // Log the doctors list
       } catch (error) {
         console.error("Error fetching interest list:", error);
+      } finally {
+        this.loading = false;
+      }
+    },
+    async removeDoctor(doctor) {
+      const userId = this.userId;
+      console.log("Removing doctor:", doctor, "for userId:", userId);
+
+      if (!userId) {
+        console.error("User ID is not defined.");
+        return;
+      }
+
+      try {
+        await api.post("user/delete", {
+          userId: userId,
+          doctor: doctor
+        });
+        console.log("Doctor removed:", doctor);
+        // Fetch the updated list from the server
+        await this.fetchInterestList();
+      } catch (error) {
+        console.error("Error removing doctor:", error);
       }
     }
   },
@@ -81,5 +111,11 @@ h1 {
   margin: 0;
   font-size: 18px;
   color: black; /* Updated text color to black */
+}
+
+.loading {
+  text-align: center;
+  font-size: 20px;
+  color: white;
 }
 </style>

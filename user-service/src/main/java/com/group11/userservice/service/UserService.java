@@ -41,6 +41,8 @@ public class UserService {
     private static final String USER_ADD_RESPONSE = USER_ADD_TOPIC + "/response";
     private static final String USER_FETCH_TOPIC = "user/fetch";
     private static final String USER_FETCH_RESPONSE = USER_FETCH_TOPIC + "/response";
+    private static final String USER_DELETE_TOPIC = "user/delete";
+    private static final String USER_DELETE_RESPONSE = USER_DELETE_TOPIC + "/response";
     private static final long MQTT_RESPONSE_TIMEOUT = 10; // Timeout in seconds
 
     @PostConstruct
@@ -59,6 +61,7 @@ public class UserService {
             mqttClient.subscribe(USER_LOGIN_TOPIC);
             mqttClient.subscribe(USER_ADD_TOPIC, 1);
             mqttClient.subscribe(USER_FETCH_TOPIC, 1);
+            mqttClient.subscribe(USER_DELETE_TOPIC, 1);
 
             mqttClient.setCallback(new MqttCallback() {
                 @Override
@@ -75,6 +78,7 @@ public class UserService {
                             case USER_LOGIN_TOPIC -> handleLogin(mqttMessage);
                             case USER_ADD_TOPIC -> handleAddToInterestList(mqttMessage);
                             case USER_FETCH_TOPIC -> handleFetchInterestList(mqttMessage);
+                            case USER_DELETE_TOPIC -> handleDeleteFromInterestList(mqttMessage);
                             default -> log.warn("Unhandled topic: {}", topic);
                         }
 
@@ -168,8 +172,8 @@ public class UserService {
     }
 
     private InterestListResponse getInterestList(String userId) {
-        // Assuming you have a repository or database to fetch the interest list.
-        User interestList = userRepository.findById(userId) // Changed from findByUserId to findById
+        // Fetch the latest interest list from the database
+        User interestList = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
 
         // Log the fetched interest list for debugging
@@ -220,6 +224,52 @@ public class UserService {
         } catch (TimeoutException e) {
             log.error("MQTT response timed out for topic: {}", USER_FETCH_TOPIC);
             throw new RuntimeException("MQTT response timed out");
+        }
+    }
+
+    private void handleDeleteFromInterestList(MqttMessage mqttMessage) throws Exception {
+        try {
+            JsonNode payload = mapper.readTree(mqttMessage.getPayload());
+            log.info("Received delete request payload: {}", payload);
+
+            if (payload == null || !payload.has("userId") || !payload.has("doctor")) {
+                throw new IllegalArgumentException("Invalid payload: userId and doctor are required");
+            }
+
+            String userId = payload.get("userId").asText();
+            String doctor = payload.get("doctor").asText();
+
+            log.info("Deleting doctor {} from user {}'s interest list", doctor, userId);
+
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+
+            if (user.getInterestList() != null && user.getInterestList().contains(doctor)) {
+                user.getInterestList().remove(doctor);
+                userRepository.save(user);
+                log.info("Doctor {} removed from user {}'s interest list", doctor, userId);
+            } else {
+                log.warn("Doctor {} not found in user {}'s interest list", doctor, userId);
+            }
+
+            // Verify that the user has been updated in the database
+            User updatedUser = userRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+            log.info("Updated interest list for user {}: {}", userId, updatedUser.getInterestList());
+
+            InterestListResponse response = new InterestListResponse(userId,
+                    new ArrayList<>(updatedUser.getInterestList()));
+            log.info("Sending response: {}", response);
+            publishResponse(USER_DELETE_RESPONSE, response);
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid request payload", e);
+            throw e;
+        } catch (RuntimeException e) {
+            log.error("Runtime exception occurred", e);
+            throw e;
+        } catch (Exception e) {
+            log.error("Unexpected error occurred", e);
+            throw e;
         }
     }
 
