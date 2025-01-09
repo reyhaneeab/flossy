@@ -37,7 +37,6 @@ export default {
   },
   methods: {
     async fetchInterestList() {
-      this.loading = true;
       const userId = this.userId; 
       console.log("Fetching interest list for userId:", userId); 
 
@@ -54,6 +53,7 @@ export default {
         console.log("Fetched data:", response.data); // Log the fetched data
         this.doctors = response.data.doctors; // Ensure the correct data structure is used
         console.log("Doctors list:", this.doctors); // Log the doctors list
+        localStorage.setItem("doctors", JSON.stringify(this.doctors)); // Save to localStorage
       } catch (error) {
         console.error("Error fetching interest list:", error);
       } finally {
@@ -75,15 +75,20 @@ export default {
           doctor: doctor
         });
         console.log("Doctor removed:", doctor);
-        // Fetch the updated list from the server
-        await this.fetchInterestList();
+        this.doctors = this.doctors.filter(d => d !== doctor);
+        localStorage.setItem("doctors", JSON.stringify(this.doctors)); // Save to localStorage
       } catch (error) {
         console.error("Error removing doctor:", error);
       }
     }
   },
   async mounted() {
-    this.fetchInterestList();
+    const savedDoctors = localStorage.getItem("doctors");
+    if (savedDoctors) {
+      this.doctors = JSON.parse(savedDoctors);
+    } else {
+      this.fetchInterestList();
+    }
   },
 };
 </script>

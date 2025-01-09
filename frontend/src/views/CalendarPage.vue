@@ -170,12 +170,24 @@ export default defineComponent({
           headers: {
             "Content-Type": "application/json",
           },
+      
           body: JSON.stringify({ userId, doctorId: slot.id }),
         });
         if (!response.ok) {
           throw new Error("Failed to add doctor to interest list");
         }
         alert("Doctor added to interest list.");
+
+        // Fetch the updated interest list and save to localStorage
+        const interestListResponse = await fetch(`/api/user/fetch`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ userId }),
+        });
+        const interestListData = await interestListResponse.json();
+        localStorage.setItem("doctors", JSON.stringify(interestListData.doctors));
       } catch (error) {
         console.error("Error adding doctor to interest list:", error);
       }
