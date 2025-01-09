@@ -69,6 +69,11 @@ export default {
         return;
       }
 
+      const confirmation = confirm(`Are you sure you want to remove Dr. ${doctor} from your interest list?`);
+      if (!confirmation) {
+        return;
+      }
+
       try {
         await api.post("user/delete", {
           userId: userId,
@@ -76,7 +81,13 @@ export default {
         });
         console.log("Doctor removed:", doctor);
         this.doctors = this.doctors.filter(d => d !== doctor);
-        localStorage.setItem("doctors", JSON.stringify(this.doctors)); // Save to localStorage
+        localStorage.setItem("doctors", JSON.stringify(this.doctors)); 
+
+        alert(`Dr. ${doctor} has been removed from your interest list.`);
+
+        if (!this.doctors.length) {
+          localStorage.removeItem("doctors");
+        }
       } catch (error) {
         console.error("Error removing doctor:", error);
       }
