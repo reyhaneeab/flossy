@@ -41,7 +41,7 @@ public class PatientCancellationHandler implements NotificationHandler{
                             Best regards,
                             The Flossy Team""",
                     user.getFirstName(), user.getLastName(),
-                    timeSlot.getStartTime(), timeSlot.getEndTime(), timeSlot.getDentistName());
+                    timeSlot.getDate(), timeSlot.getStartTime(), timeSlot.getEndTime(), timeSlot.getDentistName());
 
             emailEngine.sendEmail(user.getEmail(), "Booking Cancelled", content);
         }
