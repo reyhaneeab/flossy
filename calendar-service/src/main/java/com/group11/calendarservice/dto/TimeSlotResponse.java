@@ -6,10 +6,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public record TimeSlotResponse(
-                String id,
-                LocalDate date,
-                LocalDateTime startTime,
-                LocalDateTime endTime,
-                Dentist owner
+        String id,
+        LocalDate date,
+        LocalDateTime startTime,
+        LocalDateTime endTime,
+        Dentist owner
                 ) {
 }
