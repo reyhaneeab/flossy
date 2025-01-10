@@ -10,27 +10,28 @@ export const options = {
 };
 
 export default function () {
-    let response = http.post('http://localhost:8088/timeSlot/book');
+    const payload = JSON.stringify({
+        weekNumber: "1",
+        ownerId: "675844ff73a9ad601e5a77a9", // Replace with your own dentist id
+    });
+
+    const params = {
+        headers: {
+            "Content-Type": "application/json",//accepted file type
+        },
+    };
+    let response = http.post('http://localhost:8091/api/calendar/get',payload,params);
     check(response, {
-        'successful requests': (r) => r.status === 204,
-        'no bookings made': (r) => r.status !== 201,
-        'no timeouts': (r) => !r.error,
+        'is status 200': (r) => r.status === 200,//depending on response, display appropriate message
+        'is status 500': (r)=>r.status===500,
+        'response is not empty': (r) => r.body && r.body.length > 0,
+        'retrieve the calendar': (r) => !r.error,
     });
     sleep(1);
 
 
-    response = http.get('http://localhost:8091/calendar/get');
-    check(response, {
-        'is status 200': (r) => r.status === 200,
-        'is status 500': (r)=>r.status===500,
-        'response is not empty': (r) => r.body && r.body.length > 0,
-        'no timeouts': (r) => !r.error,
-    });
-    sleep(0.3);
-}
-/*export default function () {
-    // Payload for the request
-    const payload = JSON.stringify({
+// Payload for the request
+   /* const payload = JSON.stringify({
         weekNumber: "1",
         ownerId: "675844ff73a9ad601e5a77a9", // Replace with your own dentist id
     });
@@ -56,5 +57,5 @@ export default function () {
     });
 
     // Sleep to simulate user think time
-    sleep(1);
-}*/
+    sleep(1);*/
+}

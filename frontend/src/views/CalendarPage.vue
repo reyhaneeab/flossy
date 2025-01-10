@@ -68,21 +68,20 @@ export default defineComponent({
 
     const fetchTimeSlots = async () => {
       try {
-        console.log(dentistId)
         const response = await fetch(URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            weekNumber: "51",
-            ownerId: dentistId// Ensure dentistId is used here
+            weekNumber: "1",
+            ownerId: dentistId // Ensure dentistId is used here
           })
         })
 
         const data = await response.json();
-        console.log(data)
 
+        // Group the time slots by day and create a proper structure for `days`
         const dayMap = {};
 
         data.timeSlots.forEach(slot => {
@@ -93,8 +92,6 @@ export default defineComponent({
               slots: []
             };
           }
-          const startTime = new Date(slot.startTime[0], slot.startTime[1] - 1, slot.startTime[2], slot.startTime[3], slot.startTime[4]);
-          const endTime = new Date(slot.endTime[0], slot.endTime[1] - 1, slot.endTime[2], slot.endTime[3], slot.endTime[4]);
 
           // Push the slot details into the correct day
           dayMap[date].slots.push({
@@ -102,7 +99,6 @@ export default defineComponent({
             time: `${startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
             booked: slot.booked,
             selected: false,
-            ownerName: slot.owner ? slot.owner.name : 'Unknown'
           });
         });
 
@@ -151,6 +147,7 @@ export default defineComponent({
           alert(`Appointment is already booked: ${errorData.error}`);
           return;
         }
+
 
         alert(`Appointment has been booked successfully!`);
         showBooking.value = false;
@@ -243,6 +240,7 @@ button {
   font-weight: bold;
 }
 
+
 button.selected {
   background: #add8e6;
   border-color: #00f;
@@ -289,6 +287,7 @@ button.selected {
   font-family: Copperplate,fantasy;
 }
 
+
 #yes{
   background-color: #4169e1;
   color: white;
@@ -303,4 +302,5 @@ button.selected {
     margin-bottom: 20px;
   }
 }
+
 </style>
