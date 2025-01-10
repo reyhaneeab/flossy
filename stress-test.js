@@ -10,6 +10,18 @@ export const options = {
 };
 
 export default function () {
+    const bookingPayload=JSON.stringify({
+        timeSlot:"",
+        bookedBy:"",
+    });
+    const headers = { "Content-Type": "application/json" };
+    let booking=http.post('http://localhost:8088/timeSlot/book',bookingPayload,headers);
+check(booking,{
+    'successful requests': (r) => r.status === 204,
+    'no bookings made': (r) => r.status !== 201,
+    'book': (r) => !r.error,
+
+});
     const payload = JSON.stringify({
         weekNumber: "1",
         ownerId: "675844ff73a9ad601e5a77a9", // Replace with your own dentist id
