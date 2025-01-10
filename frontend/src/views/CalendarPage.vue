@@ -69,37 +69,41 @@ export default defineComponent({
 
     const fetchTimeSlots = async () => {
       try {
+        console.log(dentistId)
         const response = await fetch(URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            weekNumber: "50",
-            ownerId: dentistId // Ensure dentistId is used here
+            weekNumber: "51",
+            ownerId: dentistId// Ensure dentistId is used here
           })
         })
 
         const data = await response.json();
+        console.log(data)
 
-        // Group the time slots by day and create a proper structure for `days`
         const dayMap = {};
 
         data.timeSlots.forEach(slot => {
-          const date = slot.date;
+          const date =`${slot.date[0]}-${String(slot.date[1]).padStart(2, '0')}-${String(slot.date[2]).padStart(2, '0')}`;
           if (!dayMap[date]) {
             dayMap[date] = {
               date: date,
               slots: []
             };
           }
+          const startTime = new Date(slot.startTime[0], slot.startTime[1] - 1, slot.startTime[2], slot.startTime[3], slot.startTime[4]);
+          const endTime = new Date(slot.endTime[0], slot.endTime[1] - 1, slot.endTime[2], slot.endTime[3], slot.endTime[4]);
 
           // Push the slot details into the correct day
           dayMap[date].slots.push({
             id: slot.id,
-            time: `${new Date(slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+            time: `${startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
             booked: slot.booked,
             selected: false,
+            ownerName: slot.owner ? slot.owner.name : 'Unknown'
           });
         });
 
@@ -351,5 +355,4 @@ button.selected {
     margin-bottom: 20px;
   }
 }
-
 </style>
