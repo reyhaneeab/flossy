@@ -41,33 +41,4 @@ check(booking,{
     });
     sleep(1);
 
-
-// Payload for the request
-   /* const payload = JSON.stringify({
-        weekNumber: "1",
-        ownerId: "675844ff73a9ad601e5a77a9", // Replace with your own dentist id
-    });
-
-    // Request headers
-    const params = {
-        headers: {
-            "Content-Type": "application/json",
-        },
-    };
-
-    // Perform POST request
-    let response = http.post('http://localhost:8091/api/calendar/get', payload, params);
-
-
-
-    // Add checks to verify the response
-    check(response, {
-        'is status 200': (r) => r.status === 200,
-        'is status 500': (r)=>r.status===500,
-        'response is not empty': (r) => r.body && r.body.length > 0,
-        'no timeouts': (r) => !r.error,
-    });
-
-    // Sleep to simulate user think time
-    sleep(1);*/
 }
