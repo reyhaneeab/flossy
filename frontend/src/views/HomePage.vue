@@ -7,7 +7,7 @@
         <p class="lead">You are logged in.</p>
         <!-- Navigation buttons -->
         <div class="mt-5">
-          <router-link to="/calendar" class="btn btn-primary btn-lg mr-3 home-btn">
+          <router-link to="/map" class="btn btn-primary btn-lg mr-3 home-btn">
             View Calendar
           </router-link>
           <router-link to="/profile" class="btn btn-secondary btn-lg home-btn">

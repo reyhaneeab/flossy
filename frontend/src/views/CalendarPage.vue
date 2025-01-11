@@ -23,7 +23,7 @@
                   v-for="slot in day.slots"
                   :key="slot.time"
                   class="btn btn-outline-primary mb-2 time-slot"
-                  :class="{ 'btn-primary text-black': slot.selected, 'disabled': slot.booked }"
+                  :class="{ 'btn-primary text-white': slot.selected, 'disabled': slot.booked }"
                   @click="selectSlot(day, slot)"
                   :disabled="slot.booked"
               >
@@ -75,7 +75,7 @@ export default defineComponent({
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            weekNumber: "51",
+            weekNumber: "1",
             ownerId: dentistId// Ensure dentistId is used here
           })
         })
@@ -185,7 +185,7 @@ export default defineComponent({
 
 <style scoped>
 .text-center mb-4{
-  color: #ffffff;
+  color: #EDE8F5;
 }
 .calendar-card {
   transition: all 0.3s ease;
@@ -198,14 +198,17 @@ export default defineComponent({
 }
 
 .card-header {
-  background-color: #f8f9fa;
-  border-bottom: 2px solid #007bff;
+  background-color: #3D52A0;
+  border-bottom: 2px solid #3D52A0;
 }
 
 .card-title {
-  color: #007bff;
+  color: #EDE8F5;
   font-size: 1.2rem;
   margin-bottom: 0;
+}
+.card-body{
+  background-color: #3D52A0;
 }
 
 .time-slot {
@@ -222,21 +225,21 @@ export default defineComponent({
 }
 
 .selected-slot-info {
-  background-color: #e9ecef;
+  background-color: #8691E6;
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 h1, h2 {
-  color: #343a40;
+  color: #3D52A0;
 }
 
 button {
   padding: 30px 50px;
-  border: 1px solid #ddd;
+  border: 1px solid #7091E6;
   border-radius: 3px;
-  background: #fff;
+  background: #3D52A0;
   cursor: pointer;
   transition: 0.3s;
   font-size: 15px;
@@ -245,8 +248,8 @@ button {
 
 button.selected {
   background: #add8e6;
-  border-color: #00f;
-  color: #000;
+  border-color: #EDE8F5;
+  color: #7091E6;
 }
 
 .alert-box {
