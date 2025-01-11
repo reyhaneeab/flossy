@@ -6,6 +6,7 @@ import com.group11.userservice.dto.InterestListResponse;
 import com.group11.userservice.repository.UserRepository;
 import com.group11.userservice.dto.InterestListRequest;
 import com.group11.model.User;
+import com.group11.model.TimeSlot;
 import com.group11.userservice.dto.UserRequest;
 import com.group11.userservice.dto.LoginRequest;
 import com.group11.userservice.dto.LoginResponse;
@@ -167,8 +168,18 @@ public class UserService {
                 }
             }
         }
+
+        if (request.timeSlots() != null) {
+            for (TimeSlot slot : request.timeSlots()) {
+                String slotString = slot.toString();
+                if (!user.getInterestList().contains(slotString)) {
+                    user.getInterestList().add(slotString);
+                }
+            }
+        }
+
         userRepository.save(user);
-        return new InterestListResponse(user.getId(), new ArrayList<>(user.getInterestList()));
+        return new InterestListResponse(user.getId(), new ArrayList<>(user.getInterestList()), new ArrayList<>());
     }
 
     private InterestListResponse getInterestList(String userId) {
@@ -190,7 +201,7 @@ public class UserService {
         log.info("Doctors list for userId {}: {}", userId, doctors);
 
         // Create and return the response object
-        return new InterestListResponse(userId, doctors);
+        return new InterestListResponse(userId, doctors, new ArrayList<>());
     }
 
     private void handleAddToInterestList(MqttMessage mqttMessage) throws Exception {
@@ -258,7 +269,7 @@ public class UserService {
             log.info("Updated interest list for user {}: {}", userId, updatedUser.getInterestList());
 
             InterestListResponse response = new InterestListResponse(userId,
-                    new ArrayList<>(updatedUser.getInterestList()));
+                    new ArrayList<>(updatedUser.getInterestList()), new ArrayList<>());
             log.info("Sending response: {}", response);
             publishResponse(USER_DELETE_RESPONSE, response);
         } catch (IllegalArgumentException e) {

@@ -174,13 +174,12 @@ export default defineComponent({
           headers: {
             "Content-Type": "application/json",
           },
-      
-          body: JSON.stringify({ userId, doctorId: slot.id }),
+          body: JSON.stringify({ userId, doctorId: slot.ownerId, timeSlots: [slot] }),
         });
         if (!response.ok) {
           throw new Error("Failed to add doctor to interest list");
         }
-        alert("Doctor added to interest list.");
+        alert("Doctor and timeslot added to interest list.");
 
         // Fetch the updated interest list and save to localStorage
         const interestListResponse = await fetch(`/api/user/fetch`, {
