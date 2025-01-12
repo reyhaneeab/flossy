@@ -2,7 +2,10 @@ package com.group11.calendarservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.group11.calendarservice.dto.*;
+import com.group11.dto.CalendarRequest;
+import com.group11.dto.CalendarResponse;
+import com.group11.dto.TimeSlotRequest;
+import com.group11.dto.TimeSlotResponse;
 import com.group11.model.*;
 import com.group11.calendarservice.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -23,8 +26,6 @@ import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import static com.group11.config.JacksonConfig.createObjectMapper;
 
 @Slf4j
 @Service
@@ -86,7 +87,9 @@ public class CalendarService {
         }
         return timeSlots;
     }
-
+    public List<TimeSlotRequest> getDefaultTimeSlotsForWeek(LocalDate startOfWeek) {
+        return generateDefaultTimeSlots(startOfWeek);
+    }
     @PostConstruct
     public void init() {
         mapper.registerModule(new JavaTimeModule());

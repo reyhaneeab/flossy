@@ -6,12 +6,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.TypeAlias;
-import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.DocumentReference;
 
 import java.util.List;
 
-@Document(value = "calendar")
+@Document(value = "calendars")
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
@@ -22,8 +22,8 @@ public class Calendar {
     private String id;
     private int year;
     private int weekNumber;
-    @DBRef
+    @DocumentReference
     private List<TimeSlot> timeSlots;
-    @DBRef
+    @DocumentReference
     private Dentist owner;
 }

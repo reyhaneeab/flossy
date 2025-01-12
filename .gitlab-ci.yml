@@ -21,12 +21,48 @@ before_script:
   - java -version
   - mvn -version
 
-backend_build_job:
+user-service_build_job:
   stage: backend_build
   script:
-    - echo "Building the backend with Maven..."
-    - mvn clean install
+    - echo "Building User Service and dependencies..."
+    - mvn clean install -pl user-service -am -DskipTests
     - echo "Backend build complete."
+
+appointment-service_build_job:
+  stage: backend_build
+  script:
+    - echo "Building Appointment Service and dependencies..."
+    - mvn clean install -pl appointment-service -am -DskipTests
+    - echo "Backend build complete."
+
+calendar-service_build_job:
+  stage: backend_build
+  script:
+    - echo "Building  Calendar Service and dependencies..."
+    - mvn clean install -pl calendar-service -am -DskipTests
+    - echo "Backend build complete."
+
+api-gateway_build_job:
+  stage: backend_build
+  script:
+    - echo "Building API Gateway and dependencies..."
+    - mvn clean install -pl api-gateway -am -DskipTests
+    - echo "API Gateway build complete."
+
+dentist-service_build_job:
+  stage: backend_build
+  script:
+    - echo "Building Dentist Service and dependencies..."
+    - mvn clean install -pl dentist-service -am -DskipTests
+    - echo "Dentist Service build complete."
+
+notification-service_build_job:
+  stage: backend_build
+  script:
+    - echo "Building Notification Service and dependencies..."
+    - mvn clean install -pl notification-service -am -DskipTests
+    - echo "Notification Service build complete."
+
 
 user-service_Test_Job:
   stage: backend_test
@@ -45,6 +81,60 @@ user-service_Test_Job:
     - mvn test -pl user-service -am    
     - echo "Tests completed successfully."
     - echo "Stopping services after testing..."
+
+calendar-service_Test_Job:
+  stage: backend_test
+  tags:
+    - docker
+  services:
+    - name: mongo:7.0.5
+      alias: mongo
+    - name: eclipse-mosquitto:latest
+      alias: mqtt
+  variables:
+    MONGODB_URI: "mongodb://mongo:27017/calendarTestDB"
+  script:
+    - echo "Starting services for Calendar Service testing..."
+    - echo "Running Calendar Service integration tests..."
+    - mvn test -pl calendar-service -am 
+    - echo "Calendar Service tests completed successfully."
+    - echo "Stopping services after Calendar Service testing..."
+
+appointment-service_Test_Job:
+  stage: backend_test
+  tags:
+    - docker
+  services:
+    - name: mongo:7.0.5
+      alias: mongo
+    - name: eclipse-mosquitto:latest
+      alias: mqtt
+  variables:
+    MONGODB_URI: "mongodb://mongo:27017/appointmentTestDB"
+  script:
+    - echo "Starting services for Appointment Service testing..."
+    - echo "Running Appointment Service integration tests..."
+    - mvn test -pl appointment-service -am
+    - echo "Appointment Service tests completed successfully."
+    - echo "Stopping services after Appointment Service testing..."
+
+dentist-service_Test_Job:
+  stage: backend_test
+  tags:
+    - docker
+  services:
+    - name: mongo:7.0.5
+      alias: mongo
+    - name: eclipse-mosquitto:latest
+      alias: mqtt
+  variables:
+    MONGODB_URI: "mongodb://mongo:27017/dentistTestDB"
+  script:
+    - echo "Starting services for Dentist Service testing..."
+    - echo "Running Dentist Service integration tests..."
+    - mvn test -pl dentist-service -am
+    - echo "Dentist Service tests completed successfully."
+    - echo "Stopping services after Dentist Service testing..."
 
 deploy_job:
   stage: deploy

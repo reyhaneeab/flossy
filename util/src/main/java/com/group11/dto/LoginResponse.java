@@ -1,7 +1,4 @@
-package com.group11.userservice.dto;
-
-import lombok.AllArgsConstructor;
-import lombok.Data;
+package com.group11.dto;
 
 public class LoginResponse {
     private String token;

@@ -7,8 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.TypeAlias;
-import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.DocumentReference;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.util.List;
@@ -20,20 +20,15 @@ import java.util.List;
 @Builder
 @TypeAlias("user")
 public class User {
-
     @Id
     private String id;
-
+    @JsonIgnore
+    private String password;
     @Field("email")
     private String email;
-
     private String firstName;
     private String lastName;
     private String phone;
-
-    @JsonIgnore
-    private String password;
-
-    @DBRef
-    private List<TimeSlot> bookedTimes;
+    @DocumentReference
+    private List<TimeSlot> bookedSlots;
 }
