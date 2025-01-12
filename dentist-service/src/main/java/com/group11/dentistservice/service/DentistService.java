@@ -26,12 +26,10 @@ public class DentistService {
     private final MqttClient mqttClient;
     private final RedisTemplate<String, Object> redisTemplate;
 
-    private static final String DENTIST_REGISTRATION_TOPIC = "dentist/registration";
-    private static final String DENTIST_REGISTRATION_RESPONSE = DENTIST_REGISTRATION_TOPIC + "/response";
+    private static final String DENTIST_POST_TOPIC = "dentist/post";
     private static final String DENTIST_GET_TOPIC = "dentist/get";
-    private static final String DENTIST_GET_RESPONSE = DENTIST_GET_TOPIC + "/response";
-    private static final String DENTIST_GET_ALL_TOPIC = "dentist/getAll";
-    private static final String DENTIST_UPDATE_TOPIC = "dentist/update";
+    private static final String DENTIST_GetByEmail_TOPIC = "dentist/getByUID";
+    private static final String DENTIST_PATCH_TOPIC = "dentist/patch";
     private static final String DENTIST_DELETE_TOPIC = "dentist/delete";
 
     // Redis cache settings
@@ -50,17 +48,11 @@ public class DentistService {
     // Setup MQTT connection and subscribe to topics
     private void setupMqttConnection() throws MqttException {
         if (!mqttClient.isConnected()) {
-
-                MqttConnectOptions options = new MqttConnectOptions();
-                options.setAutomaticReconnect(true);
-                options.setCleanSession(false);
-                options.setConnectionTimeout(10);
-                options.setKeepAliveInterval(60);
-                mqttClient.connect(options);
-
-            mqttClient.subscribe(DENTIST_REGISTRATION_TOPIC, 1);
+            mqttClient.connect();
+            mqttClient.subscribe(DENTIST_POST_TOPIC, 1);
             mqttClient.subscribe(DENTIST_GET_TOPIC, 1);
-            mqttClient.subscribe(DENTIST_UPDATE_TOPIC, 1);
+            mqttClient.subscribe(DENTIST_GetByEmail_TOPIC, 1);
+            mqttClient.subscribe(DENTIST_PATCH_TOPIC, 1);
             mqttClient.subscribe(DENTIST_DELETE_TOPIC, 1);
         }
         mqttClient.setCallback(new MqttCallback() {
@@ -85,9 +77,10 @@ public class DentistService {
     private void handleIncomingMessage(String topic, MqttMessage message) {
         try {
             switch (topic) {
-                case DENTIST_REGISTRATION_TOPIC -> createDentist(message);
-                case DENTIST_GET_TOPIC -> handleGetAllDentists();
-                case DENTIST_UPDATE_TOPIC -> handleUpdateDentist(message);
+                case DENTIST_POST_TOPIC -> createDentist(message);
+                case DENTIST_GET_TOPIC -> getAllDentists();
+                case DENTIST_GetByEmail_TOPIC -> getDentistByEmail(message);
+                case DENTIST_PATCH_TOPIC -> handleUpdateDentist(message);
                 case DENTIST_DELETE_TOPIC -> handleDeleteDentist(message);
                 default -> log.warn("Unhandled topic: {}", topic);
             }
@@ -99,6 +92,11 @@ public class DentistService {
     // Create a new dentist
     private void createDentist(MqttMessage message) throws Exception {
         DentistRequest request = mapper.readValue(message.getPayload(), DentistRequest.class);
+
+        if (dentistRepository.existsByEmail(request.email())) {
+            throw new RuntimeException("Email already exists");
+        }
+
         Dentist dentist = Dentist.builder()
                 .officeName(request.officeName())
                 .email(request.email())
@@ -109,13 +107,22 @@ public class DentistService {
                 .build();
         Dentist savedDentist = dentistRepository.save(dentist);
         cacheDentist(savedDentist);
-        publishResponse(DENTIST_REGISTRATION_TOPIC + "/response", savedDentist);
+        publishResponse(DENTIST_POST_TOPIC + "/response", savedDentist);
+    }
+    public void getCreateDentistMessage(MqttMessage message) throws Exception {
+        createDentist(message);
     }
 
+
     // Handle get all dentists request
-    private void handleGetAllDentists() throws Exception {
+    private void getAllDentists() throws Exception {
         List<Dentist> allDentists = dentistRepository.findAll();
-        publishResponse(DENTIST_GET_RESPONSE, allDentists);
+        publishResponse(DENTIST_GET_TOPIC + "/response", allDentists);
+    }
+
+    private void getDentistByEmail(MqttMessage message) throws Exception {
+        String email = mapper.readValue(message.getPayload(), String.class);
+        publishResponse(DENTIST_GetByEmail_TOPIC + "/response", getDentistByEmail(email));
     }
 
     // Handle update dentist request
@@ -124,12 +131,12 @@ public class DentistService {
         Dentist existingDentist = dentistRepository.findByEmail(request.email())
                 .orElseThrow(() -> new RuntimeException("Dentist not found with email: " + request.email()));
         Dentist updatedDentist = updateDentist(existingDentist.getId(), request);
-        publishResponse(DENTIST_UPDATE_TOPIC + "/response", updatedDentist);
+        publishResponse(DENTIST_PATCH_TOPIC + "/response", updatedDentist);
     }
 
     // Update an existing dentist
-    public Dentist updateDentist(String id, DentistRequest request) {
-        Dentist existingDentist = getDentistById(id);
+    public Dentist updateDentist(String email, DentistRequest request) {
+        Dentist existingDentist = getDentistByEmail(email);
         updateDentistFields(existingDentist, request);
         Dentist updatedDentist = dentistRepository.save(existingDentist);
         cacheDentist(updatedDentist);
@@ -153,18 +160,19 @@ public class DentistService {
         publishResponse(DENTIST_DELETE_TOPIC + "/response", "Dentist with id " + id + " deleted");
     }
 
-    // Get dentist by ID (with caching)
-    public Dentist getDentistById(String id) {
-        String cacheKey = CACHE_KEY_PREFIX + id;
-        Dentist cachedDentist = (Dentist) redisTemplate.opsForValue().get(cacheKey);
+    // Get dentist by Email (with caching)
+    public Dentist getDentistByEmail(String email) {
+        String cacheKey = CACHE_KEY_PREFIX + email;
+        Object cachedDentist = redisTemplate.opsForValue().get(cacheKey);
 
         if (cachedDentist != null) {
-            log.info("Dentist found in cache: {}", cachedDentist.getOfficeName());
-            return cachedDentist;
+            if(cachedDentist instanceof Dentist) {
+                return (Dentist) cachedDentist;
+            }
         }
 
-        Dentist dentist = dentistRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Dentist not found with id: " + id));
+        Dentist dentist = dentistRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Dentist not found with email: " + email));
 
         cacheDentist(dentist);
         return dentist;

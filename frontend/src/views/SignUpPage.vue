@@ -1,104 +1,39 @@
 <template>
-   <div class="container mt-5">
-    <!-- Row for horizontal centering -->
-    <div class="row justify-content-center">
-      <!-- Column for responsive width control
-           On medium screens and larger, it takes up half the container width -->
-      <div class="col-md-6">
-        <!-- Card component for visual grouping -->
-        <div class="card signup-container">
-          <!-- Card header for the title -->
-          <div class="card-header">
-            <h1 class="title">Create Your Account!</h1>
-            <p class="subtitle">Join our community today and start caring about your teeth!</p>
+  <div class="container">
+    <div class="title">Registration</div>
+    <div class="content">
+      <form @submit.prevent="handleSignup">
+        <div class="user-details">
+          <div class="input-box">
+            <span class="details">First Name</span>
+            <input type="text" v-model="firstName" placeholder="Enter your first name" required>
           </div>
-          <!-- Card body for the form -->
-          <div class="card-body">
-            <!-- Form with prevent default on submit, calling handleSignup method -->
-            <form @submit.prevent="handleSignup" class="signup-form">
-              <!-- First Name input field -->
-              <div class="mb-3">
-                <label for="firstName" class="form-label">First Name</label>
-                <input
-                    id="firstName"
-                  type="text"
-                  class="form-control"
-                  v-model="firstName"
-                  placeholder="Enter your first name"
-                  required
-                />
-              </div>
-              <!-- Last Name input field -->
-              <div class="mb-3">
-                <label for="lastName" class="form-label">Last Name</label>
-                <input
-                    id="lastName"
-                  type="text"
-                  class="form-control"
-                  v-model="lastName"
-                  placeholder="Enter your last name"
-                  required
-                />
-              </div>
-              <!-- Email input field -->
-              <div class="mb-3">
-                <label for="email" class="form-label">Email</label>
-                <input
-                    id="email"
-                  type="email"
-                  class="form-control"
-                  v-model="email"
-                  placeholder="Enter your email"
-                  required
-                />
-              </div>
-              <!-- Phone input field -->
-              <div class="mb-3">
-                <label for="phone" class="form-label">Phone Number</label>
-                <input
-                    id="phone"
-                  type="number"
-                  class="form-control"
-                  v-model="phone"
-                  placeholder="Enter your phone number"
-                  required
-                />
-              </div>
-              <!-- Password input field -->
-              <div class="mb-3">
-                <label for="password" class="form-label">Password</label>
-                <input
-                    id="password"
-                  type="password"
-                  class="form-control"
-                  v-model="password"
-                  placeholder="Password"
-                  required
-                />
-              </div>
-              <!-- Confirm password input field -->
-              <div class="mb-3">
-                <label for="confirm-password" class="form-label">Confirm Password</label>
-                <input
-                    id="confirm-password"
-                    v-model="confirmPassword"
-                    type="password"
-                    class="form-control"
-                    placeholder="Confirm your password"
-                    required
-                />
-              </div>
-
-              <div v-if="error" class="error-message">{{error}}</div>
-
-              <!-- Button container with full-width grid layout -->
-              <div class="d-grid">
-                <button type="submit" class="btn-primary">Sign Up</button>
-              </div>
-            </form>
+          <div class="input-box">
+            <span class="details">Last Name</span>
+            <input type="text" v-model="lastName" placeholder="Enter your last name" required>
+          </div>
+          <div class="input-box">
+            <span class="details">Email</span>
+            <input type="email" v-model="email" placeholder="Enter your email" required>
+          </div>
+          <div class="input-box">
+            <span class="details">Phone Number</span>
+            <input type="number" v-model="phone" placeholder="Enter your phone number" required>
+          </div>
+          <div class="input-box">
+            <span class="details">Password</span>
+            <input type="password" v-model="password" placeholder="Enter your password" required>
+          </div>
+          <div class="input-box">
+            <span class="details">Confirm Password</span>
+            <input type="password" v-model="confirmPassword" placeholder="Confirm your password" required>
           </div>
         </div>
-      </div>
+        <div v-if="error" class="error-message">{{error}}</div>
+        <div class="button">
+          <input type="submit" value="Register">
+        </div>
+      </form>
     </div>
   </div>
 </template>
@@ -120,125 +55,171 @@ export default {
       error: null,
     };
   },
-methods:{
-  async handleSignup(){
-    if(this.password !== this.confirmPassword){
-      this.error = "Passwords do not match!";
-      return;
+  methods:{
+    async handleSignup(){
+      if(this.password !== this.confirmPassword){
+        this.error = "Passwords do not match!";
+        return;
+      }
+      try {
+        const response = await api.post("/user/registration", {
+          firstName: this.firstName,
+          lastName: this.lastName,
+          email: this.email,
+          phone: this.phone,
+          password: this.password
+        })
+        console.log('User created successfully', response.data)
+        alert("User created successfully")
+        await router.push('/login')
+      }
+      catch (error){
+        console.log(error)
+        this.error=error
+      }
     }
-    try {
-      const response = await api.post("/user/registration", {
-        firstName: this.firstName,
-        lastName: this.lastName,
-        email: this.email,
-        phone: this.phone,
-        password: this.password
-      })
-      console.log('User created successfully', response.data)
-      alert("User created successfully")
-      await router.push('/login')
-    }
-    catch (error){
-      console.log(error)
-      this.error=error
-    }
-  }
-
   }
 }
 </script>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;700&display=swap');
 
-/* Card Styles */
-.signup-container {
-  background-color: #ffffff; /* Clean white card */
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
-  padding: 2rem;
-  width: 100%;
-  height: 100%;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
 }
 
-/* Title and Subtitle */
-.title {
-  font-size: 1.8rem;
-  font-weight: bold;
-  color: #343a40; /* Darker color for strong emphasis */
-  margin-bottom: 0.5rem;
-  text-align: center;
+body {
+  height: 100vh; /* Ensure body takes full height */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #71b7e6, #9b59b6);
 }
 
-.subtitle {
-  font-size: 1rem;
-  color: #6c757d; /* Muted secondary text */
-  text-align: center;
-  margin-bottom: 1.5rem;
+.container {
+  max-width: 1000px;
+  width: 100%; /* Ensure container takes full width */
+  background-color: #fff;
+  padding: 25px 30px;
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
+  display: flex; /* Ensure flex display */
+  flex-direction: column;
+  align-items: center; 
+  color: black; /* Set text color to black */
+  margin: auto; /* Center the container */
 }
 
-/* Form Styles */
-.signup-form .form-label {
+.container .title {
+  font-size: 25px;
   font-weight: 500;
-  color: #495057; /* Slightly darker for labels */
+  position: relative;
+  color: black; /* Set text color to black */
 }
 
-.signup-form .form-control {
-  border: 1px solid #ced4da; /* Light border */
-  border-radius: 6px;
-  padding: 0.75rem;
-  font-size: 1rem;
-  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+.container .title::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: 30px;
+  border-radius: 5px;
+  background: linear-gradient(135deg, #71b7e6, #9b59b6);
 }
 
-.signup-form .form-control:focus {
-  border-color: #00b8d9; /* Highlight with app's primary color */
-  box-shadow: 0 0 4px rgba(0, 184, 217, 0.25);
+.content form .user-details {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  margin: 20px 0 12px 0;
+}
+
+form .user-details .input-box {
+  margin-bottom: 15px;
+  width: calc(100% / 2 - 20px);
+}
+
+form .input-box span.details {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 5px;
+}
+
+.user-details .input-box input {
+  height: 45px;
+  width: 100%;
   outline: none;
+  font-size: 16px;
+  border-radius: 5px;
+  padding-left: 15px;
+  border: 1px solid #ccc;
+  border-bottom-width: 2px;
+  transition: all 0.3s ease;
+  color: black; /* Set text color to black */
 }
 
-/* Error Message */
+.user-details .input-box input:focus,
+.user-details .input-box input:valid {
+  border-color: #9b59b6;
+}
+
+form .button {
+  height: 45px;
+  margin: 35px 0;
+}
+
+form .button input {
+  height: 100%;
+  width: 100%;
+  border-radius: 5px;
+  border: none;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #71b7e6, #9b59b6);
+}
+
+form .button input:hover {
+  background: linear-gradient(-135deg, #71b7e6, #9b59b6);
+}
+
 .error-message {
-  color: #dc3545; /* Bootstrap danger color */
+  color: #dc3545;
   font-size: 0.875rem;
   margin-top: -0.5rem;
   margin-bottom: 1rem;
 }
 
-/* Button Styles */
-.btn-primary {
-  background-color: #00b8d9; /* App's primary color */
-  color: #fff;
-  font-weight: 600;
-  padding: 0.75rem;
-  border: none;
-  border-radius: 6px;
-  font-size: 1rem;
-  width: 100%;
-  transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
-}
-
-.btn-primary:hover {
-  background-color: #0094ad; /* Darker shade for hover effect */
-  transform: translateY(-1px);
-}
-
-.btn-primary:active {
-  background-color: #007a8d; /* Even darker for active */
-  transform: translateY(0);
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .signup-container {
-    padding: 1.5rem;
+@media(max-width: 584px) {
+  .container {
+    max-width: 100%;
   }
 
-  .title {
-    font-size: 1.6rem;
+  form .user-details .input-box {
+    margin-bottom: 15px;
+    width: 100%;
   }
 
-  .subtitle {
-    font-size: 0.9rem;
+  .content form .user-details {
+    max-height: 300px;
+    overflow-y: scroll;
+  }
+
+  .user-details::-webkit-scrollbar {
+    width: 5px;
+  }
+}
+
+@media(max-width: 459px) {
+  .container .content .category {
+    flex-direction: column;
   }
 }
 </style>

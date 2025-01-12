@@ -2,7 +2,10 @@ package com.group11.calendarservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.group11.calendarservice.dto.*;
+import com.group11.dto.CalendarRequest;
+import com.group11.dto.CalendarResponse;
+import com.group11.dto.TimeSlotRequest;
+import com.group11.dto.TimeSlotResponse;
 import com.group11.model.*;
 import com.group11.calendarservice.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -22,8 +26,6 @@ import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import static com.group11.config.JacksonConfig.createObjectMapper;
 
 @Slf4j
 @Service
@@ -85,7 +87,9 @@ public class CalendarService {
         }
         return timeSlots;
     }
-
+    public List<TimeSlotRequest> getDefaultTimeSlotsForWeek(LocalDate startOfWeek) {
+        return generateDefaultTimeSlots(startOfWeek);
+    }
     @PostConstruct
     public void init() {
         mapper.registerModule(new JavaTimeModule());
@@ -163,24 +167,44 @@ public class CalendarService {
     // Create a new calendar
     public void createCalendar(MqttMessage message) throws Exception {
         CalendarRequest request = mapper.readValue(message.getPayload(), CalendarRequest.class);
-        Dentist owner = dentistRepository.findById(request.ownerId())
-                .orElseThrow(() -> new RuntimeException("Dentist not found"));
 
-        List<TimeSlot> savedTimeSlots = request.timeSlots().stream()
-                .map(this::mapToTimeSlot)
-                .peek(timeSlot -> timeSlot.setOwner(owner))
-                .toList();
+        Dentist dentist = dentistRepository.findById(request.ownerId())
+                .orElseThrow(() -> new ResourceNotFoundException("Dentist office not found"));
 
-        Calendar calendar = Calendar.builder()
-                .year(request.year())
-                .weekNumber(request.weekNumber())
-                .timeSlots(savedTimeSlots)
+        if(request.timeSlots() == null) throw new ResourceNotFoundException("TimeSlots not found");
+        List<TimeSlot> timeSlots = request.timeSlots().stream().map(slotRequest -> {
+            TimeSlot slot = new TimeSlot();
+            slot.setDate(slotRequest.date());
+            slot.setStartTime(slotRequest.startTime());
+            slot.setEndTime(slotRequest.endTime());
+            slot.setOwner(dentist);
+            return slot;
+        }).toList();
+
+        timeSlots = timeSlotRepository.saveAll(timeSlots);
+
+        Calendar calendar = new Calendar();
+        calendar.setOwner(dentist);
+        calendar.setTimeSlots(timeSlots);
+        calendar.setWeekNumber(request.weekNumber());
+        calendar.setYear(request.year());
+
+        calendarRepository.save(calendar);
+        cacheCalendar(calendar);
+        publishResponse(CALENDAR_REGISTRATION_RESPONSE, mapToCalendarResponse(calendar));
+    }
+    
+    private TimeSlot createTimeSlot(TimeSlotRequest request, Dentist owner, Calendar calendar) {
+        TimeSlot timeSlot = TimeSlot.builder()
+                .date(request.date())
+                .startTime(request.startTime())
+                .endTime(request.endTime())
+                .booked(false)
                 .owner(owner)
+                .calendar(calendar)
                 .build();
-
-        Calendar savedCalendar = calendarRepository.save(calendar);
-        cacheCalendar(savedCalendar);
-        publishResponse(CALENDAR_REGISTRATION_RESPONSE, mapToCalendarResponse(savedCalendar));
+    
+        return timeSlotRepository.save(timeSlot);
     }
 
 
@@ -205,21 +229,35 @@ public class CalendarService {
     // Retrieve calendar from cache or database
     private Calendar getCalendarFromCacheOrDatabase(String ownerId, int weekNumber) {
         String cacheKey = CACHE_KEY_PREFIX + ownerId + ":" + weekNumber;
-        Object cachedCalendar =  redisTemplate.opsForValue().get(cacheKey);
-
+        log.info("Attempting to retrieve calendar for ownerId: {}, weekNumber: {}, cacheKey: {}", ownerId, weekNumber, cacheKey);
+    
+        Object cachedCalendar = redisTemplate.opsForValue().get(cacheKey);
+    
         if (cachedCalendar != null) {
             if (cachedCalendar instanceof Calendar) {
-                log.info("Calendar found in cache for owner: {} and week: {}", ownerId, weekNumber);
-                return (Calendar) cachedCalendar;
+                Calendar calendar = (Calendar) cachedCalendar;
+                if (calendar.getOwner().getId().equals(ownerId)) {
+                    log.info("Calendar found in cache for owner: {} and week: {}", ownerId, weekNumber);
+                    return calendar;
+                } else {
+                    log.warn("Cached calendar owner mismatch. Expected: {}, Found: {}", ownerId, calendar.getOwner().getId());
+                }
+            } else {
+                log.warn("Cached object is not of type Calendar");
             }
         }
-
+    
+        log.info("Calendar not found in cache or mismatch. Fetching from database for ownerId: {}, weekNumber: {}", ownerId, weekNumber);
         Dentist owner = dentistRepository.findById(ownerId)
                 .orElseThrow(() -> new RuntimeException("Dentist not found"));
         Calendar calendar = calendarRepository.findByOwnerAndWeekNumber(owner, weekNumber);
+        
         if (calendar != null) {
             cacheCalendar(calendar);
+        } else {
+            log.warn("Calendar not found in database for ownerId: {} and weekNumber: {}", ownerId, weekNumber);
         }
+        
         return calendar;
     }
 
@@ -251,7 +289,7 @@ public class CalendarService {
     private CalendarResponse mapToCalendarResponse(Calendar calendar) {
         return new CalendarResponse(
                 calendar.getId(),
-                calendar.getOwner().getId(),
+                calendar.getOwner(),
                 calendar.getWeekNumber(),
                 calendar.getYear(),
                 calendar.getTimeSlots().stream().map(this::mapToTimeSlotResponse).toList()
@@ -262,7 +300,7 @@ public class CalendarService {
     private TimeSlotResponse mapToTimeSlotResponse(TimeSlot timeSlot) {
         return new TimeSlotResponse(
                 timeSlot.getId(),
-                timeSlot.getStartTime().toLocalDate(),
+                timeSlot.getDate(),
                 timeSlot.getStartTime(),
                 timeSlot.getEndTime(),
                 timeSlot.getOwner()
