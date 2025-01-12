@@ -89,7 +89,7 @@ export default {
   /* General Layout */
 #app {
   font-family: "Inter", Arial, sans-serif;
-  background-color: #0d1b2a;
+  background-color: #EDE8F5;
   color: #e0e1dd;
   min-height: 100vh;
   width: 100%;
@@ -99,7 +99,7 @@ export default {
 
 /* Navbar Styling */
 .navbar {
-  background-color: #1b263b;
+  background-color: #3D52A0;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
   padding: 1rem;
   position: sticky;

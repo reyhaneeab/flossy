@@ -1,54 +1,46 @@
 <template>
-  <!-- Container with top margin for centering and spacing -->
-  <div class="container mt-5">
-    <!-- Row for horizontal centering -->
-    <div class="row justify-content-center">
-      <!-- Column for responsive width control
-           On medium screens and larger, it takes up half the container width -->
-      <div class="col-md-6">
-        <!-- Card component for visual grouping -->
-        <div class="card login-container">
-          <!-- Card header for the title -->
-          <div class="card-header">
-            <h2 class="text-center">Login</h2>
+  <div class="container d-flex justify-content-center align-items-center vh-100">
+    <div class="screen">
+      <div class="screen__content">
+        <form class="login" @submit.prevent="handleLogin">
+          <div class="login__field">
+            <i class="login__icon fas fa-user"></i>
+            <input
+              type="email"
+              class="login__input"
+              v-model="email"
+              placeholder="Email"
+              required
+            />
           </div>
-          <!-- Card body for the form -->
-          <div class="card-body">
-            <!-- Form with prevent default on submit -->
-            <form @submit.prevent="handleLogin">
-              <!-- Email input group -->
-              <div class="mb-3">
-                <label for="email" class="form-label">Email</label>
-                <input
-                  type="email"
-                  class="form-control"
-                  id="email"
-                  v-model="email"
-                  placeholder="Enter your email"
-                  required
-                />
-              </div>
-              <!-- Password input group -->
-              <div class="mb-3">
-                <label for="password" class="form-label">Password</label>
-                <input
-                  type="password"
-                  class="form-control"
-                  id="password"
-                  v-model="password"
-                  placeholder="Enter your password"
-                  required
-                />
-              </div>
-              <!-- Button container with full-width grid layout -->
-              <div class="d-grid">
-                <button type="submit" class="btn btn-primary login-btn">Login</button>
-              </div>
-            </form>
-            <!-- Error message, displayed conditionally -->
-            <p v-if="error" class="text-danger mt-3 error-message">{{ error }}</p>
+          <div class="login__field">
+            <i class="login__icon fas fa-lock"></i>
+            <input
+              type="password"
+              class="login__input"
+              v-model="password"
+              placeholder="Password"
+              required
+            />
+          </div>
+          <button class="button login__submit btn btn-primary w-100">
+            <span class="button__text">Log In Now</span>
+            <i class="button__icon fas fa-chevron-right"></i>
+          </button>
+        </form>
+        <div class="social-login">
+          <div class="social-icons">
+            <a href="#" class="social-login__icon fab fa-instagram"></a>
+            <a href="#" class="social-login__icon fab fa-facebook"></a>
+            <a href="#" class="social-login__icon fab fa-twitter"></a>
           </div>
         </div>
+      </div>
+      <div class="screen__background">
+        <span class="screen__background__shape screen__background__shape4"></span>
+        <span class="screen__background__shape screen__background__shape3"></span>
+        <span class="screen__background__shape screen__background__shape2"></span>
+        <span class="screen__background__shape screen__background__shape1"></span>
       </div>
     </div>
   </div>
@@ -57,8 +49,8 @@
 <script>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import {jwtDecode} from "jwt-decode";
-import {authService} from "@/authService";
+import { jwtDecode } from "jwt-decode";
+import { authService } from "@/authService";
 
 export default {
   setup() {
@@ -89,9 +81,6 @@ export default {
       }
     };
 
-
-
-
     return {
       email,
       password,
@@ -103,23 +92,198 @@ export default {
 </script>
 
 <style scoped>
-.login-container {
-  max-width: 400px;
-  margin: 0 auto;
+@import url('https://fonts.googleapis.com/css?family=Raleway:400,700');
+@import 'https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css';
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: Raleway, sans-serif;
 }
 
-.login-btn {
-  background-color: #007bff;
-  border-color: #007bff;
+body {
+  background: linear-gradient(90deg, #C7C5F4, #776BCC);
 }
 
-.login-btn:hover {
-  background-color: #0056b3;
-  border-color: #0056b3;
+.screen {
+  background: linear-gradient(90deg, #3D52A0, #7C78B8);
+  position: relative;
+  height: 600px;
+  width: 100%;
+  max-width: 900px;
+  box-shadow: 0px 0px 24px #5C5696;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 16px;
+  overflow: hidden;
+  z-index: 1;
 }
 
-.error-message {
-  color: red;
-  margin-top: 10px;
+@media (max-width: 768px) {
+  .screen {
+    background: linear-gradient(90deg, #5D54A4, #7C78B8);
+    height: 600px;
+    width: 360px;
+    box-shadow: 0px 0px 24px #5C5696;
+  }
+}
+
+.screen__content {
+  z-index: 1;
+  position: relative;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.screen__background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 0;
+  -webkit-clip-path: inset(0 0 0 0);
+  clip-path: inset(0 0 0 0);
+}
+
+.screen__background__shape {
+  transform: rotate(45deg);
+  position: absolute;
+}
+
+.screen__background__shape1 {
+  height: 720px;
+  width: 720px;
+  background: #FFF;
+  top: -50px;
+  right: 120px;
+  border-radius: 0 72px 0 0;
+}
+
+.screen__background__shape2 {
+  height: 420px;
+  width: 420px;
+  background: #6C63AC;
+  top: -172px;
+  right: 0;
+  border-radius: 32px;
+}
+
+.screen__background__shape3 {
+  height: 740px;
+  width: 390px;
+  background: linear-gradient(270deg, #5D54A4, #6A679E);
+  top: -24px;
+  right: 0;
+  border-radius: 32px;
+}
+
+.screen__background__shape4 {
+  height: 600px;
+  width: 400px;
+  background: #7E7BB9;
+  top: 420px;
+  right: 50px;
+  border-radius: 60px;
+}
+
+.login {
+  width: 100%;
+  max-width: 520px;
+  padding: 30px;
+  padding-top: 0;
+}
+
+.login__field {
+  padding: 20px 0px;
+  position: relative;
+}
+
+.login__icon {
+  position: absolute;
+  top: 30px;
+  color: #7875B5;
+}
+
+.login__input {
+  border: none;
+  border-bottom: 2px solid #D1D1D4;
+  background: none;
+  padding: 10px;
+  padding-left: 24px;
+  font-weight: 700;
+  width: 75%;
+  transition: .2s;
+}
+
+.login__input:active,
+.login__input:focus,
+.login__input:hover {
+  outline: none;
+  border-bottom-color: #6A679E;
+}
+
+.login__submit {
+  background: #fff;
+  font-size: 14px;
+  margin-top: 30px;
+  padding: 16px 20px;
+  border-radius: 26px;
+  border: 1px solid #D4D3E8;
+  text-transform: uppercase;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  color: #4C489D;
+  box-shadow: 0px 2px 2px #5C5696;
+  cursor: pointer;
+  transition: .2s;
+}
+
+.login__submit:active,
+.login__submit:focus,
+.login__submit:hover {
+  border-color: #6A679E;
+  outline: none;
+}
+
+.button__icon {
+  font-size: 24px;
+  margin-left: auto;
+  color: #7875B5;
+}
+
+.social-login {
+  position: absolute;
+  height: 140px;
+  width: 160px;
+  text-align: center;
+  bottom: 0px;
+  right: 0px;
+  color: #fff;
+}
+
+.social-icons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.social-login__icon {
+  padding: 20px 10px;
+  color: #fff;
+  text-decoration: none;
+  text-shadow: 0px 0px 8px #7875B5;
+}
+
+.social-login__icon:hover {
+  transform: scale(1.5);
 }
 </style>
