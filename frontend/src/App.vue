@@ -99,7 +99,7 @@ export default {
 
 /* Navbar Styling */
 .navbar {
-  background-color: #EDE8F5;
+  background-color: #3D52A0;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
   padding: 1rem;
   position: sticky;
