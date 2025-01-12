@@ -176,7 +176,7 @@ export default defineComponent({
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ userId, timeSlots: [{ id: slot.id }] }),
+          body: JSON.stringify({ userId, timeSlotIds: [slot.id] }),
         });
         if (!response.ok) {
           throw new Error("Failed to add timeslot to interest list");

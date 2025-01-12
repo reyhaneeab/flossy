@@ -18,6 +18,7 @@ import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -152,7 +153,9 @@ public class UserService {
         User user = userRepository.findByEmail(request.userId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        List<TimeSlot> timeSlots = request.timeSlots();
+        List<TimeSlot> timeSlots = request.timeSlotIds().stream()
+                .map(id -> new TimeSlot(id, null, null, null, null, null, null, null, null))
+                .collect(Collectors.toList());
         user.addTimeSlots(timeSlots);
         userRepository.save(user);
 
@@ -182,7 +185,9 @@ public class UserService {
         User user = userRepository.findByEmail(request.userId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        List<TimeSlot> timeSlots = request.timeSlots();
+        List<TimeSlot> timeSlots = request.timeSlotIds().stream()
+                .map(id -> new TimeSlot(id, null, null, null, null, null, null, null, null))
+                .collect(Collectors.toList());
         user.removeTimeSlots(timeSlots);
         userRepository.save(user);
 
