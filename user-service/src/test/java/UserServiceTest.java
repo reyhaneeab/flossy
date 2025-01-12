@@ -40,17 +40,14 @@ public class UserServiceTest {
 
     @Test
     void testCreateUser_Success() throws Exception {
-        // Arrange
         UserRequest request = new UserRequest("test@example.com", "John", "Doe", "1234567890", "password");
         MqttMessage mqttMessage = new MqttMessage(new ObjectMapper().writeValueAsBytes(request));
 
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
         when(passwordEncoder.encode(request.password())).thenReturn("encodedPassword");
 
-        // Act
         userService.createUser(mqttMessage);
 
-        // Assert
         verify(userRepository, times(1)).save(userCaptor.capture());
         User savedUser = userCaptor.getValue();
         assertEquals("test@example.com", savedUser.getEmail());
@@ -77,13 +74,10 @@ public class UserServiceTest {
 
     @Test
     void testInit_SuccessfulConnection() throws Exception {
-        // Arrange
         when(mqttClient.isConnected()).thenReturn(false);
 
-        // Act
         userService.init();
 
-        // Assert
         verify(mqttClient, times(1)).isConnected();
         verify(mqttClient, times(1)).subscribe("user/registration");
     }

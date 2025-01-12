@@ -42,7 +42,7 @@ public class CalendarServiceTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         topicCaptor = ArgumentCaptor.forClass(String.class);
-        payloadCaptor = ArgumentCaptor.forClass(byte[].class);  // Initialize payload captor
+        payloadCaptor = ArgumentCaptor.forClass(byte[].class);
         calendarService = new CalendarService(
                 dentistRepository,
                 null,
@@ -78,10 +78,8 @@ public class CalendarServiceTest {
 
         Mockito.when(dentistRepository.findAll()).thenReturn(dentistList);
 
-        //simulate MQTT client connection
         Mockito.when(mqttClient.isConnected()).thenReturn(true);
 
-        //simulate successful MQTT publish
         Mockito.doNothing().when(mqttClient).publish(
                 Mockito.anyString(),
                 Mockito.any(byte[].class),

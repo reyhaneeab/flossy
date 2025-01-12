@@ -44,12 +44,10 @@ public class DentistServiceTest {
         MockitoAnnotations.openMocks(this);
         objectMapper = new ObjectMapper();
 
-        //pass all dependencies to the constructor
         dentistService = new DentistService(objectMapper, dentistRepository, mqttClient, redisTemplate);
 
         Mockito.when(redisTemplate.opsForValue()).thenReturn(ops);
         Mockito.doNothing().when(ops).set(Mockito.anyString(), Mockito.any(), Mockito.anyLong(), Mockito.any());
-
 
         DentistRequest request = new DentistRequest("Flossy", "flossy@gmail.com", "Supersecurepassword", "backerStreer", "1234567890", null);
         System.out.println("DentistRequest: " + request);
@@ -60,15 +58,6 @@ public class DentistServiceTest {
     void testDentistRequest() throws Exception {
         DentistRequest request = new DentistRequest("Flossy", "flossy@gmail.com", "Supersecurepassword", "backerStreer", "1234567890", null);
         System.out.println("DentistRequest: " + request);
-
-        Dentist dentist = Dentist.builder()
-                .officeName(request.officeName())
-                .email(request.email())
-                .password(request.password())
-                .address(request.address())
-                .phone(request.phone())
-                .doctors(request.doctors())
-                .build();
 
         byte[] payload = objectMapper.writeValueAsBytes(request);
         System.out.println("Serialized Payload: " + (payload != null ? new String(payload) : "null"));
