@@ -11,7 +11,6 @@ import java.util.ArrayList;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.TypeAlias;
-import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.DocumentReference;
 import org.springframework.data.mongodb.core.mapping.Field;
@@ -36,6 +35,7 @@ public class User {
 
     @JsonIgnore
     private String password;
-    @DBRef
-    private List<Dentist> dentistList;
+
+    @DocumentReference
+    private List<Dentist> dentistList = new ArrayList<>();
 }
