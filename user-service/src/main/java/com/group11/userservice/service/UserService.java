@@ -2,7 +2,6 @@ package com.group11.userservice.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.group11.userservice.dto.InterestListResponse;
 import com.group11.userservice.repository.UserRepository;
 import com.group11.userservice.dto.InterestListRequest;
 import com.group11.model.User;
@@ -154,13 +153,13 @@ public class UserService {
     public void addToInterestList(InterestListRequest request) {
         User user = userRepository.findById(request.userId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
+        Dentist dentist = dentistRepository.findById(request.dentistId())
+                .orElseThrow(() -> new RuntimeException("Dentist not found"));
 
-        List<Dentist> dentists = request.dentistIds().stream()
-                .map(dentistId -> dentistRepository.findById(dentistId)
-                        .orElseThrow(() -> new RuntimeException("Dentist not found")))
-                .collect(Collectors.toList());
-
-        user.getInterestList().addAll(dentists);
+        List<Dentist> list = user.getDentistList();
+        log.info(list.toString());
+        list.add(dentist);
+        user.setDentistList(list);
         userRepository.save(user);
 
         publishResponse(USER_ADD_RESPONSE, user);
@@ -172,14 +171,14 @@ public class UserService {
     }
 
     public void fetchInterestList(String userId) {
+        log.info(userId);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        List<Dentist> dentistList = user.getInterestList();
+        List<Dentist> dentistList = user.getDentistList();
 
-        InterestListResponse response = new InterestListResponse(userId, dentistList);
-
-        publishResponse(USER_FETCH_RESPONSE, response);
+        log.info(dentistList.toString());
+        publishResponse(USER_FETCH_RESPONSE, dentistList);
     }
 
     private void handleFetchInterestList(MqttMessage mqttMessage) throws Exception {
@@ -191,14 +190,13 @@ public class UserService {
     public void deleteFromInterestList(InterestListRequest request) {
         User user = userRepository.findById(request.userId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
+        Dentist dentist = dentistRepository.findById(request.dentistId())
+                .orElseThrow(() -> new RuntimeException("Dentist not found"));
 
-        List<Dentist> updatedList = user.getInterestList().stream()
-                .filter(d -> !request.dentistIds().contains(d.getId()))
-                .collect(Collectors.toList());
-
-        user.setInterestList(updatedList);
+        List<Dentist> list = user.getDentistList();
+        list.remove(dentist);
+        user.setDentistList(list);
         userRepository.save(user);
-
         publishResponse(USER_DELETE_RESPONSE, user);
     }
 

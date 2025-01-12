@@ -4,5 +4,5 @@ import java.util.List;
 
 public record InterestListRequest(
         String userId,
-        List<String> dentistIds) {
+        String dentistId) {
 }
