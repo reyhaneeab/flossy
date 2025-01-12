@@ -115,10 +115,10 @@ public class DentistServiceTest {
         Dentist existingDentist = new Dentist("1", "Flossy", "flossy@gmail.com", "Supersecurepassword", "backerStreer", "1234567890", null);
         DentistRequest updatedRequest = new DentistRequest("Flossy2", "flossy2@gmail.com", "Supersecurepassword2", "backerStreer2", "2234567890", null);
 
-        Mockito.when(dentistRepository.findById("1")).thenReturn(java.util.Optional.of(existingDentist));
+        Mockito.when(dentistRepository.findByEmail("Flossy")).thenReturn(java.util.Optional.of(existingDentist));
         Mockito.when(dentistRepository.save(Mockito.any(Dentist.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Dentist updatedDentist = dentistService.updateDentist("1", updatedRequest);
+        Dentist updatedDentist = dentistService.updateDentist("Flossy", updatedRequest);
 
         assertNotNull(updatedDentist);
         assertEquals("Flossy2", updatedDentist.getOfficeName());

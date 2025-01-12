@@ -34,14 +34,14 @@ public class PatientCancellationHandler implements NotificationHandler{
                             Date: %s
                             Start: %s
                             End: %s
-                            Doctor: %s
+           
                             
                             Thank you for using our service. If you have any questions or need further assistance, please feel free to reach out.
                             
                             Best regards,
                             The Flossy Team""",
                     user.getFirstName(), user.getLastName(),
-                    timeSlot.getDate(), timeSlot.getStartTime(), timeSlot.getEndTime(), timeSlot.getDentistName());
+                    timeSlot.getDate(), timeSlot.getStartTime(), timeSlot.getEndTime());
 
             emailEngine.sendEmail(user.getEmail(), "Booking Cancelled", content);
         }
