@@ -16,6 +16,9 @@
 </template>
 
 <script>
+import router from "@/router";
+//import apiClient from "@/api";
+
 export default {
   data() {
     return {
@@ -25,9 +28,9 @@ export default {
   },
   methods: {
     login() {
-      // Simulate API call to login
+      //apiClient.post("")
       alert('Login successful!');
-      this.$router.push('/schedule');
+      router.push('/schedule');
     }
   }
 };

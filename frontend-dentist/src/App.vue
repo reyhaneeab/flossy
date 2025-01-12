@@ -1,15 +1,12 @@
-<template>
-  <img alt="Vue logo" src="./assets/logo.png">
-  <WelcomePage msg="Welcome to Your Vue.js App"/>
-</template>
-
 <script>
 import WelcomePage from '@/views/WelcomePage.vue'
+import SchedulePage from "@/views/SchedulePage.vue";
 
 export default {
   name: 'App',
   components: {
-    WelcomePage
+    WelcomePage,
+    SchedulePage
   }
 }
 </script>

@@ -1,4 +1,5 @@
 <template>
+  <img alt="Flossy Logo" src="@/assets/logo.png">
   <div id="welcome-page">
     <h1>Welcome to the Dentist Office Management System</h1>
     <div>
