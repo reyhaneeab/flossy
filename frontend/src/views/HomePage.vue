@@ -26,11 +26,6 @@
 <script setup>
 </script>
 
-
-<script setup>
-
-</script>
-
 <style scoped>
 /* Styles for the navigation buttons */
 .home-btn {
@@ -46,18 +41,27 @@
   background-image: url('../assets/background.jpg');
   background-size: cover;
   background-repeat: no-repeat;
-  background-position: center; 
+  background-position: center;
+  background-attachment: fixed;
   min-height: 100vh;
   width: 100%;
-  overflow: hidden;
-  display: flex; 
+  display: flex;
   justify-content: center;
   align-items: center;
-  z-index: -1;
-}
+position: absolute;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
 
-.content {
-  text-align: center; /* Centers text inside the content block */
+
+ontent {
+text-align: center; /* Centers text inside the content block */
+background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent white background */
+padding: 30px;
+border-radius: 10px;
+max-width: 100%;
+box-sizing: border-box;
 }
 h1 {
   color: #333;
@@ -75,5 +79,5 @@ p {
     width: 100%;
     margin: 10px 0;
   }
-}
+}}
 </style>
