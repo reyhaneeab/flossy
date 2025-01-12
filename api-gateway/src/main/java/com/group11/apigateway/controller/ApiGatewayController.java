@@ -37,6 +37,7 @@ public class ApiGatewayController {
     @GetMapping("/{entity}/{id}")
     public ResponseEntity<JsonNode> getEntityById(@PathVariable String entity, @PathVariable String id) {
         String topic = String.format("%s/getById", entity);
+        log.info(id);
         return forwardGetRequest(topic, id);
     }
 
@@ -76,7 +77,7 @@ public class ApiGatewayController {
             }
 
             log.info("Cache miss for topic: {}. Forwarding request.", topic);
-            JsonNode response = mqttHandler.forwardRequest(topic, null);
+            JsonNode response = mqttHandler.forwardRequest(topic, cacheKey);
 
             if (cacheKey != null) {
                 cacheUtil.cacheResponse(cacheKey, response);
