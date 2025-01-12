@@ -17,11 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 @Slf4j
 @Service
@@ -44,7 +40,6 @@ public class UserService {
     private static final String USER_FETCH_RESPONSE = USER_FETCH_TOPIC + "/response";
     private static final String USER_DELETE_TOPIC = "user/delete";
     private static final String USER_DELETE_RESPONSE = USER_DELETE_TOPIC + "/response";
-    private static final long MQTT_RESPONSE_TIMEOUT = 10; // Timeout in seconds
 
     @PostConstruct
     public void init() {
@@ -153,135 +148,51 @@ public class UserService {
         mqttClient.publish(USER_LOGIN_RESPONSE, payload.getBytes(), 1, false);
     }
 
-    public InterestListResponse addToInterestList(InterestListRequest request) {
-        User user = userRepository.findById(request.userId())
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + request.userId()));
+    public void addToInterestList(InterestListRequest request) {
+        User user = userRepository.findByEmail(request.userId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (user.getInterestList() == null) {
-            user.setInterestList(new ArrayList<>());
-        }
-
-        if (request.doctors() != null) {
-            for (String doctor : request.doctors()) {
-                if (!user.getInterestList().contains(doctor)) {
-                    user.getInterestList().add(doctor);
-                }
-            }
-        }
-
-        if (request.timeSlots() != null) {
-            for (TimeSlot slot : request.timeSlots()) {
-                String slotString = slot.toString();
-                if (!user.getInterestList().contains(slotString)) {
-                    user.getInterestList().add(slotString);
-                }
-            }
-        }
-
+        List<TimeSlot> timeSlots = request.timeSlots();
+        user.addTimeSlots(timeSlots);
         userRepository.save(user);
-        return new InterestListResponse(user.getId(), new ArrayList<>(user.getInterestList()), new ArrayList<>());
-    }
 
-    private InterestListResponse getInterestList(String userId) {
-        // Fetch the latest interest list from the database
-        User interestList = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
-
-        // Log the fetched interest list for debugging
-        log.info("Fetched Interest List for userId {}: {}", userId, interestList);
-
-        if (interestList == null) {
-            throw new IllegalArgumentException("Interest list not found for userId: " + userId);
-        }
-
-        // Fetch the list of doctors from the InterestList object
-        List<String> doctors = interestList.getInterestList(); // Fetching the interest list from the user
-
-        // Log the doctors list for debugging
-        log.info("Doctors list for userId {}: {}", userId, doctors);
-
-        // Create and return the response object
-        return new InterestListResponse(userId, doctors, new ArrayList<>());
+        InterestListResponse response = new InterestListResponse(user.getEmail(), user.getTimeSlots());
+        publishResponse(USER_ADD_RESPONSE, response);
     }
 
     private void handleAddToInterestList(MqttMessage mqttMessage) throws Exception {
         InterestListRequest request = mapper.readValue(mqttMessage.getPayload(), InterestListRequest.class);
+        addToInterestList(request);
+    }
 
-        if (request == null || request.userId() == null || request.userId().isEmpty()) {
-            throw new IllegalArgumentException("Invalid payload: userId is required");
-        }
+    public void fetchInterestList(String userId) {
+        User user = userRepository.findByEmail(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        CompletableFuture<InterestListResponse> future = CompletableFuture
-                .supplyAsync(() -> addToInterestList(request));
-        try {
-            InterestListResponse response = future.get(MQTT_RESPONSE_TIMEOUT, TimeUnit.SECONDS);
-            publishResponse(USER_ADD_RESPONSE, response);
-        } catch (TimeoutException e) {
-            log.error("MQTT response timed out for topic: {}", USER_ADD_TOPIC);
-            throw new RuntimeException("MQTT response timed out");
-        }
+        InterestListResponse response = new InterestListResponse(user.getEmail(), user.getTimeSlots());
+        publishResponse(USER_FETCH_RESPONSE, response);
     }
 
     private void handleFetchInterestList(MqttMessage mqttMessage) throws Exception {
-        JsonNode payload = mapper.readTree(mqttMessage.getPayload());
-        log.info("Received message for fetching interest list: {}", payload);
+        String userId = mapper.readValue(mqttMessage.getPayload(), JsonNode.class).get("userId").asText();
+        fetchInterestList(userId);
+    }
 
-        String userId = payload.get("userId").asText();
+    public void deleteFromInterestList(InterestListRequest request) {
+        User user = userRepository.findByEmail(request.userId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        CompletableFuture<InterestListResponse> future = CompletableFuture.supplyAsync(() -> getInterestList(userId));
-        try {
-            InterestListResponse response = future.get(MQTT_RESPONSE_TIMEOUT, TimeUnit.SECONDS);
-            publishResponse(USER_FETCH_RESPONSE, response);
-        } catch (TimeoutException e) {
-            log.error("MQTT response timed out for topic: {}", USER_FETCH_TOPIC);
-            throw new RuntimeException("MQTT response timed out");
-        }
+        List<TimeSlot> timeSlots = request.timeSlots();
+        user.removeTimeSlots(timeSlots);
+        userRepository.save(user);
+
+        InterestListResponse response = new InterestListResponse(user.getEmail(), user.getTimeSlots());
+        publishResponse(USER_DELETE_RESPONSE, response);
     }
 
     private void handleDeleteFromInterestList(MqttMessage mqttMessage) throws Exception {
-        try {
-            JsonNode payload = mapper.readTree(mqttMessage.getPayload());
-            log.info("Received delete request payload: {}", payload);
-
-            if (payload == null || !payload.has("userId") || !payload.has("doctor")) {
-                throw new IllegalArgumentException("Invalid payload: userId and doctor are required");
-            }
-
-            String userId = payload.get("userId").asText();
-            String doctor = payload.get("doctor").asText();
-
-            log.info("Deleting doctor {} from user {}'s interest list", doctor, userId);
-
-            User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
-
-            if (user.getInterestList() != null && user.getInterestList().contains(doctor)) {
-                user.getInterestList().remove(doctor);
-                userRepository.save(user);
-                log.info("Doctor {} removed from user {}'s interest list", doctor, userId);
-            } else {
-                log.warn("Doctor {} not found in user {}'s interest list", doctor, userId);
-            }
-
-            // Verify that the user has been updated in the database
-            User updatedUser = userRepository.findById(userId)
-                    .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
-            log.info("Updated interest list for user {}: {}", userId, updatedUser.getInterestList());
-
-            InterestListResponse response = new InterestListResponse(userId,
-                    new ArrayList<>(updatedUser.getInterestList()), new ArrayList<>());
-            log.info("Sending response: {}", response);
-            publishResponse(USER_DELETE_RESPONSE, response);
-        } catch (IllegalArgumentException e) {
-            log.error("Invalid request payload", e);
-            throw e;
-        } catch (RuntimeException e) {
-            log.error("Runtime exception occurred", e);
-            throw e;
-        } catch (Exception e) {
-            log.error("Unexpected error occurred", e);
-            throw e;
-        }
+        InterestListRequest request = mapper.readValue(mqttMessage.getPayload(), InterestListRequest.class);
+        deleteFromInterestList(request);
     }
 
     private void publishResponse(String topic, Object response) {

@@ -66,6 +66,8 @@ export default defineComponent({
     const route = useRoute();
     const dentistId = route.params.dentistId; // Get dentistId from route params
     const URL = `http://localhost:8091/api/calendar/get`
+    const ADD = `http://localhost:8091/api/user/add`
+    const FETCH = `http://localhost:8091/api/user/fetch`
 
     const fetchTimeSlots = async () => {
       try {
@@ -169,20 +171,20 @@ export default defineComponent({
     const addToInterestList = async (slot) => {
       try {
         const userId = jwtDecode(localStorage.getItem("token")).sub;
-        const response = await fetch(`/api/user/add`, {
+        const response = await fetch(ADD, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ userId, doctorId: slot.ownerId, timeSlots: [slot] }),
+          body: JSON.stringify({ userId, timeSlots: [{ id: slot.id }] }),
         });
         if (!response.ok) {
-          throw new Error("Failed to add doctor to interest list");
+          throw new Error("Failed to add timeslot to interest list");
         }
-        alert("Doctor and timeslot added to interest list.");
+        alert("Timeslot added to interest list.");
 
         // Fetch the updated interest list and save to localStorage
-        const interestListResponse = await fetch(`/api/user/fetch`, {
+        const interestListResponse = await fetch(FETCH, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -190,9 +192,9 @@ export default defineComponent({
           body: JSON.stringify({ userId }),
         });
         const interestListData = await interestListResponse.json();
-        localStorage.setItem("doctors", JSON.stringify(interestListData.doctors));
+        localStorage.setItem("timeSlots", JSON.stringify(interestListData.timeSlots));
       } catch (error) {
-        console.error("Error adding doctor to interest list:", error);
+        console.error("Error adding timeslot to interest list:", error);
       }
     };
 
