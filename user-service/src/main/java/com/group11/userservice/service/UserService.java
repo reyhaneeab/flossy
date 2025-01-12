@@ -64,7 +64,7 @@ public class UserService {
                             handleLogin(mqttMessage);
                         }
                         else if (topic.equals(USER_GET_BY_ID)) {
-                            handleLogin(mqttMessage);
+                            handleGetUserById(mqttMessage);
                         }
                     } catch (Exception e) {
                         log.error("Error processing message", e);
@@ -143,16 +143,12 @@ public class UserService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
         log.info(user.toString());
 
-            try {
-                String response = mapper.writeValueAsString(user);
-                mqttClient.publish("user/getById/response", response.getBytes(), 1, false);
-            } catch (Exception e) {
-                log.error("Error sending user data by ID", e);
-            }
+        try {
+            String response = mapper.writeValueAsString(user);
+            mqttClient.publish("user/getById/response", response.getBytes(), 1, false);
+        } catch (Exception e) {
+            log.error("Error sending user data by ID", e);
         }
     }
-
-
-
-
 }
+
