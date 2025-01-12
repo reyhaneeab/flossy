@@ -1,18 +1,22 @@
 <template>
-  <div class="container mt-5">
-    <div class="row justify-content-center">
-      <!-- Column for content, centered and responsive -->
-      <div class="col-md-8 text-center">
-        <h1 class="display-4 mb-4">Welcome Home!</h1>
-        <p class="lead">You are logged in.</p>
-        <!-- Navigation buttons -->
-        <div class="mt-5">
-          <router-link to="/map" class="btn btn-primary btn-lg mr-3 home-btn">
-            View Calendar
-          </router-link>
-          <router-link to="/profile" class="btn btn-secondary btn-lg home-btn">
-            My Profile
-          </router-link>
+  <div class="background">
+    <div class="container mt-5">
+      <div class="row justify-content-center">
+        <!-- Column for content, centered and responsive -->
+        <div class="col-md-8 text-center">
+          <div class="content">
+          <h1 class="display-4 mb-4">Welcome Home!</h1>
+          <p class="lead">You are logged in.</p>
+          <!-- Navigation buttons -->
+          <div class="mt-5">
+            <router-link to="/map" class="btn btn-primary btn-lg mr-3 home-btn">
+              Interest List
+            </router-link>
+            <router-link to="/profile" class="btn btn-secondary btn-lg home-btn">
+              My Profile
+            </router-link>
+          </div>
+          </div>
         </div>
       </div>
     </div>
@@ -34,7 +38,23 @@
   transform: translateY(-3px);
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
+.background {
+  background-image: url('../assets/background.jpg');
+  background-size: cover;
+  background-repeat: no-repeat;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
+.content {
+  text-align: center; /* Centers text inside the content block */
+}
 h1 {
   color: #333;
   text-align: center;
