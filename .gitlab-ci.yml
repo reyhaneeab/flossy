@@ -96,7 +96,7 @@ calendar-service_Test_Job:
   script:
     - echo "Starting services for Calendar Service testing..."
     - echo "Running Calendar Service integration tests..."
-    - mvn test -pl calendar-service -am
+    - mvn test -pl calendar-service -am 
     - echo "Calendar Service tests completed successfully."
     - echo "Stopping services after Calendar Service testing..."
 
