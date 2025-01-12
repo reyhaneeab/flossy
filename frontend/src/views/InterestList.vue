@@ -145,12 +145,12 @@ h1 {
 }
 
 .card-header {
-  background-color: #f8f9fa;
+  background-color: #8697C4; 
   border-bottom: 2px solid #007bff;
 }
 
 .card-title {
-  color: #007bff;
+  color: #3D52A0; 
   font-size: 1.2rem;
   margin-bottom: 0;
 }
@@ -165,6 +165,11 @@ h1 {
 .dentist-info p {
   margin: 0;
   font-size: 16px;
+}
+
+.btn-danger {
+  background-color: #7091E6; 
+  border-color: #7091E6; 
 }
 
 .loading {
