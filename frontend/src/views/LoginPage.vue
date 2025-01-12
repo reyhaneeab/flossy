@@ -1,5 +1,5 @@
 <template>
-  <div class="container">
+  <div class="container d-flex justify-content-center align-items-center vh-100">
     <div class="screen">
       <div class="screen__content">
         <form class="login" @submit.prevent="handleLogin">
@@ -23,7 +23,7 @@
               required
             />
           </div>
-          <button class="button login__submit">
+          <button class="button login__submit btn btn-primary w-100">
             <span class="button__text">Log In Now</span>
             <i class="button__icon fas fa-chevron-right"></i>
           </button>
@@ -93,6 +93,7 @@ export default {
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css?family=Raleway:400,700');
+@import 'https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css';
 
 * {
   box-sizing: border-box;
@@ -105,21 +106,13 @@ body {
   background: linear-gradient(90deg, #C7C5F4, #776BCC);
 }
 
-.container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  width: 100%;
-}
-
 .screen {
   background: linear-gradient(90deg, #3D52A0, #7C78B8);
   position: relative;
   height: 600px;
-  width: 360px;
+  width: 100%;
+  max-width: 900px;
   box-shadow: 0px 0px 24px #5C5696;
-  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -128,11 +121,24 @@ body {
   z-index: 1;
 }
 
+@media (max-width: 768px) {
+  .screen {
+    background: linear-gradient(90deg, #5D54A4, #7C78B8);
+    height: 600px;
+    width: 360px;
+    box-shadow: 0px 0px 24px #5C5696;
+  }
+}
+
 .screen__content {
   z-index: 1;
   position: relative;
   height: 100%;
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .screen__background {
@@ -152,8 +158,8 @@ body {
 }
 
 .screen__background__shape1 {
-  height: 520px;
-  width: 520px;
+  height: 720px;
+  width: 720px;
   background: #FFF;
   top: -50px;
   right: 120px;
@@ -161,8 +167,8 @@ body {
 }
 
 .screen__background__shape2 {
-  height: 220px;
-  width: 220px;
+  height: 420px;
+  width: 420px;
   background: #6C63AC;
   top: -172px;
   right: 0;
@@ -170,8 +176,8 @@ body {
 }
 
 .screen__background__shape3 {
-  height: 540px;
-  width: 190px;
+  height: 740px;
+  width: 390px;
   background: linear-gradient(270deg, #5D54A4, #6A679E);
   top: -24px;
   right: 0;
@@ -179,8 +185,8 @@ body {
 }
 
 .screen__background__shape4 {
-  height: 400px;
-  width: 200px;
+  height: 600px;
+  width: 400px;
   background: #7E7BB9;
   top: 420px;
   right: 50px;
@@ -188,9 +194,10 @@ body {
 }
 
 .login {
-  width: 320px;
+  width: 100%;
+  max-width: 520px;
   padding: 30px;
-  padding-top: 156px;
+  padding-top: 0;
 }
 
 .login__field {
