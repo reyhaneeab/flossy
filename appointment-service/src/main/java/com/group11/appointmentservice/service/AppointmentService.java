@@ -1,7 +1,7 @@
 package com.group11.appointmentservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.group11.appointmentservice.dto.BookAppointmentRequest;
+import com.group11.dto.AppointmentRequest;
 import com.group11.appointmentservice.repository.*;
 import com.group11.model.TimeSlot;
 import com.group11.model.User;
@@ -74,7 +74,7 @@ public class AppointmentService {
 
     public void bookAppointment(MqttMessage message) throws Exception {
 
-        BookAppointmentRequest request = mapper.readValue(message.getPayload(), BookAppointmentRequest.class);
+        AppointmentRequest request = mapper.readValue(message.getPayload(), AppointmentRequest.class);
         // Access structured data
         String timeSlotId = request.getTimeSlotId();
         String userId = request.getUserId();
@@ -102,7 +102,7 @@ public class AppointmentService {
     }
 
     public void cancelAppointment(MqttMessage message) throws Exception {
-        BookAppointmentRequest request = mapper.readValue(message.getPayload(), BookAppointmentRequest.class);
+        AppointmentRequest request = mapper.readValue(message.getPayload(), AppointmentRequest.class);
 
         log.info("Canceling appointment for UserId: {} and TimeSlotId: {} ", request.getUserId(), request.getTimeSlotId());
 
