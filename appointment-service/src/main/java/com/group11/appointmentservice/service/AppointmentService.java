@@ -2,6 +2,7 @@ package com.group11.appointmentservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.group11.appointmentservice.dto.BookAppointmentRequest;
+import com.group11.appointmentservice.dto.TimeSlotReq;
 import com.group11.appointmentservice.repository.*;
 import com.group11.model.TimeSlot;
 import com.group11.model.User;
@@ -14,6 +15,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.dao.DataAccessException;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import static com.group11.config.JacksonConfig.createObjectMapper;
 
 
@@ -28,6 +33,7 @@ public class AppointmentService {
 
     private final MqttClient mqttClient;
     private static final String BOOK_APPOINTMENT_TOPIC = "timeSlot/book";
+    private static final String BOOK_TIMESLOT_TOPIC = "timeSlot/get";
     private static final String BOOK_APPOINTMENT_RESPONSE = BOOK_APPOINTMENT_TOPIC + "/response";
     private static final String CANCEL_APPOINTMENT_TOPIC = "timeSlot/cancel";
     private static final String CANCEL_APPOINTMENT_RESPONSE = CANCEL_APPOINTMENT_TOPIC + "/response";
@@ -39,6 +45,7 @@ public class AppointmentService {
                 mqttClient.connect();
                 mqttClient.subscribe(BOOK_APPOINTMENT_TOPIC, 1);
                 mqttClient.subscribe(CANCEL_APPOINTMENT_TOPIC,1);
+                mqttClient.subscribe(BOOK_TIMESLOT_TOPIC,1);
             }
             mqttClient.setCallback(new MqttCallback() {
                 @Override
@@ -59,7 +66,8 @@ public class AppointmentService {
                             bookAppointment(mqttMessage);
                         }else if (topic.equals(CANCEL_APPOINTMENT_TOPIC)){
                             cancelAppointment(mqttMessage);
-                        }
+                        }else if (topic.equals(BOOK_TIMESLOT_TOPIC));
+                            timeSlot(mqttMessage);
                     }
                     catch (Exception e){log.info(e.getMessage());}
                 }
@@ -128,5 +136,21 @@ public class AppointmentService {
             mqttClient.publish(CANCEL_APPOINTMENT_RESPONSE, payload.getBytes(), 1, false);
             log.info("Cancellation successful for UserId: {} and TimeSlotId: {}", request.getUserId(), request.getTimeSlotId());
         }
+    }
+
+    public void timeSlot(MqttMessage message) throws Exception {
+        TimeSlotReq request = mapper.readValue(message.getPayload(), TimeSlotReq.class);
+        List<TimeSlot> responseSlots = new ArrayList<>();
+        List<TimeSlot> timeSlots = timeSlotRepository.findAll();
+
+        for (TimeSlot timeSlot : timeSlots) {
+            if(timeSlot.getBookedBy().getId() == request.userId()){
+                responseSlots.add(timeSlot);
+            }
+        }
+
+        String payload = mapper.writeValueAsString(responseSlots);
+        mqttClient.publish(BOOK_TIMESLOT_TOPIC + "/response", payload.getBytes(), 1, false);
+
     }
 }
