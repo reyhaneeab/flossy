@@ -92,9 +92,9 @@ function setCurrentLocationMarker(pos) {
 // Fetch the dentist offices from the API and add them to the map
 async function fetchDentists() {
   try {
-    const response = await api.post('dentist/get')
+    const response = await api.post('dentist/get' ,{})
     dentists.value = response.data
-    convertAddressesToCoordinates()
+    await convertAddressesToCoordinates()
   } catch (error) {
     console.error('Error fetching dentist offices:', error)
   }
