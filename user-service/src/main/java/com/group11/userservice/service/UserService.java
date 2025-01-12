@@ -6,7 +6,7 @@ import com.group11.userservice.dto.InterestListResponse;
 import com.group11.userservice.repository.UserRepository;
 import com.group11.userservice.dto.InterestListRequest;
 import com.group11.model.User;
-import com.group11.model.TimeSlot;
+import com.group11.model.Dentist;
 import com.group11.userservice.dto.UserRequest;
 import com.group11.userservice.dto.LoginRequest;
 import com.group11.userservice.dto.LoginResponse;
@@ -150,16 +150,17 @@ public class UserService {
     }
 
     public void addToInterestList(InterestListRequest request) {
-        User user = userRepository.findByEmail(request.userId())
+        User user = userRepository.findById(request.userId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        List<TimeSlot> timeSlots = request.timeSlotIds().stream()
-                .map(id -> TimeSlot.builder().id(id).build())
-                .collect(Collectors.toList());
-        user.addTimeSlots(timeSlots);
+        Dentist dentist = Dentist.builder()
+                .id(request.dentistId())
+                .build();
+
+        user.getInterestList().add(dentist);
         userRepository.save(user);
 
-        InterestListResponse response = new InterestListResponse(user.getEmail(), user.getTimeSlots());
+        InterestListResponse response = new InterestListResponse(user.getId(), user.getInterestList());
         publishResponse(USER_ADD_RESPONSE, response);
     }
 
@@ -169,29 +170,31 @@ public class UserService {
     }
 
     public void fetchInterestList(String userId) {
-        User user = userRepository.findByEmail(userId)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        InterestListResponse response = new InterestListResponse(user.getEmail(), user.getTimeSlots());
+        InterestListResponse response = new InterestListResponse(user.getId(), user.getInterestList());
         publishResponse(USER_FETCH_RESPONSE, response);
     }
 
     private void handleFetchInterestList(MqttMessage mqttMessage) throws Exception {
-        String userId = mapper.readValue(mqttMessage.getPayload(), JsonNode.class).get("userId").asText();
+        JsonNode jsonNode = mapper.readTree(mqttMessage.getPayload());
+        String userId = jsonNode.get("userId").asText();
         fetchInterestList(userId);
     }
 
     public void deleteFromInterestList(InterestListRequest request) {
-        User user = userRepository.findByEmail(request.userId())
+        User user = userRepository.findById(request.userId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        List<TimeSlot> timeSlots = request.timeSlotIds().stream()
-                .map(id -> new TimeSlot(id, null, null, null, null, null, null, null, null))
+        List<Dentist> updatedList = user.getInterestList().stream()
+                .filter(dentist -> !dentist.getId().equals(request.dentistId()))
                 .collect(Collectors.toList());
-        user.removeTimeSlots(timeSlots);
+
+        user.setInterestList(updatedList);
         userRepository.save(user);
 
-        InterestListResponse response = new InterestListResponse(user.getEmail(), user.getTimeSlots());
+        InterestListResponse response = new InterestListResponse(user.getId(), user.getInterestList());
         publishResponse(USER_DELETE_RESPONSE, response);
     }
 

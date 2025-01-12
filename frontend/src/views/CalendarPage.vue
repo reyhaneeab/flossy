@@ -14,6 +14,10 @@
         <div class="card calendar-card">
           <div class="card-header">
             <h3 class="card-title">{{ formatDate(day.date) }}</h3>
+            <h4 class="card-subtitle">{{ dentistName }}</h4>
+            <button @click="addToInterestList(dentistId)" class="btn btn-outline-secondary mb-2">
+              <i class="fa fa-heart"></i> Add to Interest List
+            </button>
           </div>
           <div class="card-body">
             <!-- Flexbox container for vertical alignment of buttons -->
@@ -62,12 +66,13 @@ export default defineComponent({
     const selectedSlot = ref(null);
     const showBooking = ref(false);
     const days = ref([]);
+    const dentistName = ref('');
     const bookingURL = `http://localhost:8091/api/timeSlot/book`;
     const route = useRoute();
     const dentistId = route.params.dentistId; // Get dentistId from route params
     const URL = `http://localhost:8091/api/calendar/get`
     const ADD = `http://localhost:8091/api/user/add`
-    const FETCH = `http://localhost:8091/api/user/fetch`
+    
 
     const fetchTimeSlots = async () => {
       try {
@@ -111,6 +116,7 @@ export default defineComponent({
 
         // Assign the grouped slots to the days array
         days.value = Object.values(dayMap);
+        dentistName.value = data.dentistName; // Assuming the API returns the dentist name
 
       } catch (error) {
         console.error("Failed to fetch time slots:", error);
@@ -168,33 +174,26 @@ export default defineComponent({
       showBooking.value = false;
     };
 
-    const addToInterestList = async (slot) => {
+    const addToInterestList = async (dentistId) => {
       try {
-        const userId = jwtDecode(localStorage.getItem("token")).sub;
         const response = await fetch(ADD, {
-          method: "POST",
+          method: 'POST',
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ userId, timeSlotIds: [slot.id] }),
+          body: JSON.stringify({
+            userId: jwtDecode(localStorage.getItem('token')).sub,
+            dentistId: dentistId
+          })
         });
-        if (!response.ok) {
-          throw new Error("Failed to add timeslot to interest list");
-        }
-        alert("Timeslot added to interest list.");
 
-        // Fetch the updated interest list and save to localStorage
-        const interestListResponse = await fetch(FETCH, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ userId }),
-        });
-        const interestListData = await interestListResponse.json();
-        localStorage.setItem("timeSlots", JSON.stringify(interestListData.timeSlots));
+        if (response.ok) {
+          alert('Dentist added to interest list');
+        } else {
+          alert('Failed to add dentist to interest list');
+        }
       } catch (error) {
-        console.error("Error adding timeslot to interest list:", error);
+        console.error(error);
       }
     };
 
@@ -212,6 +211,7 @@ export default defineComponent({
       confirmBooking,
       closeAlert,
       addToInterestList,
+      dentistName
     };
   },
 });

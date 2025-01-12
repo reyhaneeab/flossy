@@ -11,7 +11,6 @@ import java.util.ArrayList;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.TypeAlias;
-import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
@@ -35,26 +34,8 @@ public class User {
 
     @JsonIgnore
     private String password;
-    private List<String> interestList;
-
-    @DBRef
-    private List<TimeSlot> timeSlots;
-
-    public List<TimeSlot> getTimeSlots() {
-        return timeSlots;
-    }
-
-    public void addTimeSlots(List<TimeSlot> timeSlots) {
-        if (this.timeSlots == null) {
-            this.timeSlots = new ArrayList<>(timeSlots);
-        } else {
-            this.timeSlots.addAll(timeSlots);
-        }
-    }
-
-    public void removeTimeSlots(List<TimeSlot> timeSlots) {
-        if (this.timeSlots != null) {
-            this.timeSlots.removeAll(timeSlots);
-        }
-    }
+    @Builder.Default
+    private List<Dentist> interestList = new ArrayList<>();
+    @Builder.Default
+    private List<Dentist> dentists = new ArrayList<>();
 }

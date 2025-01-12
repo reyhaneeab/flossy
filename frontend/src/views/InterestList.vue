@@ -3,18 +3,18 @@
     <h1 class="mb-4">My Interest List</h1>
     <div v-if="loading" class="loading">Loading...</div>
     <div v-else>
-      <div v-if="timeSlots && timeSlots.length">
+      <div v-if="dentists && dentists.length">
         <div class="row">
-          <div v-for="slot in timeSlots" :key="slot.id" class="col-md-6 col-lg-4 mb-4">
+          <div v-for="dentist in dentists" :key="dentist.id" class="col-md-6 col-lg-4 mb-4">
             <div class="card calendar-card">
               <div class="card-header">
-                <h3 class="card-title">{{ formatDate(slot.startTime) }}</h3>
+                <h3 class="card-title">{{ dentist.name }}</h3>
               </div>
               <div class="card-body">
                 <div class="d-flex flex-column">
-                  <div class="time-slot">
-                    <p>{{ formatTime(slot.startTime) }} - {{ formatTime(slot.endTime) }}</p>
-                    <button @click="removeTimeSlot(slot)" class="btn btn-danger btn-sm">Remove</button>
+                  <div class="dentist-info">
+                    <p>{{ dentist.address }}</p>
+                    <button @click="removeDentist(dentist)" class="btn btn-danger btn-sm">Remove</button>
                   </div>
                 </div>
               </div>
@@ -23,20 +23,20 @@
         </div>
       </div>
       <div v-else>
-        <p>No time slots in your interest list.</p>
+        <p>No dentists in your interest list.</p>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import {jwtDecode} from 'jwt-decode'; 
+import { jwtDecode } from 'jwt-decode';
 import api from "@/api";
 
 export default {
   data() {
     return {
-      timeSlots: [],
+      dentists: [],
       loading: false
     };
   },
@@ -47,16 +47,9 @@ export default {
     }
   },
   methods: {
-    formatDate(dateString) {
-      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-      return new Date(dateString).toLocaleDateString(undefined, options);
-    },
-    formatTime(dateString) {
-      return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    },
     async fetchInterestList() {
-      const userId = this.userId; 
-      console.log("Fetching interest list for userId:", userId); 
+      const userId = this.userId;
+      console.log("Fetching interest list for userId:", userId);
 
       if (!userId) {
         console.error("User ID is not defined.");
@@ -68,26 +61,26 @@ export default {
         const response = await api.post("user/fetch", {
           userId: userId
         });
-        console.log("Fetched data:", response.data); // Log the fetched data
-        this.timeSlots = response.data.timeSlots; // Ensure the correct data structure is used
-        console.log("Time slots list:", this.timeSlots); // Log the time slots list
-        localStorage.setItem("timeSlots", JSON.stringify(this.timeSlots)); // Save to localStorage
+        console.log("Fetched data:", response.data);
+        this.dentists = response.data.dentists;
+        console.log("Dentist list:", this.dentists);
+        localStorage.setItem("dentists", JSON.stringify(this.dentists));
       } catch (error) {
         console.error("Error fetching interest list:", error);
       } finally {
         this.loading = false;
       }
     },
-    async removeTimeSlot(slot) {
+    async removeDentist(dentist) {
       const userId = this.userId;
-      console.log("Removing time slot:", slot, "for userId:", userId);
+      console.log("Removing dentist:", dentist, "for userId:", userId);
 
       if (!userId) {
         console.error("User ID is not defined.");
         return;
       }
 
-      const confirmation = confirm(`Are you sure you want to remove this time slot from your interest list?`);
+      const confirmation = confirm(`Are you sure you want to remove this dentist from your interest list?`);
       if (!confirmation) {
         return;
       }
@@ -95,26 +88,26 @@ export default {
       try {
         await api.post("user/delete", {
           userId: userId,
-          timeSlots: [slot]
+          dentistId: dentist.id
         });
-        console.log("Time slot removed:", slot);
-        this.timeSlots = this.timeSlots.filter(s => s.id !== slot.id);
-        localStorage.setItem("timeSlots", JSON.stringify(this.timeSlots)); 
+        console.log("Dentist removed:", dentist);
+        this.dentists = this.dentists.filter(d => d.id !== dentist.id);
+        localStorage.setItem("dentists", JSON.stringify(this.dentists));
 
-        alert(`Time slot has been removed from your interest list.`);
+        alert(`Dentist has been removed from your interest list.`);
 
-        if (!this.timeSlots.length) {
-          localStorage.removeItem("timeSlots");
+        if (!this.dentists.length) {
+          localStorage.removeItem("dentists");
         }
       } catch (error) {
-        console.error("Error removing time slot:", error);
+        console.error("Error removing dentist:", error);
       }
     }
   },
   async mounted() {
-    const savedTimeSlots = localStorage.getItem("timeSlots");
-    if (savedTimeSlots) {
-      this.timeSlots = JSON.parse(savedTimeSlots);
+    const savedDentists = localStorage.getItem("dentists");
+    if (savedDentists) {
+      this.dentists = JSON.parse(savedDentists);
     } else {
       this.fetchInterestList();
     }
@@ -154,14 +147,14 @@ h1 {
   margin-bottom: 0;
 }
 
-.time-slot {
+.dentist-info {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 10px;
 }
 
-.time-slot p {
+.dentist-info p {
   margin: 0;
   font-size: 16px;
 }
