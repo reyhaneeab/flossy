@@ -5,23 +5,27 @@
         <!-- Column for content, centered and responsive -->
         <div class="col-md-8 text-center">
           <div class="content">
-          <h1 class="display-4 mb-4">Welcome Home!</h1>
-          <p class="lead">You are logged in.</p>
-          <!-- Navigation buttons -->
-          <div class="mt-5">
-            <router-link to="/map" class="btn btn-primary btn-lg mr-3 home-btn">
-              Interest List
-            </router-link>
-            <router-link to="/profile" class="btn btn-secondary btn-lg home-btn">
-              My Profile
-            </router-link>
-          </div>
+            <h1 class="display-4 mb-4">Welcome Home!</h1>
+            <p class="lead">You are logged in.</p>
+            <!-- Navigation buttons -->
+            <div class="mt-5">
+              <router-link to="/map" class="btn btn-primary btn-lg mr-3 home-btn">
+                Interest List
+              </router-link>
+              <router-link to="/profile" class="btn btn-secondary btn-lg home-btn">
+                My Profile
+              </router-link>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
 </template>
+
+<script setup>
+</script>
+
 
 <script setup>
 
@@ -42,14 +46,14 @@
   background-image: url('../assets/background.jpg');
   background-size: cover;
   background-repeat: no-repeat;
-  width: 100vw;
-  height: 100vh;
-  margin: 0;
-  padding: 0;
+  background-position: center; 
+  min-height: 100vh;
+  width: 100%;
   overflow: hidden;
-  display: flex;
+  display: flex; 
   justify-content: center;
   align-items: center;
+  z-index: -1;
 }
 
 .content {
