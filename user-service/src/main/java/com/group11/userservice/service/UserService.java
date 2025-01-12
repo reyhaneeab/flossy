@@ -137,18 +137,31 @@ public class UserService {
         mqttClient.publish(USER_LOGIN_RESPONSE, payload.getBytes(), 1, false);
     }
     private void handleGetUserById(MqttMessage message) throws Exception {
-        String userId = new String(message.getPayload());
-        log.info("Fetching user by ID: {}", userId);
-        User user = userRepository.findById("678134614a12c5470f32026e")
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        log.info(user.toString());
+        String userId = new String(message.getPayload()).replace("\"", "").trim();
 
         try {
+            User user = getUserById(userId);
+
             String response = mapper.writeValueAsString(user);
             mqttClient.publish("user/getById/response", response.getBytes(), 1, false);
-        } catch (Exception e) {
-            log.error("Error sending user data by ID", e);
+            log.info("User data sent to topic: user/getById/response");
+
+        } catch (RuntimeException e) {
+            log.error("Error fetching user: {}", e.getMessage());
+
+            String errorResponse = mapper.createObjectNode()
+                    .put("error", e.getMessage())
+                    .toString();
+
+            mqttClient.publish("user/getById/response", errorResponse.getBytes(), 1, false);
         }
     }
-}
 
+
+    public User getUserById(String id) {
+        log.info("Fetching user by ID: {}", id);
+
+        return userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + id));
+    }
+}

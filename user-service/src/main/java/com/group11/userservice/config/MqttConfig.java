@@ -24,6 +24,9 @@ public class MqttConfig {
     private static final String USER_REGISTRATION_RESPONSE = USER_REGISTRATION_TOPIC + "/response";
     private static final String USER_LOGIN_TOPIC = "user/login";
     private static final String USER_LOGIN_RESPONSE = USER_LOGIN_TOPIC + "/response";
+    private static final String USER_GET_BY_ID = "user/getById";
+    private static final String USER_GET_BY_ID_RESPONSE = USER_GET_BY_ID + "/response";
+
 
     @Bean
     public MqttClient mqttClient() throws MqttException {
@@ -51,6 +54,7 @@ public class MqttConfig {
                 mqttClient.unsubscribe("user/registration/response");
                 mqttClient.unsubscribe("user/login");
                 mqttClient.unsubscribe("user/login/response");
+                mqttClient.unsubscribe("user/getById");
                 mqttClient.disconnect();
                 mqttClient.close();
                 logger.info("MQTT client unsubscribed from topics, disconnected, and closed");
