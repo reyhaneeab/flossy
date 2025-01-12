@@ -62,7 +62,10 @@ export default {
           userId: userId
         });
         console.log("Fetched data:", response.data);
-        this.dentists = response.data.dentists;
+        this.dentists = response.data.dentists.map(dentist => ({
+          ...dentist,
+          officeName: dentist.officeName 
+        }));
         console.log("Dentist list:", this.dentists);
         localStorage.setItem("dentists", JSON.stringify(this.dentists));
       } catch (error) {
@@ -106,8 +109,13 @@ export default {
   },
   async mounted() {
     const savedDentists = localStorage.getItem("dentists");
-    if (savedDentists) {
-      this.dentists = JSON.parse(savedDentists);
+    if (savedDentists && savedDentists !== "undefined") {
+      try {
+        this.dentists = JSON.parse(savedDentists);
+      } catch (e) {
+        console.error("Error parsing saved dentists from localStorage:", e);
+        this.dentists = [];
+      }
     } else {
       this.fetchInterestList();
     }

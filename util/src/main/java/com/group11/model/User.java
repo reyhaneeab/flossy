@@ -36,6 +36,4 @@ public class User {
     private String password;
     @Builder.Default
     private List<Dentist> interestList = new ArrayList<>();
-    @Builder.Default
-    private List<Dentist> dentists = new ArrayList<>();
 }

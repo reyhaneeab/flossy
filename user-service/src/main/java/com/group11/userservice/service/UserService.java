@@ -7,6 +7,7 @@ import com.group11.userservice.repository.UserRepository;
 import com.group11.userservice.dto.InterestListRequest;
 import com.group11.model.User;
 import com.group11.model.Dentist;
+import com.group11.userservice.repository.DentistRepository;
 import com.group11.userservice.dto.UserRequest;
 import com.group11.userservice.dto.LoginRequest;
 import com.group11.userservice.dto.LoginResponse;
@@ -28,6 +29,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final MqttClient mqttClient;
     private final PasswordEncoder passwordEncoder;
+    private final DentistRepository dentistRepository;
     private final ObjectMapper mapper = new ObjectMapper();
     private final JwtTokenProvider jwtTokenProvider = new JwtTokenProvider();
 
@@ -153,15 +155,15 @@ public class UserService {
         User user = userRepository.findById(request.userId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Dentist dentist = Dentist.builder()
-                .id(request.dentistId())
-                .build();
+        List<Dentist> dentists = request.dentistIds().stream()
+                .map(dentistId -> dentistRepository.findById(dentistId)
+                        .orElseThrow(() -> new RuntimeException("Dentist not found")))
+                .collect(Collectors.toList());
 
-        user.getInterestList().add(dentist);
+        user.getInterestList().addAll(dentists);
         userRepository.save(user);
 
-        InterestListResponse response = new InterestListResponse(user.getId(), user.getInterestList());
-        publishResponse(USER_ADD_RESPONSE, response);
+        publishResponse(USER_ADD_RESPONSE, user);
     }
 
     private void handleAddToInterestList(MqttMessage mqttMessage) throws Exception {
@@ -173,7 +175,10 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        InterestListResponse response = new InterestListResponse(user.getId(), user.getInterestList());
+        List<Dentist> dentistList = user.getInterestList();
+
+        InterestListResponse response = new InterestListResponse(userId, dentistList);
+
         publishResponse(USER_FETCH_RESPONSE, response);
     }
 
@@ -188,14 +193,13 @@ public class UserService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         List<Dentist> updatedList = user.getInterestList().stream()
-                .filter(dentist -> !dentist.getId().equals(request.dentistId()))
+                .filter(d -> !request.dentistIds().contains(d.getId()))
                 .collect(Collectors.toList());
 
         user.setInterestList(updatedList);
         userRepository.save(user);
 
-        InterestListResponse response = new InterestListResponse(user.getId(), user.getInterestList());
-        publishResponse(USER_DELETE_RESPONSE, response);
+        publishResponse(USER_DELETE_RESPONSE, user);
     }
 
     private void handleDeleteFromInterestList(MqttMessage mqttMessage) throws Exception {

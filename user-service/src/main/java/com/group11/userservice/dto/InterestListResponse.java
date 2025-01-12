@@ -5,6 +5,6 @@ import com.group11.model.Dentist;
 import java.util.List;
 
 public record InterestListResponse(
-                String userId,
-                List<Dentist> dentists) {
+        String userId,
+        List<Dentist> dentists) {
 }
