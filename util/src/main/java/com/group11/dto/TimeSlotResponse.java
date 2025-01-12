@@ -1,4 +1,4 @@
-package com.group11.calendarservice.dto;
+package com.group11.dto;
 
 import com.group11.model.Dentist;
 

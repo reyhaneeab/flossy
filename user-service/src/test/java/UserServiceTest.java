@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.group11.model.User;
-import com.group11.userservice.dto.UserRequest;
+import com.group11.dto.UserRequest;
 import com.group11.userservice.repository.UserRepository;
 import com.group11.userservice.service.UserService;
 import org.eclipse.paho.client.mqttv3.MqttClient;

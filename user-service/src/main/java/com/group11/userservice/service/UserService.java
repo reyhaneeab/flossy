@@ -2,10 +2,10 @@ package com.group11.userservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.group11.model.User;
-import com.group11.userservice.dto.UserRequest;
+import com.group11.dto.UserRequest;
 import com.group11.userservice.repository.UserRepository;
-import com.group11.userservice.dto.LoginRequest;
-import com.group11.userservice.dto.LoginResponse;
+import com.group11.dto.LoginRequest;
+import com.group11.dto.LoginResponse;
 import com.group11.userservice.config.JwtTokenProvider;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
