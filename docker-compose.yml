@@ -18,7 +18,12 @@
       environment:
         - SPRING_DATA_MONGODB_URI=mongodb://mongodb1:27017,mongodb2:27017,mongodb3:27017/flossyDB?replicaSet=rs0
         - MQTT_BROKER_URL=tcp://mqtt:1883
-  
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:8090/actuator/health"]
+        interval: 30s
+        timeout: 10s
+        retries: 5
+
     dentist-service:
       image: openjdk:21-jdk-slim
       working_dir: /app
@@ -35,16 +40,21 @@
       networks:
         - flossynet
       environment:
-        - SPRING_DATA_MONGODB_URI=mongodb://mongodb1:27017,mongodb2:27018,mongodb3:27019/flossyDB?replicaSet=rs0
+        - SPRING_DATA_MONGODB_URI=mongodb://mongodb1:27017,mongodb2:27017,mongodb3:27017/flossyDB?replicaSet=rs0
         - SPRING_DATA_MONGODB_DATABASE=flossyDB
         - MQTT_BROKER_URL=tcp://mqtt:1883
         - SPRING_REDIS_HOST=redis
         - SPRING_REDIS_PORT=6379
-  
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+        interval: 30s
+        timeout: 10s
+        retries: 5
+
     mqtt:
       image: eclipse-mosquitto
       volumes:
-        - mosquitto_conf:/mosquitto/config
+        - ./mosquitto/config:/mosquitto/config
         - mosquitto_data:/mosquitto/data
         - mosquitto_log:/mosquitto/log
       networks:
@@ -52,17 +62,33 @@
       ports:
         - "9001:9001"
         - "1883:1883"
-  
+    cleanup:
+      image: alpine:latest
+      command: >
+        sh -c '
+          echo "Cleaning up MongoDB data directories..."
+          rm -rf /data/mongo1/* /data/mongo2/* /data/mongo3/*
+          echo "Cleanup completed."
+        '
+      volumes:
+        - ./data/mongo1:/data/mongo1
+        - ./data/mongo2:/data/mongo2
+        - ./data/mongo3:/data/mongo3
+
     mongodb1:
       container_name: mongodb1
       image: mongo:7.0.5
       command: mongod --replSet rs0 --bind_ip_all
+      depends_on:
+        cleanup:
+          condition: service_completed_successfully
       ports:
-        - "27016:27017"
+        - "27017:27017"
       environment:
         MONGO_INITDB_DATABASE: flossyDB
       volumes:
         - ./data/mongo1:/data/db
+        - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
       networks:
         - flossynet
       healthcheck:
@@ -70,17 +96,21 @@
         interval: 10s
         timeout: 5s
         retries: 5
-  
+
     mongodb2:
       container_name: mongodb2
       image: mongo:7.0.5
       command: mongod --replSet rs0 --bind_ip_all
+      depends_on:
+        cleanup:
+          condition: service_completed_successfully
       ports:
         - "27018:27017"
       environment:
         MONGO_INITDB_DATABASE: flossyDB
       volumes:
         - ./data/mongo2:/data/db
+        - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
       networks:
         - flossynet
       healthcheck:
@@ -88,17 +118,21 @@
         interval: 10s
         timeout: 5s
         retries: 5
-  
+
     mongodb3:
       container_name: mongodb3
       image: mongo:7.0.5
       command: mongod --replSet rs0 --bind_ip_all
+      depends_on:
+        cleanup:
+          condition: service_completed_successfully
       ports:
         - "27019:27017"
       environment:
         MONGO_INITDB_DATABASE: flossyDB
       volumes:
         - ./data/mongo3:/data/db
+        - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
       networks:
         - flossynet
       healthcheck:
@@ -106,20 +140,23 @@
         interval: 10s
         timeout: 5s
         retries: 5
-  
+
     mongo-init:
       image: mongo:7.0.5
       command: >
         bash -c '
-          echo "Waiting for MongoDB instances to start..."
-          for host in mongodb1 mongodb2 mongodb3; do
-            until mongosh --host $$host:27017 --eval "print(\"waited for connection\")"
-            do
-              sleep 2
-            done
+        apt-get update && apt-get install -y iputils-ping && \
+          echo "Waiting for DNS resolution..."
+          for i in {1..30}; do
+            if ping -c 1 mongodb1 > /dev/null 2>&1; then
+              echo "DNS resolution successful"
+              break
+            fi
+            echo "Waiting for DNS resolution... attempt $$i"
+            sleep 2
           done
-          echo "MongoDB instances are up"
-  
+
+          echo "Initializing replica set..."
           mongosh --host mongodb1:27017 --eval "
             rs.initiate({
               _id: \"rs0\",
@@ -132,24 +169,34 @@
           "
         '
       depends_on:
-        - mongodb1
-        - mongodb2
-        - mongodb3
+        mongodb1:
+          condition: service_healthy
+        mongodb2:
+          condition: service_healthy
+        mongodb3:
+          condition: service_healthy
       networks:
         - flossynet
-  
+
     redis:
       image: redis:latest
       ports:
         - "6379:6379"
+      volumes:
+        - redis_data:/data
       networks:
         - flossynet
-  
+      healthcheck:
+        test: ["CMD", "redis-cli", "ping"]
+        interval: 30s
+        timeout: 10s
+        retries: 5
+
   volumes:
-    mosquitto_conf:
     mosquitto_data:
     mosquitto_log:
-  
+    redis_data:
+
   networks:
     flossynet:
       name: flossynet
