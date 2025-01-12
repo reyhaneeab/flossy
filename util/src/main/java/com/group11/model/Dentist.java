@@ -1,8 +1,10 @@
 package com.group11.model;
 
 import lombok.*;
+import org.intellij.lang.annotations.Identifier;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.TypeAlias;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 

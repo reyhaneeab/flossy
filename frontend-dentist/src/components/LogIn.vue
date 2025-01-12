@@ -17,7 +17,7 @@
 
 <script>
 import router from "@/router";
-//import apiClient from "@/api";
+import apiClient from "@/api";
 
 export default {
   data() {
@@ -27,10 +27,17 @@ export default {
     };
   },
   methods: {
-    login() {
-      //apiClient.post("")
-      alert('Login successful!');
-      router.push('/schedule');
+    async login() {
+      await apiClient.get(`dentist/${this.email}`).then(response => {
+        if(response.data.password !== this.password) {
+          alert('Login failed. Please try again');
+        }
+        else{
+          alert('Login successful!');
+          localStorage.setItem('id', response.data.id);
+          router.push('/schedule');
+        }
+      })
     }
   }
 };

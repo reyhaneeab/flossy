@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.group11.apigateway.handler.MqttHandler;
 import com.group11.util.CacheUtil;
+import com.mongodb.lang.Nullable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -34,11 +35,10 @@ public class ApiGatewayController {
     }
 
     // Handle GET requests for a specific entity by ID
-    @GetMapping("/{entity}/{id}")
-    public ResponseEntity<JsonNode> getEntityById(@PathVariable String entity, @PathVariable String id) {
-        String topic = String.format("%s/getById", entity);
-        log.info(id);
-        return forwardGetRequest(topic, id);
+    @GetMapping("/{entity}/{uid}")
+    public ResponseEntity<JsonNode> getEntityByUID(@PathVariable String entity, @PathVariable String uid, @RequestBody @Nullable String requestBody) {
+        String topic = String.format("%s/getByUID", entity);
+        return forwardGetRequest(topic, uid + requestBody);
     }
 
     // Handle DELETE requests
@@ -52,7 +52,7 @@ public class ApiGatewayController {
     @PatchMapping("/{entity}/{id}")
     public ResponseEntity<JsonNode> updateEntity(@PathVariable String entity, @PathVariable String id, @RequestBody String requestBody) {
         String topic = String.format("%s/patch", entity);
-        return forwardRequest(topic, requestBody);
+        return forwardRequest(topic, id + requestBody);
     }
 
     private ResponseEntity<JsonNode> forwardRequest(String topic, String requestBody) {

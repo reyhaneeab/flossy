@@ -43,12 +43,18 @@ export default {
   },
   methods: {
     async signup() {
-      await apiClient.post("/dentist/registration",
+      await apiClient.post("/dentist",
           {officeName: this.name, email: this.email, password: this.password, address: this.address, phone: this.phone}).then((response) => {
         console.log(response);
+        if (response.status === 200) {
+          localStorage.setItem("id", response.data.id);
+          alert('Dentist Office registered successfully!');
+          router.push('/schedule');
+        }
+      }).catch((error) => {
+        console.log(error);
+        alert("An error occurred!");
       })
-      alert('Dentist Office registered successfully!');
-      await router.push('/schedule');
     }
   }
 };

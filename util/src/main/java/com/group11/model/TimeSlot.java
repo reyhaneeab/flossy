@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 public class TimeSlot {
     @Id
     private String id;
+    private Boolean booked;
     private LocalDate date;
     private LocalDateTime startTime;
     private LocalDateTime endTime;

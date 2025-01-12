@@ -118,7 +118,6 @@ public class AppointmentService {
             throw new Exception("Cancellation failed. The time slot is not booked by this user.");
 
         } else {
-            log.info("1");
             timeSlot.setBooked(false);
             timeSlot.setBookedBy(null);
             timeSlotRepository.save(timeSlot);

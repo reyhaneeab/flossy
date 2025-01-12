@@ -11,6 +11,8 @@
 </template>
 
 <script>
+import apiClient from "@/api";
+
 export default {
   name: 'SchedulePage',
   data() {
@@ -18,7 +20,8 @@ export default {
       appointments: [
         { date: '2024-12-16', time: '10:00 AM - 11:00 AM', patientName: 'John Doe' },
         { date: '2024-12-17', time: '11:00 AM - 12:00 PM', patientName: 'Jane Smith' }
-      ]
+      ],
+      dentistId: localStorage.getItem("id")
     };
   },
   methods: {
@@ -27,6 +30,9 @@ export default {
       alert(`Appointment on ${this.appointments[index].date} at ${this.appointments[index].time} has been canceled.`);
       this.appointments.splice(index, 1);
     }
+  },
+  mounted() {
+    apiClient.get(`calendar/${this.dentistId}`)
   }
 };
 </script>
