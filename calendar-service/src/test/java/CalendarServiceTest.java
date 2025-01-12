@@ -1,7 +1,7 @@
 package com.group11.calendarservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.group11.calendarservice.dto.TimeSlotRequest;
+import com.group11.dto.TimeSlotRequest;
 import com.group11.calendarservice.repository.DentistRepository;
 import com.group11.model.Dentist;
 
