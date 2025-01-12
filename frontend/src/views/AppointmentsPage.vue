@@ -38,7 +38,7 @@ export default defineComponent({
     const showAlert = ref(false);
     const backendMessage = ref(null);
 
-    const fetchURL = `http://localhost:8091/api/calendar/get`;
+    const fetchURL = `http://localhost:8091/api/timeSlot/get`;
     const cancelURL = `http://localhost:8091/api/timeSlot/cancel`;
     //const router = useRouter()
 
@@ -57,7 +57,7 @@ export default defineComponent({
         const data = await response.json();
 
         const dayMap = {};
-        data.timeSlots.forEach(slot => {
+        data.forEach(slot => {
           const date = slot.date;
           if (!dayMap[date]) {
             dayMap[date] = {
