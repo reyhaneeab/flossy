@@ -1,4 +1,4 @@
-package com.group11.userservice.dto;
+package com.group11.dto;
 
 import lombok.Data;
 
