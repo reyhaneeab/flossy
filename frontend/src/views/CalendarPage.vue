@@ -225,25 +225,32 @@ export default defineComponent({
 }
 
 .selected-slot-info {
-  background-color: #8691E6;
+  background-color: #3D52A0;
   padding: 20px;
-  border-radius: 8px;
+  border-radius: 10px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
-
-h1, h2 {
-  color: #3D52A0;
+h1{
+  color:#3D52A0;
+  text-shadow:0 2px 4px rgba(0, 0, 0, 0.6);
+}
+ h2 {
+  color: #EDE8F5;
+  text-shadow:0 2px 4px rgba(0, 0, 0, 0.6);
 }
 
 button {
   padding: 30px 50px;
   border: 1px solid #7091E6;
-  border-radius: 3px;
-  background: #3D52A0;
+  border-radius: 10px;
+  background: #ADBBDA;
   cursor: pointer;
   transition: 0.3s;
   font-size: 15px;
   font-weight: bold;
+  box-shadow: 0 4px 6px #7091E6(0, 0, 0, 0.6);
+  color:#3D52A0;
+  text-shadow: 0 4px 6px #rgba(0, 0, 0, 0.6);
 }
 
 button.selected {
@@ -281,15 +288,16 @@ button.selected {
 
 #bookButton{
   display: inline-block;
-  padding: 15px 30px;
+  padding: 20px 40px;
   border: 1px solid #000000;
-  background: #4169e1;
+  background: #7091E6;
   cursor: pointer;
   font-size: 15px;
   font-weight: bold;
-  border-radius: 8px;
-  color: #ffffff;
-  font-family: Copperplate,fantasy;
+  border-radius: 10px;
+  color: #EDE8F5;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.6);
+  text-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
 }
 
 #yes{
