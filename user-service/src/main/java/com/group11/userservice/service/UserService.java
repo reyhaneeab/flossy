@@ -29,6 +29,7 @@ public class UserService {
     private static final String USER_REGISTRATION_RESPONSE = USER_REGISTRATION_TOPIC + "/response";
     private static final String USER_LOGIN_TOPIC = "user/login";
     private static final String USER_LOGIN_RESPONSE = USER_LOGIN_TOPIC + "/response";
+    private static final String USER_GET_BY_ID = "user/getById";
 
     @PostConstruct
     public void init() {
@@ -44,6 +45,7 @@ public class UserService {
 
             mqttClient.subscribe(USER_REGISTRATION_TOPIC);
             mqttClient.subscribe(USER_LOGIN_TOPIC);
+            mqttClient.subscribe(USER_GET_BY_ID);
 
 
             mqttClient.setCallback(new MqttCallback() {
@@ -59,6 +61,9 @@ public class UserService {
                         if (topic.equals(USER_REGISTRATION_TOPIC)) {
                             createUser(mqttMessage);
                         } else if (topic.equals(USER_LOGIN_TOPIC)) {
+                            handleLogin(mqttMessage);
+                        }
+                        else if (topic.equals(USER_GET_BY_ID)) {
                             handleLogin(mqttMessage);
                         }
                     } catch (Exception e) {
@@ -131,4 +136,23 @@ public class UserService {
         String payload = mapper.writeValueAsString(loginResponse);
         mqttClient.publish(USER_LOGIN_RESPONSE, payload.getBytes(), 1, false);
     }
+    private void handleGetUserById(MqttMessage message) throws Exception {
+        String userId = new String(message.getPayload());
+        log.info("Fetching user by ID: {}", userId);
+        User user = userRepository.findById("678134614a12c5470f32026e")
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        log.info(user.toString());
+
+            try {
+                String response = mapper.writeValueAsString(user);
+                mqttClient.publish("user/getById/response", response.getBytes(), 1, false);
+            } catch (Exception e) {
+                log.error("Error sending user data by ID", e);
+            }
+        }
+    }
+
+
+
+
 }
