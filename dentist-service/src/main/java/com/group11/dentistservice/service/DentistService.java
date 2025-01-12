@@ -108,8 +108,10 @@ public class DentistService {
                 .address(request.address())
                 .doctors(request.doctors())
                 .build();
-        Dentist savedDentist = dentistRepository.save(dentist);
-        cacheDentist(savedDentist);
+        
+
+        Dentist savedDentist = dentistRepository.saveWithLogging(dentist);
+        
         publishResponse(DENTIST_REGISTRATION_TOPIC + "/response", savedDentist);
     }
 
