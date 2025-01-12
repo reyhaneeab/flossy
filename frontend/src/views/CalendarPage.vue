@@ -19,7 +19,7 @@
             <!-- Flexbox container for vertical alignment of buttons -->
             <div class="d-flex flex-column">
               <!-- Time slot buttons -->
-              <div v-for="slot in day.slots" :key="slot.time" class="time-slot">
+              <div v-for="slot in day.slots" :key="slot.id" class="time-slot">
                 <button
                     class="btn btn-outline-primary mb-2 time-slot"
                     :class="{ 'btn-primary text-black': slot.selected, 'disabled': slot.booked }"
@@ -28,7 +28,7 @@
                 >
                   {{ slot.time }}
                 </button>
-                <button @click="addToInterestList(slot)">Add to Interest List</button>
+                <button @click="addToInterestList(slot)" class="btn btn-outline-secondary mb-2">Add to Interest List</button>
               </div>
             </div>
           </div>
@@ -79,7 +79,7 @@ export default defineComponent({
           },
           body: JSON.stringify({
             weekNumber: "51",
-            ownerId: dentistId// Ensure dentistId is used here
+            ownerId: dentistId // Ensure dentistId is used here
           })
         })
 
@@ -89,7 +89,7 @@ export default defineComponent({
         const dayMap = {};
 
         data.timeSlots.forEach(slot => {
-          const date =`${slot.date[0]}-${String(slot.date[1]).padStart(2, '0')}-${String(slot.date[2]).padStart(2, '0')}`;
+          const date = `${slot.date[0]}-${String(slot.date[1]).padStart(2, '0')}-${String(slot.date[2]).padStart(2, '0')}`;
           if (!dayMap[date]) {
             dayMap[date] = {
               date: date,

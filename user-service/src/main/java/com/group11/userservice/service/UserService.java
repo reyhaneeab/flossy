@@ -154,7 +154,7 @@ public class UserService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         List<TimeSlot> timeSlots = request.timeSlotIds().stream()
-                .map(id -> new TimeSlot(id, null, null, null, null, null, null, null, null))
+                .map(id -> TimeSlot.builder().id(id).build())
                 .collect(Collectors.toList());
         user.addTimeSlots(timeSlots);
         userRepository.save(user);
