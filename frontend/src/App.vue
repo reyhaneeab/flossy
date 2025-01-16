@@ -30,7 +30,7 @@
               </li>
               <li class="nav-item">
                 <router-link class="nav-link" to="/interest-list">
-                   <i class="fa fa-tooth" style="font-size:30px; color:#007BFF; position: relative;">
+                   <i class="fa fa-tooth" style="font-size:30px; color:#EDE8F5; position: relative;">
                   <i class="fa fa-heart" style="font-size:12px; color:red; position: absolute; top:-5px; right:-10px;"></i>
               </i>
               </router-link>
