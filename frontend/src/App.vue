@@ -49,7 +49,7 @@
               </li>
             </ul>
             <div class="navbar-nav" v-else>
-              <button class="nav-item dropdown" @click="logout">
+              <button class="nav-item dropdown logout-button" @click="logout">
                 Log Out
               </button>
             </div>
@@ -156,6 +156,20 @@ export default {
 
 .navbar-toggler-icon {
   background-image: url("data:image/svg+xml;charset=utf8,%3Csvg viewBox='0 0 30 30' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath stroke='rgba%28224, 224, 224, 1%29' stroke-width='2' stroke-linecap='round' stroke-miterlimit='10' d='M4 7h22M4 15h22M4 23h22'/%3E%3C/svg%3E");
+}
+
+.logout-button {
+  background-color: #3D52A0;
+  color: #EDE8F5;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  transition: background-color 0.3s;
+}
+
+.logout-button:hover {
+  background-color: #7091E6;
+  color: #8697C4;
 }
 
 /* Main Content */
