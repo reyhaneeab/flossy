@@ -268,7 +268,7 @@ button {
   font-weight: bold;
   box-shadow: 0 4px 6px #7091E6(0, 0, 0, 0.6);
   color:#3D52A0;
-  text-shadow: 0 4px 6px #rgba(0, 0, 0, 0.6);
+  text-shadow: 0 4px 6px rgba(0, 0, 0, 0.6);
 }
 
 button.selected {
