@@ -66,11 +66,20 @@ export default defineComponent({
     const selectedSlot = ref(null);
     const showBooking = ref(false);
     const days = ref([]);
-    const currentWeek = ref(new Date().getWeek());
-    const bookingURL = `http://localhost:8091/api/timeSlot/book`;
+
+    // Corrected function and initialization for currentWeek
+    const getCurrentWeek = (date) => {
+      const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
+      const pastDaysOfYear = (date - firstDayOfYear + (firstDayOfYear.getTimezoneOffset() - date.getTimezoneOffset()) * 60 * 1000) / 86400000;
+      return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+    };
+
+    const currentWeek = ref(getCurrentWeek(new Date()));
+
+    const bookingURL = "http://localhost:8091/api/timeSlot/book";
     const route = useRoute();
-    const dentistId = route.params.dentistId; // Get dentistId from route params
-    const URL = `http://localhost:8091/api/calendar/get`
+    const dentistId = route.params.dentistId;
+    const URL = "http://localhost:8091/api/calendar/get";
 
     const fetchTimeSlots = async () => {
       try {
@@ -81,71 +90,70 @@ export default defineComponent({
           },
           body: JSON.stringify({
             weekNumber: currentWeek.value,
-            ownerId: dentistId // Ensure dentistId is used here
-          })
-        })
+            ownerId: dentistId,
+          }),
+        });
 
         const data = await response.json();
 
-        // Group the time slots by day and create a proper structure for `days`
         const dayMap = {};
 
         data.timeSlots.forEach(slot => {
-          const date =`${slot.date[0]}-${String(slot.date[1]).padStart(2, '0')}-${String(slot.date[2]).padStart(2, '0')}`;
+          const date = `${slot.date[0]}-${String(slot.date[1]).padStart(2, '0')}-${String(slot.date[2]).padStart(2, '0')}`;
           if (!dayMap[date]) {
             dayMap[date] = {
               date: date,
-              slots: []
+              slots: [],
             };
           }
           const startTime = new Date(slot.startTime[0], slot.startTime[1] - 1, slot.startTime[2], slot.startTime[3], slot.startTime[4]);
           const endTime = new Date(slot.endTime[0], slot.endTime[1] - 1, slot.endTime[2], slot.endTime[3], slot.endTime[4]);
 
-          // Push the slot details into the correct day
           dayMap[date].slots.push({
             id: slot.id,
-            time: `${startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+            time: `${startTime.toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit'
+            })} - ${endTime.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}`,
             booked: slot.booked,
             selected: false,
-            ownerName: slot.owner ? slot.owner.name : 'Unknown'
+            ownerName: slot.owner ? slot.owner.name : 'Unknown',
           });
         });
 
-        // Assign the grouped slots to the days array
         days.value = Object.values(dayMap);
-
       } catch (error) {
         console.error("Failed to fetch time slots:", error);
       }
     };
+
     const changeWeek = (direction) => {
       currentWeek.value += direction;
       fetchTimeSlots();
     };
 
     const selectSlot = (day, slot) => {
-      // Deselect any previously selected slot
       days.value.forEach(day => {
         day.slots.forEach(slot => {
           slot.selected = false;
         });
       });
-      // Select the clicked slot
       slot.selected = true;
       selectedSlot.value = slot;
     };
 
     const formatDate = (dateString) => {
-      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      const options = {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'};
       return new Date(dateString).toLocaleDateString(undefined, options);
     };
-    const book = ()=>{
+
+    const book = () => {
       showBooking.value = true;
     };
 
     const confirmBooking = async () => {
       try {
-        const response=await fetch(bookingURL, {
+        const response = await fetch(bookingURL, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -160,19 +168,17 @@ export default defineComponent({
           alert(`Appointment is already booked: ${errorData.error}`);
           return;
         }
-
-
-        alert(`Appointment has been booked successfully!`);
+        alert("Appointment has been booked successfully!");
         showBooking.value = false;
       } catch (error) {
         console.error("Error booking appointment:", error);
-        alert("Appointment is already booked. Please try other time slot.");
+        alert("Appointment is already booked. Please try another time slot.");
         showBooking.value = false;
       }
     };
 
-    const closeAlert = ()=>{
-      showBooking.value=false;
+    const closeAlert = () => {
+      showBooking.value = false;
     };
 
     onMounted(() => {
@@ -192,7 +198,7 @@ export default defineComponent({
       currentWeek,
     };
   },
-});
+  });
 </script>
 
 <style scoped>
