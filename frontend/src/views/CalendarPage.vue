@@ -1,55 +1,60 @@
- <template>
-      <!-- Container with top margin for overall layout -->
-      <div class="container mt-4">
-        <!-- Centered heading with bottom margin -->
-        <h1 class="text-center mb-4">Appointment Calendar</h1>
-        <!-- Bootstrap row for grid layout -->
-        <div class="row">
-          <!--
-               - On medium screens (md) and up, each card takes 6 columns (half width)
-               - On large screens (lg) and up, each card takes 4 columns (one-third width)
-               - mb-4 adds bottom margin for vertical spacing between cards -->
-          <div v-for="day in days" :key="day.date" class="col-md-6 col-lg-4 mb-4">
-            <!-- Card component for each day -->
-            <div class="card calendar-card">
-              <div class="card-header">
-                <h3 class="card-title">{{ formatDate(day.date) }}</h3>
-              </div>
-              <div class="card-body">
-                <!-- Flexbox container for vertical alignment of buttons -->
-                <div class="d-flex flex-column">
-                  <!-- Time slot buttons -->
-                  <button
-                      v-for="slot in day.slots"
-                      :key="slot.time"
-                      class="btn btn-outline-primary mb-2 time-slot"
-                      :class="{ 'btn-primary text-black': slot.selected, 'disabled': slot.booked }"
-                      @click="selectSlot(day, slot)"
-                      :disabled="slot.booked"
-                  >
-                    {{ slot.time }}
-                  </button>
-                </div>
-              </div>
+<template>
+  <!-- Container with top margin for overall layout -->
+  <div class="container mt-4">
+    <!-- Centered heading with bottom margin -->
+    <h1 class="text-center mb-4">Appointment Calendar</h1>
+    <div class="d-flex justify-content-between mb-4">
+      <button class="btn btn-secondary" @click="changeWeek(-1)">Previous Week</button>
+      <span class="text-center">Week {{ currentWeek }}</span>
+      <button class="btn btn-secondary" @click="changeWeek(1)">Next Week</button>
+    </div>
+    <!-- Bootstrap row for grid layout -->
+    <div class="row">
+      <!--
+           - On medium screens (md) and up, each card takes 6 columns (half width)
+           - On large screens (lg) and up, each card takes 4 columns (one-third width)
+           - mb-4 adds bottom margin for vertical spacing between cards -->
+      <div v-for="day in days" :key="day.date" class="col-md-6 col-lg-4 mb-4">
+        <!-- Card component for each day -->
+        <div class="card calendar-card">
+          <div class="card-header">
+            <h3 class="card-title">{{ formatDate(day.date) }}</h3>
+          </div>
+          <div class="card-body">
+            <!-- Flexbox container for vertical alignment of buttons -->
+            <div class="d-flex flex-column">
+              <!-- Time slot buttons -->
+              <button
+                  v-for="slot in day.slots"
+                  :key="slot.time"
+                  class="btn btn-outline-primary mb-2 time-slot"
+                  :class="{ 'btn-primary text-black': slot.selected, 'disabled': slot.booked }"
+                  @click="selectSlot(day, slot)"
+                  :disabled="slot.booked"
+              >
+                {{ slot.time }}
+              </button>
             </div>
           </div>
         </div>
-        <!-- Selected slot information, shown conditionally -->
-        <div v-if="selectedSlot" class="mt-4 selected-slot-info">
-          <h2 class="text-center">Selected Time Slot</h2>
-          <p class="text-center">
-            Date: {{ formatDate(selectedSlot.date) }} <br />
-            Time: {{ selectedSlot.time }}
-          </p>
-          <div @click="book" id="bookButton">BOOK APPOINTMENT</div>
-          <div v-if="showBooking" class="alert-box">
-            <p>Are you sure you want to book this appointment?</p>
-            <button @click="confirmBooking" id="yes">Yes</button>
-            <button @click="closeAlert" id="no">No</button>
-          </div>
-        </div>
       </div>
-    </template>
+    </div>
+    <!-- Selected slot information, shown conditionally -->
+    <div v-if="selectedSlot" class="mt-4 selected-slot-info">
+      <h2 class="text-center">Selected Time Slot</h2>
+      <p class="text-center">
+        Date: {{ formatDate(selectedSlot.date) }} <br />
+        Time: {{ selectedSlot.time }}
+      </p>
+      <div @click="book" id="bookButton">BOOK APPOINTMENT</div>
+      <div v-if="showBooking" class="alert-box">
+        <p>Are you sure you want to book this appointment?</p>
+        <button @click="confirmBooking" id="yes">Yes</button>
+        <button @click="closeAlert" id="no">No</button>
+      </div>
+    </div>
+  </div>
+</template>
 
 <script>
 import { defineComponent, ref, onMounted } from "vue";
@@ -61,28 +66,29 @@ export default defineComponent({
     const selectedSlot = ref(null);
     const showBooking = ref(false);
     const days = ref([]);
+    const currentWeek = ref(new Date().getWeek());
     const bookingURL = `http://localhost:8091/api/timeSlot/book`;
     const route = useRoute();
     const dentistId = route.params.dentistId; // Get dentistId from route params
     const URL = `http://localhost:8091/api/calendar/get`
 
-          const fetchTimeSlots = async () => {
-            try {
-              const response = await fetch(URL, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  weekNumber: "50",
-                  ownerId: dentistId // Ensure dentistId is used here
-                })
-              })
+    const fetchTimeSlots = async () => {
+      try {
+        const response = await fetch(URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            weekNumber: currentWeek.value,
+            ownerId: dentistId // Ensure dentistId is used here
+          })
+        })
 
-              const data = await response.json();
+        const data = await response.json();
 
-              // Group the time slots by day and create a proper structure for `days`
-              const dayMap = {};
+        // Group the time slots by day and create a proper structure for `days`
+        const dayMap = {};
 
         data.timeSlots.forEach(slot => {
           const date =`${slot.date[0]}-${String(slot.date[1]).padStart(2, '0')}-${String(slot.date[2]).padStart(2, '0')}`;
@@ -105,83 +111,89 @@ export default defineComponent({
           });
         });
 
-              // Assign the grouped slots to the days array
-              days.value = Object.values(dayMap);
+        // Assign the grouped slots to the days array
+        days.value = Object.values(dayMap);
 
-            } catch (error) {
-              console.error("Failed to fetch time slots:", error);
-            }
-          };
+      } catch (error) {
+        console.error("Failed to fetch time slots:", error);
+      }
+    };
+    const changeWeek = (direction) => {
+      currentWeek.value += direction;
+      fetchTimeSlots();
+    };
 
-          const selectSlot = (day, slot) => {
-            // Deselect any previously selected slot
-            days.value.forEach(day => {
-              day.slots.forEach(slot => {
-                slot.selected = false;
-              });
-            });
-            // Select the clicked slot
-            slot.selected = true;
-            selectedSlot.value = slot;
-          };
-
-          const formatDate = (dateString) => {
-            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            return new Date(dateString).toLocaleDateString(undefined, options);
-          };
-          const book = ()=>{
-            showBooking.value = true;
-          };
-
-          const confirmBooking = async () => {
-            try {
-              const response=await fetch(bookingURL, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  timeSlotId: selectedSlot.value.id,
-                  userId: jwtDecode(localStorage.getItem("token")).sub,
-                }),
-              });
-              if (!response.ok) {
-                const errorData = await response.json();
-                alert(`Appointment is already booked: ${errorData.error}`);
-                return;
-              }
-
-
-              alert(`Appointment has been booked successfully!`);
-              showBooking.value = false;
-            } catch (error) {
-              console.error("Error booking appointment:", error);
-              alert("Appointment is already booked. Please try other time slot.");
-              showBooking.value = false;
-            }
-          };
-
-          const closeAlert = ()=>{
-            showBooking.value=false;
-          };
-
-          onMounted(() => {
-            fetchTimeSlots();
-          });
-
-          return {
-            days,
-            selectedSlot,
-            showBooking,
-            formatDate,
-            selectSlot,
-            book,
-            confirmBooking,
-            closeAlert,
-          };
-        },
+    const selectSlot = (day, slot) => {
+      // Deselect any previously selected slot
+      days.value.forEach(day => {
+        day.slots.forEach(slot => {
+          slot.selected = false;
+        });
       });
-    </script>
+      // Select the clicked slot
+      slot.selected = true;
+      selectedSlot.value = slot;
+    };
+
+    const formatDate = (dateString) => {
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      return new Date(dateString).toLocaleDateString(undefined, options);
+    };
+    const book = ()=>{
+      showBooking.value = true;
+    };
+
+    const confirmBooking = async () => {
+      try {
+        const response=await fetch(bookingURL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            timeSlotId: selectedSlot.value.id,
+            userId: jwtDecode(localStorage.getItem("token")).sub,
+          }),
+        });
+        if (!response.ok) {
+          const errorData = await response.json();
+          alert(`Appointment is already booked: ${errorData.error}`);
+          return;
+        }
+
+
+        alert(`Appointment has been booked successfully!`);
+        showBooking.value = false;
+      } catch (error) {
+        console.error("Error booking appointment:", error);
+        alert("Appointment is already booked. Please try other time slot.");
+        showBooking.value = false;
+      }
+    };
+
+    const closeAlert = ()=>{
+      showBooking.value=false;
+    };
+
+    onMounted(() => {
+      fetchTimeSlots();
+    });
+
+    return {
+      days,
+      selectedSlot,
+      showBooking,
+      formatDate,
+      selectSlot,
+      book,
+      confirmBooking,
+      closeAlert,
+      changeWeek,
+      currentWeek,
+    };
+  },
+});
+</script>
 
 <style scoped>
 .text-center mb-4{
@@ -234,7 +246,7 @@ h1{
   color:#3D52A0;
   text-shadow:0 2px 4px rgba(0, 0, 0, 0.6);
 }
- h2 {
+h2 {
   color: #EDE8F5;
   text-shadow:0 2px 4px rgba(0, 0, 0, 0.6);
 }

@@ -11,7 +11,7 @@ export const options = {
 
 export default function () {
     const bookingPayload=JSON.stringify({
-        ownerId:"675844ff73a9ad601e5a77a9",//replace with your dentist id
+        ownerId:"67842e3b4ca90a759f12f25d",//replace with your dentist id
     });
     const headers = {
         headers: {
@@ -27,7 +27,7 @@ export default function () {
 });
     const payload = JSON.stringify({
         weekNumber: "1",
-        ownerId: "675844ff73a9ad601e5a77a9", // Replace with your own dentist id
+        ownerId: "67842e3b4ca90a759f12f25d", // Replace with your own dentist id
     });
 
     const params = {

@@ -26,7 +26,7 @@ public class DentistService {
     private final MqttClient mqttClient;
     private final RedisTemplate<String, Object> redisTemplate;
 
-    private static final String DENTIST_POST_TOPIC = "dentist/post";
+    private static final String DENTIST_POST_TOPIC = "dentist/registration";
     private static final String DENTIST_GET_TOPIC = "dentist/get";
     private static final String DENTIST_GetByEmail_TOPIC = "dentist/getByUID";
     private static final String DENTIST_PATCH_TOPIC = "dentist/patch";
