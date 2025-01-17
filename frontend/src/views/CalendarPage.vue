@@ -10,10 +10,6 @@
     </div>
     <!-- Bootstrap row for grid layout -->
     <div class="row">
-      <!--
-           - On medium screens (md) and up, each card takes 6 columns (half width)
-           - On large screens (lg) and up, each card takes 4 columns (one-third width)
-           - mb-4 adds bottom margin for vertical spacing between cards -->
       <div v-for="day in days" :key="day.date" class="col-md-6 col-lg-4 mb-4">
         <!-- Card component for each day -->
         <div class="card calendar-card">
@@ -27,8 +23,12 @@
               <button
                   v-for="slot in day.slots"
                   :key="slot.time"
-                  class="btn btn-outline-primary mb-2 time-slot"
-                  :class="{ 'btn-primary text-black': slot.selected, 'disabled': slot.booked }"
+                  class="btn mb-2 time-slot"
+                  :class="{
+                  'btn-outline-primary': !slot.booked,
+                  'btn-success': slot.bookedByCurrentUser,
+                  'btn-danger': slot.bookedByOthers
+                }"
                   @click="selectSlot(day, slot)"
                   :disabled="slot.booked"
               >
@@ -43,7 +43,6 @@
     <div v-if="selectedSlot" class="mt-4 selected-slot-info">
       <h2 class="text-center">Selected Time Slot</h2>
       <p class="text-center">
-        Date: {{ formatDate(selectedSlot.date) }} <br />
         Time: {{ selectedSlot.time }}
       </p>
       <div @click="book" id="bookButton">BOOK APPOINTMENT</div>
@@ -79,6 +78,7 @@ export default defineComponent({
     const bookingURL = "http://localhost:8091/api/timeSlot/book";
     const route = useRoute();
     const dentistId = route.params.dentistId;
+    const currentUser = jwtDecode(localStorage.getItem("token")).sub;
     const URL = "http://localhost:8091/api/calendar/get";
 
     const fetchTimeSlots = async () => {
@@ -97,6 +97,8 @@ export default defineComponent({
         const data = await response.json();
 
         const dayMap = {};
+
+        console.log(data);
 
         data.timeSlots.forEach(slot => {
           const date = `${slot.date[0]}-${String(slot.date[1]).padStart(2, '0')}-${String(slot.date[2]).padStart(2, '0')}`;
@@ -127,15 +129,17 @@ export default defineComponent({
       }
     };
 
-    const changeWeek = (direction) => {
+    const changeWeek = async (direction) => {
       currentWeek.value += direction;
-      fetchTimeSlots();
+      await fetchTimeSlots();
     };
 
     const selectSlot = (day, slot) => {
       days.value.forEach(day => {
         day.slots.forEach(slot => {
           slot.selected = false;
+          slot.bookedByCurrentUser = slot.booked && slot.userId === currentUser;
+          slot.bookedByOthers = slot.booked && slot.userId !== currentUser;
         });
       });
       slot.selected = true;
@@ -170,6 +174,7 @@ export default defineComponent({
         }
         alert("Appointment has been booked successfully!");
         showBooking.value = false;
+        selectedSlot.value.bookedByCurrentUser = true;
       } catch (error) {
         console.error("Error booking appointment:", error);
         alert("Appointment is already booked. Please try another time slot.");
@@ -331,5 +336,13 @@ button.selected {
   .calendar-card {
     margin-bottom: 20px;
   }
+}
+.btn-success {
+  background-color: green !important;
+  color: white !important;
+}
+.btn-danger {
+  background-color: red !important;
+  color: white !important;
 }
 </style>

@@ -48,8 +48,6 @@ public class ApiGatewayController {
             JsonNode requestJson = objectMapper.readTree(requestBody);
             JsonNode response = mqttHandler.forwardRequest(topic, requestJson);
 
-            // Cache the response
-            cacheUtil.cacheResponse(cacheKey, response);
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {

@@ -25,7 +25,7 @@ export default {
   },
   methods: {
     goToCalendar() {
-      this.$router.push({ name: 'Calendar', params: { ownerId: 123, weekNumber: 51 } }); 
+      this.$router.push('/map');
     }
   }
 };

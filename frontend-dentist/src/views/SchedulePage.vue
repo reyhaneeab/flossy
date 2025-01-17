@@ -20,7 +20,7 @@ export default {
       appointments: [
         { date: '2024-12-16', time: '10:00 AM - 11:00 AM', patientName: 'John Doe' },
         { date: '2024-12-17', time: '11:00 AM - 12:00 PM', patientName: 'Jane Smith' }
-      ],e git
+      ],
       dentistId: localStorage.getItem("id")
     };
   },
@@ -32,7 +32,7 @@ export default {
     }
   },
   mounted() {
-    apiClient.get(`calendar/${this.dentistId}`)
+    apiClient.post(`calendar/get`, {ownerId: localStorage.getItem("id"), weekNumber: "3"})
   }
 };
 </script>

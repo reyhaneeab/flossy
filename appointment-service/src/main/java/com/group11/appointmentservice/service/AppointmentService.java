@@ -11,6 +11,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import static com.group11.config.JacksonConfig.createObjectMapper;
 
 
@@ -28,6 +32,7 @@ public class AppointmentService {
     private static final String BOOK_APPOINTMENT_RESPONSE = BOOK_APPOINTMENT_TOPIC + "/response";
     private static final String CANCEL_APPOINTMENT_TOPIC = "timeSlot/cancel";
     private static final String CANCEL_APPOINTMENT_RESPONSE = CANCEL_APPOINTMENT_TOPIC + "/response";
+    private static final String GET_TIMESLOT_TOPIC = "timeSlot/get";
 
     @PostConstruct
     public void init() {
@@ -36,6 +41,7 @@ public class AppointmentService {
                 mqttClient.connect();
                 mqttClient.subscribe(BOOK_APPOINTMENT_TOPIC, 1);
                 mqttClient.subscribe(CANCEL_APPOINTMENT_TOPIC,1);
+                mqttClient.subscribe(GET_TIMESLOT_TOPIC,1);
             }
             mqttClient.setCallback(new MqttCallback() {
                 @Override
@@ -56,6 +62,9 @@ public class AppointmentService {
                             bookAppointment(mqttMessage);
                         }else if (topic.equals(CANCEL_APPOINTMENT_TOPIC)){
                             cancelAppointment(mqttMessage);
+                        }
+                        else if(topic.equals(GET_TIMESLOT_TOPIC)){
+                            timeSlot(mqttMessage);
                         }
                     }
                     catch (Exception e){log.info(e.getMessage());}
@@ -127,4 +136,23 @@ public class AppointmentService {
             log.info("Cancellation successful for UserId: {} and TimeSlotId: {}", request.getUserId(), request.getTimeSlotId());
         }
     }
+
+    public void timeSlot(MqttMessage message) throws Exception {
+        AppointmentRequest request = mapper.readValue(message.getPayload(), AppointmentRequest.class);
+        List<TimeSlot> responseSlots = new ArrayList<>();
+        List<TimeSlot> timeSlots = timeSlotRepository.findAll();
+
+        for (TimeSlot timeSlot : timeSlots) {
+            if(timeSlot.getBookedBy() != null) {
+                if (timeSlot.getBookedBy().getId().equals(request.getUserId())) {
+                    responseSlots.add(timeSlot);
+                }
+            }
+        }
+
+        String payload = mapper.writeValueAsString(responseSlots);
+        mqttClient.publish(GET_TIMESLOT_TOPIC + "/response", payload.getBytes(), 1, false);
+
+    }
+
 }

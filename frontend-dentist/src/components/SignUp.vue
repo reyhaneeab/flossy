@@ -43,7 +43,7 @@ export default {
   },
   methods: {
     async signup() {
-      await apiClient.post("/dentist",
+      await apiClient.post("/dentist/registration",
           {officeName: this.name, email: this.email, password: this.password, address: this.address, phone: this.phone}).then((response) => {
         console.log(response);
         if (response.status === 200) {
@@ -53,7 +53,7 @@ export default {
         }
       }).catch((error) => {
         console.log(error);
-        alert("An error occurred!");
+        alert("Email is already in use! Please use a different email.");
       })
     }
   }

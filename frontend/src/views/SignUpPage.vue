@@ -69,9 +69,14 @@ export default {
           phone: this.phone,
           password: this.password
         })
-        console.log('User created successfully', response.data)
-        alert("User created successfully")
-        await router.push('/login')
+        if(response.status === 200){
+          console.log('User created successfully', response.data)
+          alert("User created successfully")
+          await router.push('/login')
+        }
+        else{
+          alert("Email is already in use")
+        }
       }
       catch (error){
         console.log(error)

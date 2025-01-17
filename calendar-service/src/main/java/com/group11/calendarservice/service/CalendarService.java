@@ -178,6 +178,7 @@ public class CalendarService {
             slot.setStartTime(slotRequest.startTime());
             slot.setEndTime(slotRequest.endTime());
             slot.setOwner(dentist);
+            slot.setBooked(false);
             return slot;
         }).toList();
 

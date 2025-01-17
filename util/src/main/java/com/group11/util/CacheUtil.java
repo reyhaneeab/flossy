@@ -14,7 +14,7 @@ import java.time.Duration;
 public class CacheUtil {
 
     private static final String CACHE_KEY_PREFIX = "api-gateway:";
-    private static final Duration CACHE_TTL = Duration.ofMinutes(15);
+    private static final Duration CACHE_TTL = Duration.ofMinutes(5);
     private static final Logger logger = LoggerFactory.getLogger(CacheUtil.class);
 
     private final RedisTemplate<String, String> redisTemplate;
